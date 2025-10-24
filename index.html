@@ -6,14 +6,9 @@
     <title>My Site</title>
     <style>
         body {
-            background-color: #00008B;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            background-color: #08080f;
             margin: 0;
-            font-family: Arial, sans-serif;
+            font-family: 'Courier New', monospace;
             overflow: hidden;
         }
         
@@ -26,18 +21,74 @@
             z-index: 0;
         }
         
+        .top-right {
+            position: fixed;
+            top: 50px;
+            right: 50px;
+            z-index: 1;
+            text-align: right;
+        }
+        
+        .top-right h1 {
+            color: white;
+            font-weight: bold;
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .expandable-container {
+            position: fixed;
+            top: 120px;
+            right: 50px;
+            width: 300px;
+            z-index: 1;
+        }
+        
+        .expandable-box {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        
+        .expandable-header {
+            color: white;
+            padding: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: text-decoration 0.2s;
+        }
+        
+        .expandable-header:hover {
+            text-decoration: underline;
+        }
+        
+        .expandable-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .expandable-content.expanded {
+            max-height: 500px;
+        }
+        
+        .expandable-text {
+            color: white;
+            padding: 0 15px 15px 15px;
+            font-weight: normal;
+            font-size: 14px;
+        }
+        
         .content {
-            position: relative;
+            position: fixed;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
-        
-        h1 {
-            color: white;
-            font-weight: bold;
-            margin: 10px 0;
         }
         
         p {
@@ -78,8 +129,41 @@
 <body>
     <canvas id="numberCanvas"></canvas>
     
-    <div class="content">
+    <div class="top-right">
         <h1>Hello, welcome to my site!</h1>
+    </div>
+    
+    <div class="expandable-container">
+        <div class="expandable-box">
+            <div class="expandable-header" onclick="toggleExpand(this)">Introduction</div>
+            <div class="expandable-content">
+                <div class="expandable-text">Hello! My name is...</div>
+            </div>
+        </div>
+        
+        <div class="expandable-box">
+            <div class="expandable-header" onclick="toggleExpand(this)">Projects</div>
+            <div class="expandable-content">
+                <div class="expandable-text">Hello! My name is...</div>
+            </div>
+        </div>
+        
+        <div class="expandable-box">
+            <div class="expandable-header" onclick="toggleExpand(this)">Connections</div>
+            <div class="expandable-content">
+                <div class="expandable-text">Hello! My name is...</div>
+            </div>
+        </div>
+        
+        <div class="expandable-box">
+            <div class="expandable-header" onclick="toggleExpand(this)">Socials</div>
+            <div class="expandable-content">
+                <div class="expandable-text">Hello! My name is...</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="content">
         <p>I make cool projects online</p>
         
         <div class="icons">
@@ -93,6 +177,12 @@
     </div>
     
     <script>
+        // Expandable box functionality
+        function toggleExpand(header) {
+            const content = header.nextElementSibling;
+            content.classList.toggle('expanded');
+        }
+        
         // Number background animation
         const canvas = document.getElementById('numberCanvas');
         const ctx = canvas.getContext('2d');
@@ -135,10 +225,10 @@
         }
         
         function draw() {
-            ctx.fillStyle = '#00008B';
+            ctx.fillStyle = '#08080f';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            ctx.font = '14px monospace';
+            ctx.font = '14px "Courier New", monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
