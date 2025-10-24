@@ -6,7 +6,7 @@
     <title>My Site</title>
     <style>
         body {
-            background-color: #0b0b1b;
+            background-color: #00008B;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -14,6 +14,24 @@
             height: 100vh;
             margin: 0;
             font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        
+        #numberCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        .content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         
         h1 {
@@ -58,19 +76,104 @@
     </style>
 </head>
 <body>
-    <h1>Hello, welcome to my site!</h1>
-    <p>I make cool projects online</p>
+    <canvas id="numberCanvas"></canvas>
     
-    <div class="icons">
-        <a href="https://www.roblox.com/users/453133356/profile" target="_blank">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Roblox_Logo.svg/2048px-Roblox_Logo.svg.png" alt="Roblox" class="icon">
-        </a>
-        <img src="https://cdn.freebiesupply.com/logos/large/2x/discord-logo-black-and-white.png" alt="Discord" class="icon" onclick="copyUsername()">
+    <div class="content">
+        <h1>Hello, welcome to my site!</h1>
+        <p>I make cool projects online</p>
+        
+        <div class="icons">
+            <a href="https://www.roblox.com/users/453133356/profile" target="_blank">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Roblox_Logo.svg/2048px-Roblox_Logo.svg.png" alt="Roblox" class="icon">
+            </a>
+            <img src="https://www.clipartmax.com/png/middle/39-393163_company-discord-logo-png-white.png" alt="Discord" class="icon" onclick="copyUsername()">
+        </div>
+        
+        <div id="copyMessage" class="message">username copied to clipboard</div>
     </div>
     
-    <div id="copyMessage" class="message">username copied to clipboard</div>
-    
     <script>
+        // Number background animation
+        const canvas = document.getElementById('numberCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let mouseX = -1000;
+        let mouseY = -1000;
+        const GLOW_RADIUS = 16;
+        const NUMBER_SIZE = 20;
+        
+        let numbers = [];
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initNumbers();
+        }
+        
+        function initNumbers() {
+            numbers = [];
+            const cols = Math.ceil(canvas.width / NUMBER_SIZE);
+            const rows = Math.ceil(canvas.height / NUMBER_SIZE);
+            
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    numbers.push({
+                        x: x * NUMBER_SIZE,
+                        y: y * NUMBER_SIZE,
+                        value: Math.floor(Math.random() * 10)
+                    });
+                }
+            }
+        }
+        
+        function updateNumbers() {
+            numbers.forEach(num => {
+                if (Math.random() < 0.05) {
+                    num.value = Math.floor(Math.random() * 10);
+                }
+            });
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#00008B';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.font = '14px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            numbers.forEach(num => {
+                const dx = num.x - mouseX;
+                const dy = num.y - mouseY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const numberDistance = distance / NUMBER_SIZE;
+                
+                let brightness = 0;
+                if (numberDistance < GLOW_RADIUS) {
+                    brightness = Math.max(0, 1 - (numberDistance / GLOW_RADIUS));
+                }
+                
+                const colorValue = Math.floor(brightness * 255);
+                ctx.fillStyle = `rgb(${colorValue}, ${colorValue}, ${colorValue})`;
+                ctx.fillText(num.value, num.x, num.y);
+            });
+        }
+        
+        function animate() {
+            updateNumbers();
+            draw();
+            requestAnimationFrame(animate);
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        resizeCanvas();
+        animate();
+        
         function copyUsername() {
             navigator.clipboard.writeText('spookitys').then(() => {
                 const message = document.getElementById('copyMessage');
