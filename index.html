@@ -32,13 +32,16 @@
             font-weight: bold;
             margin: 0 0 20px 0;
             font-family: 'Courier New', monospace;
+            width: fit-content;
         }
         
         .expandable-box {
             margin-bottom: 15px;
-            background-color: #08080f;
+            background-color: #15151f;
             position: relative;
             z-index: 1;
+            width: fit-content;
+            padding: 10px;
         }
         
         .box-header {
@@ -47,6 +50,8 @@
             cursor: pointer;
             user-select: none;
             padding: 5px 0;
+            border: 2px solid white;
+            padding: 10px;
         }
         
         .box-header:hover {
@@ -68,7 +73,9 @@
         }
         
         .box-content-inner {
-            padding: 10px 0;
+            padding: 10px;
+            border: 2px solid white;
+            border-top: none;
         }
         
         .box-content a {
@@ -80,6 +87,30 @@
         }
         
         .box-content a:hover {
+            opacity: 0.7;
+        }
+        
+        .box-content ul {
+            list-style: none;
+            padding: 0;
+            margin: 5px 0;
+        }
+        
+        .box-content li {
+            margin: 2px 0;
+        }
+        
+        .category {
+            font-weight: bold;
+        }
+        
+        .game-link {
+            color: white;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        
+        .game-link:hover {
             opacity: 0.7;
         }
         
@@ -126,13 +157,13 @@
     <canvas id="numberCanvas"></canvas>
     
     <div class="content">
-        <h1>Hello, welcome to my site!</h1>
+        <h1>Welcome to my site!</h1>
         
         <div class="expandable-box">
             <div class="box-header" onclick="toggleBox('intro')">Introduction</div>
             <div id="intro" class="box-content">
                 <div class="box-content-inner">
-                    Hello! My name is...
+                    Hello! My name is Andrew, otherwise known as Spookitys online, and welcome to my slice of the internet! I'm a developer in LUA and hobbyist with a passion for creating fun experiences and games on the internet.
                 </div>
             </div>
         </div>
@@ -142,6 +173,26 @@
             <div id="stuff" class="box-content">
                 <div class="box-content-inner">
                     Here is some random things that I enjoy:
+                    <ul>
+                        <li class="category">Games:</li>
+                        <li class="category">    Roblox</li>
+                        <li>        <a href="https://www.roblox.com/games/71895508397153/" target="_blank" class="game-link">Die of Death</a></li>
+                        <li>        <a href="https://www.roblox.com/games/7138009149/" target="_blank" class="game-link">Phighting</a></li>
+                        <li>        <a href="https://www.roblox.com/games/18687417158/" target="_blank" class="game-link">Forsaken</a></li>
+                        <li>        <a href="https://www.roblox.com/games/3260590327/" target="_blank" class="game-link">Tower Defense Simulator</a></li>
+                        <li>        <a href="https://www.roblox.com/games/9503261072/" target="_blank" class="game-link">Tower Defense X</a></li>
+                        <li>        <a href="https://www.roblox.com/games/6403373529/" target="_blank" class="game-link">Slap Battles</a></li>
+                        <li>        <a href="https://www.roblox.com/games/78515341506665/" target="_blank" class="game-link">Alter Ego</a></li>
+                        <li>        <a href="https://www.roblox.com/games/16483433878/" target="_blank" class="game-link">Block Tales</a></li>
+                        <li class="category">    Steam</li>
+                        <li>        <a href="https://store.steampowered.com/app/960090/Bloons_TD_6/" target="_blank" class="game-link">Bloons Tower Defense 6</a></li>
+                        <li>        <a href="https://store.steampowered.com/app/553850/HELLDIVERS_2/" target="_blank" class="game-link">Helldivers 2</a></li>
+                        <li>        <a href="https://store.steampowered.com/app/105600/Terraria" target="_blank" class="game-link">Terraria</a></li>
+                        <li>        <a href="https://store.steampowered.com/app/945360/Among_Us" target="_blank" class="game-link">Among Us</a></li>
+                        <li class="category">    Looking Forward To</li>
+                        <li>        <a href="https://store.steampowered.com/app/1030300/Hollow_Knight_Silksong" target="_blank" class="game-link">Hollow Knight / Silksong</a></li>
+                        <li>        <a href="https://www.youtube.com/watch?v=HTs0s6urogA" target="_blank" class="game-link">Give Me Your Best! [UNRELEASED]</a></li>
+                    </ul>
                 </div>
             </div>
         </div>
