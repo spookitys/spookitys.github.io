@@ -27,12 +27,20 @@
             padding: 50px;
         }
         
+        .header-container {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
         h1 {
             color: white;
             font-weight: bold;
-            margin: 0 0 20px 0;
+            margin: 0;
             font-size: 1.5em;
             width: fit-content;
+            height: 1.5em;
+            line-height: 1.5em;
         }
         
         .expandable-box {
@@ -78,7 +86,6 @@
         .box-content-inner {
             padding: 10px;
             border: 2px solid white;
-            border-top: none;
             background-color: #15151f;
             width: fit-content;
             min-width: 300px;
@@ -169,7 +176,9 @@
     <canvas id="numberCanvas"></canvas>
     
     <div class="content">
-        <h1 id="mainHeader">Welcome to my site!</h1>
+        <div class="header-container">
+            <h1 id="mainHeader">Welcome to my site!</h1>
+        </div>
         
         <div class="expandable-box">
             <div class="box-header" onclick="toggleBox('intro')">Introduction</div>
@@ -242,7 +251,7 @@
             header.style.fontFamily = fonts[currentFontIndex];
         }
         
-        setInterval(rotateFont, 2000);
+        setInterval(rotateFont, 100);
         
         // Expandable boxes
         function toggleBox(boxId) {
