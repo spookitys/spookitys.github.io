@@ -21,97 +21,66 @@
             z-index: 0;
         }
         
-        .top-right {
-            position: fixed;
-            top: 50px;
-            right: 50px;
+        .content {
+            position: relative;
             z-index: 1;
-            text-align: right;
+            padding: 50px;
         }
         
-        .top-right h1 {
+        h1 {
             color: white;
             font-weight: bold;
-            margin: 0;
-            font-size: 24px;
-        }
-        
-        .expandable-container {
-            position: fixed;
-            top: 120px;
-            right: 50px;
-            width: 300px;
-            z-index: 1;
+            margin: 0 0 20px 0;
+            font-family: 'Courier New', monospace;
         }
         
         .expandable-box {
-            background-color: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            margin-bottom: 10px;
-            overflow: hidden;
+            margin-bottom: 15px;
+            background-color: #08080f;
+            position: relative;
+            z-index: 1;
         }
         
-        .expandable-header {
+        .box-header {
             color: white;
-            padding: 15px;
-            cursor: pointer;
             font-weight: bold;
-            transition: text-decoration 0.2s;
+            cursor: pointer;
+            user-select: none;
+            padding: 5px 0;
         }
         
-        .expandable-header:hover {
+        .box-header:hover {
             text-decoration: underline;
         }
         
-        .expandable-content {
+        .box-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .expandable-content.expanded {
-            max-height: 500px;
-        }
-        
-        .expandable-text {
+            transition: max-height 0.4s ease-out;
             color: white;
-            padding: 0 15px 15px 15px;
             font-weight: normal;
             font-size: 14px;
         }
         
-        .content {
-            position: fixed;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        .box-content.expanded {
+            max-height: 500px;
+            transition: max-height 0.4s ease-out;
         }
         
-        p {
+        .box-content-inner {
+            padding: 10px 0;
+        }
+        
+        .box-content a {
             color: white;
-            font-weight: normal;
-            margin: 10px 0 30px 0;
-        }
-        
-        .icons {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-        
-        .icon {
-            width: 80px;
-            height: 80px;
             cursor: pointer;
-            transition: transform 0.2s;
+            text-decoration: underline;
+            display: block;
+            margin: 5px 0;
         }
         
-        .icon:hover {
-            transform: scale(1.1);
+        .box-content a:hover {
+            opacity: 0.7;
         }
         
         .message {
@@ -119,68 +88,82 @@
             margin-top: 10px;
             opacity: 0;
             transition: opacity 0.3s;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 5px;
         }
         
         .message.show {
             opacity: 1;
+        }
+        
+        @media (max-width: 768px), (orientation: portrait) {
+            .content {
+                padding: 50px 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            
+            h1 {
+                text-align: center;
+            }
+            
+            .expandable-box {
+                width: 100%;
+                max-width: 300px;
+            }
         }
     </style>
 </head>
 <body>
     <canvas id="numberCanvas"></canvas>
     
-    <div class="top-right">
-        <h1>Hello, welcome to my site!</h1>
-    </div>
-    
-    <div class="expandable-container">
-        <div class="expandable-box">
-            <div class="expandable-header" onclick="toggleExpand(this)">Introduction</div>
-            <div class="expandable-content">
-                <div class="expandable-text">Hello! My name is...</div>
-            </div>
-        </div>
-        
-        <div class="expandable-box">
-            <div class="expandable-header" onclick="toggleExpand(this)">Projects</div>
-            <div class="expandable-content">
-                <div class="expandable-text">Hello! My name is...</div>
-            </div>
-        </div>
-        
-        <div class="expandable-box">
-            <div class="expandable-header" onclick="toggleExpand(this)">Connections</div>
-            <div class="expandable-content">
-                <div class="expandable-text">Hello! My name is...</div>
-            </div>
-        </div>
-        
-        <div class="expandable-box">
-            <div class="expandable-header" onclick="toggleExpand(this)">Socials</div>
-            <div class="expandable-content">
-                <div class="expandable-text">Hello! My name is...</div>
-            </div>
-        </div>
-    </div>
-    
     <div class="content">
-        <p>I make cool projects online</p>
+        <h1>Hello, welcome to my site!</h1>
         
-        <div class="icons">
-            <a href="https://www.roblox.com/users/453133356/profile" target="_blank">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Roblox_Logo.svg/2048px-Roblox_Logo.svg.png" alt="Roblox" class="icon">
-            </a>
-            <img src="https://www.clipartmax.com/png/middle/39-393163_company-discord-logo-png-white.png" alt="Discord" class="icon" onclick="copyUsername()">
+        <div class="expandable-box">
+            <div class="box-header" onclick="toggleBox('intro')">Introduction</div>
+            <div id="intro" class="box-content">
+                <div class="box-content-inner">
+                    Hello! My name is...
+                </div>
+            </div>
         </div>
         
-        <div id="copyMessage" class="message">username copied to clipboard</div>
+        <div class="expandable-box">
+            <div class="box-header" onclick="toggleBox('stuff')">Stuff</div>
+            <div id="stuff" class="box-content">
+                <div class="box-content-inner">
+                    Here is some random things that I enjoy:
+                </div>
+            </div>
+        </div>
+        
+        <div class="expandable-box">
+            <div class="box-header" onclick="toggleBox('socials')">Socials</div>
+            <div id="socials" class="box-content">
+                <div class="box-content-inner">
+                    <a href="https://www.roblox.com/users/453133356/profile" target="_blank">Roblox</a>
+                    <a onclick="copyUsername()">Discord</a>
+                </div>
+            </div>
+        </div>
     </div>
+    
+    <div id="copyMessage" class="message">username copied to clipboard</div>
     
     <script>
-        // Expandable box functionality
-        function toggleExpand(header) {
-            const content = header.nextElementSibling;
-            content.classList.toggle('expanded');
+        // Expandable boxes
+        function toggleBox(boxId) {
+            const box = document.getElementById(boxId);
+            box.classList.toggle('expanded');
         }
         
         // Number background animation
