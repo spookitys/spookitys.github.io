@@ -152,6 +152,40 @@
             opacity: 1;
         }
         
+        #gameContainer {
+            position: fixed;
+            right: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 3;
+            display: none;
+        }
+        
+        #gameContainer.active {
+            display: block;
+        }
+        
+        #flappyCanvas {
+            border: 2px solid white;
+            background-color: #87CEEB;
+            display: block;
+        }
+        
+        #closeGame {
+            background-color: #15151f;
+            color: white;
+            border: 2px solid white;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            width: 100%;
+            margin-top: 5px;
+        }
+        
+        #closeGame:hover {
+            opacity: 0.7;
+        }
+        
         @media (max-width: 768px), (orientation: portrait) {
             .content {
                 padding: 50px 20px;
@@ -169,6 +203,10 @@
                 width: 100%;
                 max-width: 300px;
             }
+            
+            .expandable-box.games-box {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -184,8 +222,7 @@
             <div class="box-header" onclick="toggleBox('intro')">Introduction</div>
             <div id="intro" class="box-content">
                 <div class="box-content-inner">
-                    Hello! My name is Andrew, otherwise known as Spookitys online, and welcome to my slice of the internet!
-                    <ul>
+                    <ul>Hello! My name is Andrew, otherwise known as Spookitys online, and welcome to my slice of the internet!
                     <li>I'm a developer in LUA and hobbyist with a passion for creating fun experiences and games on the internet.
                     <ul>
                 </div>
@@ -221,15 +258,30 @@
             </div>
         </div>
         
+        <div class="expandable-box games-box">
+            <div class="box-header" onclick="toggleBox('games')">Games</div>
+            <div id="games" class="box-content">
+                <div class="box-content-inner">
+                    <a onclick="startFlappyBird()">Flappy Bird</a>
+                </div>
+            </div>
+        </div>
+        
         <div class="expandable-box">
             <div class="box-header" onclick="toggleBox('socials')">Socials</div>
             <div id="socials" class="box-content">
                 <div class="box-content-inner">
                     <a href="https://www.roblox.com/users/453133356/profile" target="_blank">Roblox</a>
+                    <a href="https://steamcommunity.com/id/Karbonites/" target="_blank">Steam</a>
                     <a onclick="copyUsername()">Discord</a>
                 </div>
             </div>
         </div>
+    </div>
+    
+    <div id="gameContainer">
+        <canvas id="flappyCanvas" width="320" height="480"></canvas>
+        <button id="closeGame" onclick="closeFlappyBird()">Close Game</button>
     </div>
     
     <div id="copyMessage" class="message">username copied to clipboard</div>
@@ -348,6 +400,163 @@
                     message.classList.remove('show');
                 }, 1000);
             });
+        }
+        
+        // Flappy Bird Game
+        let flappyGame = null;
+        
+        function startFlappyBird() {
+            const container = document.getElementById('gameContainer');
+            container.classList.add('active');
+            
+            if (!flappyGame) {
+                flappyGame = new FlappyBird();
+            }
+            flappyGame.start();
+        }
+        
+        function closeFlappyBird() {
+            const container = document.getElementById('gameContainer');
+            container.classList.remove('active');
+            if (flappyGame) {
+                flappyGame.stop();
+            }
+        }
+        
+        class FlappyBird {
+            constructor() {
+                this.canvas = document.getElementById('flappyCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.bird = { x: 50, y: 240, velocity: 0, radius: 12 };
+                this.pipes = [];
+                this.score = 0;
+                this.gameOver = false;
+                this.animationId = null;
+                this.pipeGap = 150;
+                this.pipeWidth = 50;
+                this.gravity = 0.5;
+                this.jumpStrength = -8;
+                this.pipeSpeed = 2;
+                
+                this.canvas.addEventListener('click', () => this.jump());
+            }
+            
+            jump() {
+                if (!this.gameOver) {
+                    this.bird.velocity = this.jumpStrength;
+                } else {
+                    this.reset();
+                }
+            }
+            
+            reset() {
+                this.bird = { x: 50, y: 240, velocity: 0, radius: 12 };
+                this.pipes = [];
+                this.score = 0;
+                this.gameOver = false;
+            }
+            
+            start() {
+                this.reset();
+                this.gameLoop();
+            }
+            
+            stop() {
+                if this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                }
+            }
+            
+            gameLoop() {
+                this.update();
+                this.draw();
+                this.animationId = requestAnimationFrame(() => this.gameLoop());
+            }
+            
+            update() {
+                if (this.gameOver) return;
+                
+                // Update bird
+                this.bird.velocity += this.gravity;
+                this.bird.y += this.bird.velocity;
+                
+                // Check boundaries
+                if (this.bird.y + this.bird.radius > this.canvas.height || this.bird.y - this.bird.radius < 0) {
+                    this.gameOver = true;
+                }
+                
+                // Add new pipes
+                if (this.pipes.length === 0 || this.pipes[this.pipes.length - 1].x < this.canvas.width - 200) {
+                    const gapY = Math.random() * (this.canvas.height - this.pipeGap - 100) + 50;
+                    this.pipes.push({ x: this.canvas.width, gapY: gapY });
+                }
+                
+                // Update pipes
+                for (let i = this.pipes.length - 1; i >= 0; i--) {
+                    this.pipes[i].x -= this.pipeSpeed;
+                    
+                    // Check collision
+                    if (this.bird.x + this.bird.radius > this.pipes[i].x && 
+                        this.bird.x - this.bird.radius < this.pipes[i].x + this.pipeWidth) {
+                        if (this.bird.y - this.bird.radius < this.pipes[i].gapY || 
+                            this.bird.y + this.bird.radius > this.pipes[i].gapY + this.pipeGap) {
+                            this.gameOver = true;
+                        }
+                    }
+                    
+                    // Score
+                    if (this.pipes[i].x + this.pipeWidth < this.bird.x && !this.pipes[i].scored) {
+                        this.score++;
+                        this.pipes[i].scored = true;
+                    }
+                    
+                    // Remove off-screen pipes
+                    if (this.pipes[i].x + this.pipeWidth < 0) {
+                        this.pipes.splice(i, 1);
+                    }
+                }
+            }
+            
+            draw() {
+                // Background
+                this.ctx.fillStyle = '#87CEEB';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Pipes
+                this.ctx.fillStyle = '#2D5016';
+                this.pipes.forEach(pipe => {
+                    // Top pipe
+                    this.ctx.fillRect(pipe.x, 0, this.pipeWidth, pipe.gapY);
+                    // Bottom pipe
+                    this.ctx.fillRect(pipe.x, pipe.gapY + this.pipeGap, this.pipeWidth, this.canvas.height);
+                });
+                
+                // Bird
+                this.ctx.fillStyle = '#FFD700';
+                this.ctx.beginPath();
+                this.ctx.arc(this.bird.x, this.bird.y, this.bird.radius, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Score
+                this.ctx.fillStyle = 'white';
+                this.ctx.font = '24px "Courier New", monospace';
+                this.ctx.fillText(`Score: ${this.score}`, 10, 30);
+                
+                // Game Over
+                if (this.gameOver) {
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.ctx.fillStyle = 'white';
+                    this.ctx.font = '32px "Courier New", monospace';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('Game Over!', this.canvas.width / 2, this.canvas.height / 2 - 20);
+                    this.ctx.font = '20px "Courier New", monospace';
+                    this.ctx.fillText(`Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 20);
+                    this.ctx.fillText('Click to restart', this.canvas.width / 2, this.canvas.height / 2 + 50);
+                    this.ctx.textAlign = 'left';
+                }
+            }
         }
     </script>
 </body>
