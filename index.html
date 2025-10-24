@@ -31,17 +31,17 @@
             color: white;
             font-weight: bold;
             margin: 0 0 20px 0;
-            font-family: 'Courier New', monospace;
+            font-size: 1.5em;
             width: fit-content;
         }
         
         .expandable-box {
             margin-bottom: 15px;
-            background-color: #15151f;
+            background-color: transparent;
             position: relative;
             z-index: 1;
             width: fit-content;
-            padding: 10px;
+            padding: 0;
         }
         
         .box-header {
@@ -52,6 +52,8 @@
             padding: 5px 0;
             border: 2px solid white;
             padding: 10px;
+            width: fit-content;
+            background-color: #15151f;
         }
         
         .box-header:hover {
@@ -70,12 +72,16 @@
         .box-content.expanded {
             max-height: 500px;
             transition: max-height 0.4s ease-out;
+            width: fit-content;
         }
         
         .box-content-inner {
             padding: 10px;
             border: 2px solid white;
             border-top: none;
+            background-color: #15151f;
+            width: fit-content;
+            min-width: 300px;
         }
         
         .box-content a {
@@ -102,6 +108,12 @@
         
         .category {
             font-weight: bold;
+        }
+        
+        @media (min-width: 769px) and (orientation: landscape) {
+            .box-content ul li:not(.category) {
+                padding-left: 20px;
+            }
         }
         
         .game-link {
@@ -157,13 +169,16 @@
     <canvas id="numberCanvas"></canvas>
     
     <div class="content">
-        <h1>Welcome to my site!</h1>
+        <h1 id="mainHeader">Welcome to my site!</h1>
         
         <div class="expandable-box">
             <div class="box-header" onclick="toggleBox('intro')">Introduction</div>
             <div id="intro" class="box-content">
                 <div class="box-content-inner">
-                    Hello! My name is Andrew, otherwise known as Spookitys online, and welcome to my slice of the internet! I'm a developer in LUA and hobbyist with a passion for creating fun experiences and games on the internet.
+                    Hello! My name is Andrew, otherwise known as Spookitys online, and welcome to my slice of the internet!
+                    <ul>
+                    <li>I'm a developer in LUA and hobbyist with a passion for creating fun experiences and games on the internet.
+                    <ul>
                 </div>
             </div>
         </div>
@@ -211,6 +226,24 @@
     <div id="copyMessage" class="message">username copied to clipboard</div>
     
     <script>
+        // Font rotation for header
+        const fonts = [
+            '"Courier New", monospace',
+            '"Lucida Console", Monaco, monospace',
+            '"Consolas", monospace',
+            '"Monaco", monospace',
+            '"Andale Mono", monospace'
+        ];
+        let currentFontIndex = 0;
+        
+        function rotateFont() {
+            const header = document.getElementById('mainHeader');
+            currentFontIndex = (currentFontIndex + 1) % fonts.length;
+            header.style.fontFamily = fonts[currentFontIndex];
+        }
+        
+        setInterval(rotateFont, 2000);
+        
         // Expandable boxes
         function toggleBox(boxId) {
             const box = document.getElementById(boxId);
