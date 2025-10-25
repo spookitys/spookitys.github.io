@@ -42,8 +42,13 @@
             height: 1.5em;
             line-height: 1.5em;
             overflow: hidden;
-            display: flex;
-            align-items: center;
+            position: relative; /* Changed from flex */
+        }
+
+        h1 span {
+            position: absolute;
+            width: 100%;
+            text-align: center;
         }
         
         .expandable-box {
@@ -182,7 +187,7 @@
             z-index: 4;
             width: 40px;
             height: 40px;
-            background: #08080f;        /* black box */
+            background: #0c0c0c;        /* black box */
             color: red;                /* red text */
             border: 2px solid red;     /* red outline */
             border-radius: 6px;
@@ -363,8 +368,9 @@ Terminal Protcol Initiated [Website Version: 0.2]
         function slideText() {
             const oldSpan = header.querySelector('span');
             if (oldSpan) {
-                oldSpan.style.transition = 'transform 0.5s ease-in-out';
+                oldSpan.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
                 oldSpan.style.transform = 'translateY(-100%)';
+                oldSpan.style.opacity = '0';
                 oldSpan.addEventListener('transitionend', () => oldSpan.remove(), { once: true });
             }
 
@@ -372,20 +378,20 @@ Terminal Protcol Initiated [Website Version: 0.2]
             const newSpan = document.createElement('span');
             newSpan.textContent = phrases[phraseIndex];
             newSpan.style.transform = 'translateY(100%)';
-            newSpan.style.display = 'inline-block';
+            newSpan.style.opacity = '0';
             header.appendChild(newSpan);
 
             // Force reflow to apply initial transform before transitioning
             newSpan.getBoundingClientRect(); 
 
-            newSpan.style.transition = 'transform 0.5s ease-in-out';
+            newSpan.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
             newSpan.style.transform = 'translateY(0)';
+            newSpan.style.opacity = '1';
         }
 
         // Initial setup
         const initialSpan = document.createElement('span');
         initialSpan.textContent = phrases[0];
-        initialSpan.style.display = 'inline-block';
         header.innerHTML = '';
         header.appendChild(initialSpan);
         phraseIndex = 0;
@@ -440,7 +446,7 @@ Terminal Protcol Initiated [Website Version: 0.2]
         }
         
         function draw() {
-            ctx.fillStyle = '#08080f';
+            ctx.fillStyle = '#0c0c0c';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             ctx.font = '14px "Courier New", monospace';
