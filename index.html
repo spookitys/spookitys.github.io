@@ -170,6 +170,86 @@
                 max-width: 300px;
             }
         }
+
+        /* Terminal toggle button */
+        .terminal-button {
+            position: fixed;
+            left: 12px;
+            bottom: 12px;
+            z-index: 4;
+            width: 40px;
+            height: 40px;
+            background: red;
+            color: #08080f;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* Terminal panel */
+        .terminal {
+            position: fixed;
+            left: 12px;
+            bottom: 60px;
+            z-index: 3;
+            width: 60vw;
+            max-width: 800px;
+            min-width: 300px;
+            height: 40vh;
+            background: rgba(8, 8, 15, 0.95);
+            border: 2px solid red;
+            border-radius: 6px;
+            color: red;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Courier New', monospace;
+        }
+        .terminal.hidden { display: none; }
+
+        .terminal-output {
+            flex: 1;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: red;
+        }
+
+        .terminal-prompt {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-top: 1px solid red;
+            padding-top: 6px;
+            margin-top: 6px;
+        }
+
+        .terminal-prompt-label {
+            color: red;
+        }
+
+        .terminal-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: red;
+            caret-color: red;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px), (orientation: portrait) {
+            /* ...existing code... */
+            .terminal {
+                width: 92vw;
+                left: 4vw;
+                bottom: 64px;
+                height: 45vh;
+            }
+        }
     </style>
 </head>
 <body>
@@ -233,7 +313,21 @@
     </div>
     
     <div id="copyMessage" class="message">username copied to clipboard</div>
-    
+
+    <!-- Terminal button and panel -->
+    <button id="terminalButton" class="terminal-button">\</button>
+    <div id="terminalPanel" class="terminal hidden" aria-label="Terminal">
+        <div id="terminalOutput" class="terminal-output">
+Spookitys Protcol Initiated [Website Version: 0.0102]
+© Copyright Legal Registration. All rights reserved.
+
+        </div>
+        <div class="terminal-prompt">
+            <span class="terminal-prompt-label">C:/cmd&gt;</span>
+            <input id="terminalInput" class="terminal-input" type="text" autocomplete="off" spellcheck="false" />
+        </div>
+    </div>
+
     <script>
         // Font rotation for header
         const fonts = [
@@ -349,6 +443,50 @@
                 }, 1000);
             });
         }
+
+        // Terminal logic
+        const terminalBtn = document.getElementById('terminalButton');
+        const terminalPanel = document.getElementById('terminalPanel');
+        const terminalOutput = document.getElementById('terminalOutput');
+        const terminalInput = document.getElementById('terminalInput');
+
+        function toggleTerminal(forceShow) {
+            const show = forceShow !== undefined ? forceShow : terminalPanel.classList.contains('hidden');
+            terminalPanel.classList.toggle('hidden', !show);
+            if (show) setTimeout(() => terminalInput.focus(), 0);
+        }
+
+        function printLine(text = '') {
+            const line = document.createElement('div');
+            line.textContent = text;
+            line.style.color = 'red';
+            terminalOutput.appendChild(line);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        function handleCommand(cmd) {
+            const normalized = cmd.trim().toLowerCase();
+            if (!normalized) return;
+            if (normalized === 'info') {
+                printLine('info here');
+            } else {
+                printLine(`'${cmd}' is not recognized as an internal or external command.`);
+            }
+        }
+
+        terminalBtn.addEventListener('click', () => toggleTerminal());
+
+        terminalInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const cmd = terminalInput.value;
+                printLine(`C:/cmd> ${cmd}`);
+                handleCommand(cmd);
+                terminalInput.value = '';
+            } else if (e.key === 'Escape') {
+                toggleTerminal(false);
+            }
+        });
     </script>
 </body>
 </html>
