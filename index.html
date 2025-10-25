@@ -38,17 +38,17 @@
             font-weight: bold;
             margin: 0;
             font-size: 1.5em;
-            width: fit-content;
+            /* width: fit-content; */
             height: 1.5em;
             line-height: 1.5em;
             overflow: hidden;
-            position: relative; /* Changed from flex */
+            position: relative;
+            transition: width 0.5s ease-in-out;
         }
 
         h1 span {
             position: absolute;
-            width: 100%;
-            text-align: center;
+            white-space: nowrap;
         }
         
         .expandable-box {
@@ -381,6 +381,9 @@ Terminal Protcol Initiated [Website Version: 0.2]
             newSpan.style.opacity = '0';
             header.appendChild(newSpan);
 
+            // Animate width and slide in new text
+            header.style.width = newSpan.offsetWidth + 'px';
+            
             // Force reflow to apply initial transform before transitioning
             newSpan.getBoundingClientRect(); 
 
@@ -394,6 +397,7 @@ Terminal Protcol Initiated [Website Version: 0.2]
         initialSpan.textContent = phrases[0];
         header.innerHTML = '';
         header.appendChild(initialSpan);
+        header.style.width = initialSpan.offsetWidth + 'px';
         phraseIndex = 0;
 
         setInterval(slideText, 3000);
