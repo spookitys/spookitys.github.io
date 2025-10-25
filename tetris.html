@@ -74,64 +74,42 @@
             font-weight: bold;
         }
         .muted { opacity: 0.8; }
-        .board { position: relative; display: inline-block; }
-        .pause-overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.5);
-            color: var(--accent);
-            font-weight: bold;
-            font-size: 32px;
-            letter-spacing: 4px;
-            text-shadow: 0 0 8px rgba(255, 48, 64, 0.7);
-        }
-        .hidden { display: none; }
-
-        /* Mobile controls */
-        .mobile-controls { display: none; }
-        .ctrl-btn {
-            appearance: none;
-            border: 1px solid var(--accent);
-            background: #1a1a24;
-            color: var(--fg);
-            border-radius: 6px;
-            padding: 10px 12px;
-            font-family: "Courier New", monospace;
-            font-weight: bold;
-            text-align: center;
-            user-select: none;
-        }
-        .ctrl-btn:active {
-            background: #222231;
-        }
         @media (max-width: 640px) {
             .game { grid-template-columns: 1fr; }
             .side { order: -1; }
-            .mobile-controls {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 8px;
-                margin-top: 10px;
-            }
-            .mobile-controls .wide {
-                grid-column: span 3;
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 8px;
-            }
+        }
+
+        /* Mobile controls */
+        .touch-controls {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .touch-controls .row {
+            display: contents;
+        }
+        .touch-controls button {
+            background: var(--accent);
+            color: #08080f;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 10px;
+            font-weight: bold;
+            font-family: "Courier New", monospace;
+            cursor: pointer;
+            user-select: none;
+        }
+        .touch-controls button:active { filter: brightness(0.9); }
+        @media (max-width: 640px) {
+            .touch-controls { display: grid; }
         }
     </style>
 </head>
 <body>
 <div class="wrap">
     <div class="game">
-        <div class="board">
-            <canvas id="tetris" width="240" height="480" aria-label="Tetris board"></canvas>
-            <div id="pauseOverlay" class="pause-overlay hidden" aria-live="polite">PAUSED</div>
-        </div>
+        <canvas id="tetris" width="240" height="480" aria-label="Tetris board"></canvas>
         <div class="side">
             <div class="info">
                 <div class="title">Tetris</div>
@@ -141,23 +119,37 @@
             </div>
             <div class="info">
                 <div class="title">Controls</div>
-                <div>A / D: Move</div>
-                <div>S or Q: Soft drop</div>
+                <div>A: Move left</div>
+                <div>D: Move right</div>
+                <div>R: Rotate</div>
+                <div>S: Soft drop</div>
+                <div>Space: Hard drop</div>
+                <div>M: Restart</div>
                 <div>P: Pause</div>
-                <div>R: Restart</div>
                 <div class="muted">Esc: Back</div>
             </div>
+
+            <!-- Mobile controls -->
+            <div class="touch-controls" aria-label="Mobile Controls">
+                <div class="row">
+                    <button data-action="left">←</button>
+                    <button data-action="rotate">⟳</button>
+                    <button data-action="right">→</button>
+                </div>
+                <div class="row">
+                    <button data-action="soft">Soft</button>
+                    <button data-action="hard">Hard</button>
+                    <button data-action="pause">Pause</button>
+                </div>
+                <div class="row">
+                    <button data-action="restart">Restart</button>
+                    <button data-action="back">Back</button>
+                    <span></span>
+                </div>
+            </div>
+
             <div class="btns">
                 <a class="btn" href="index.html">Back</a>
-            </div>
-            <div class="mobile-controls" aria-label="Mobile Controls">
-                <button id="btnLeft"  class="ctrl-btn">Left</button>
-                <button id="btnSoft"  class="ctrl-btn">Soft</button>
-                <button id="btnRight" class="ctrl-btn">Right</button>
-                <div class="wide">
-                    <button id="btnPause"   class="ctrl-btn">Pause</button>
-                    <button id="btnRestart" class="ctrl-btn">Restart</button>
-                </div>
             </div>
         </div>
     </div>
@@ -365,6 +357,17 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     drawMatrix(arena, { x: 0, y: 0 });
     drawMatrix(player.matrix, player.pos);
+
+    // Pause indicator overlay
+    if (paused) {
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ff3040';
+        ctx.font = 'bold 28px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+    }
 }
 
 function update(time = 0) {
@@ -374,8 +377,8 @@ function update(time = 0) {
         dropCounter += delta;
         const speed = Math.max(120, 1000 - player.level * 75);
         if (dropCounter > speed) playerDrop();
-        draw();
     }
+    draw();
     requestAnimationFrame(update);
 }
 
@@ -385,43 +388,46 @@ function updateScore() {
     document.getElementById('level').textContent = player.level;
 }
 
-function setPaused(p) {
-    paused = p;
-    const overlay = document.getElementById('pauseOverlay');
-    overlay.classList.toggle('hidden', !paused);
-}
-
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'a' || e.key === 'A') playerMove(-1);
-    else if (e.key === 'd' || e.key === 'D') playerMove(1);
-    else if (e.key === 's' || e.key === 'S' || e.key === 'q' || e.key === 'Q') playerDrop();
-    else if (e.key === 'p' || e.key === 'P') setPaused(!paused);
-    else if (e.key === 'r' || e.key === 'R') {
+    const k = e.key.toLowerCase();
+    if (k === 'a') { e.preventDefault(); playerMove(-1); }
+    else if (k === 'd') { e.preventDefault(); playerMove(1); }
+    else if (k === 's') { e.preventDefault(); playerDrop(); }
+    else if (k === 'r') { e.preventDefault(); playerRotate(1); }
+    else if (k === ' ') { e.preventDefault(); hardDrop(); }
+    else if (k === 'm') {
+        e.preventDefault();
         arena.forEach(row => row.fill(0));
         player.score = 0; player.lines = 0; player.level = 0;
         playerReset(); updateScore();
     }
-    else if (e.key === 'Escape') window.location.href = 'MySite.html';
+    else if (k === 'p') { e.preventDefault(); paused = !paused; }
+    else if (k === 'escape') { window.location.href = 'MySite.html'; }
 });
 
-// Mobile control bindings
-function bindBtn(id, handler) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const run = (ev) => { ev.preventDefault(); handler(); };
-    el.addEventListener('pointerdown', run);
-    el.addEventListener('click', run);
-}
-
-bindBtn('btnLeft',  () => playerMove(-1));
-bindBtn('btnRight', () => playerMove(1));
-bindBtn('btnSoft',  () => playerDrop());
-bindBtn('btnPause', () => setPaused(!paused));
-bindBtn('btnRestart', () => {
-    arena.forEach(row => row.fill(0));
-    player.score = 0; player.lines = 0; player.level = 0;
-    playerReset(); updateScore();
-});
+// Mobile buttons hook
+(function wireTouchControls(){
+    const actions = {
+        left: () => playerMove(-1),
+        right: () => playerMove(1),
+        rotate: () => playerRotate(1),
+        soft: () => playerDrop(),
+        hard: () => hardDrop(),
+        pause: () => { paused = !paused; },
+        restart: () => {
+            arena.forEach(row => row.fill(0));
+            player.score = 0; player.lines = 0; player.level = 0;
+            playerReset(); updateScore();
+        },
+        back: () => { window.location.href = 'index.html'; }
+    };
+    document.querySelectorAll('.touch-controls button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const act = btn.getAttribute('data-action');
+            if (actions[act]) actions[act]();
+        }, { passive: true });
+    });
+})();
 
 playerReset();
 updateScore();
