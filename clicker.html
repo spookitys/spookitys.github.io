@@ -154,6 +154,20 @@
 
 <script>
   // filepath: c:\Users\ginge\Downloads\clicker.html
+  // admin guard: redirect to index if not admin
+  (function(){
+    try {
+      if (localStorage.getItem('alpha_admin_v1') !== '1') {
+        alert('Access denied. Admin required.');
+        window.location.href = 'index.html';
+        return;
+      }
+    } catch(e) {
+      window.location.href = 'index.html';
+      return;
+    }
+  })();
+
   // Items map: program vs upgrade entries
   const KEY = 'alpha_clicker_v1';
   const defaultState = {
