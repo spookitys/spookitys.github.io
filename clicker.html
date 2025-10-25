@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>57 Alpha Clicker</title>
+<style>
+    :root {
+        --bg: #0c0c0c;
+        --panel: #111;
+        --accent: red;
+        --text: #fff;
+        --muted: #bbb;
+    }
+    html,body { height:100%; margin:0; background:var(--bg); color:var(--text); font-family: 'Courier New', monospace; display:flex; align-items:center; justify-content:center; }
+    .wrap { width: 92vw; max-width:900px; background: linear-gradient(180deg,#0b0b0b,#0f0f0f); border:2px solid var(--accent); padding:20px; border-radius:8px; box-shadow:0 6px 30px rgba(255,0,0,0.08); }
+    .header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    .title { font-size:1.2rem; font-weight:bold; color:var(--accent); }
+    .stats { text-align:right; font-size:0.95rem; color:var(--muted); }
+    .main { display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap; }
+    .cookie-area { flex:1 1 320px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .cookie-btn {
+        width:220px; height:220px; border-radius:50%; background:radial-gradient(circle at 30% 30%, #fff 0%, #ddd 20%, #cfa 40%, #b98 60%, #9a6 100%);
+        display:grid; place-items:center; font-size:1.4rem; color:#000; border:4px solid rgba(0,0,0,0.2); cursor:pointer; user-select:none;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 18px rgba(255,0,0,0.06);
+    }
+    .counts { text-align:center; }
+    .big-num { font-size:2rem; font-weight:bold; color:var(--text); }
+    .sub { color:var(--muted); font-size:0.9rem; }
+
+    .shop { width:340px; min-width:260px; background:var(--panel); border:2px solid rgba(255,0,0,0.12); padding:12px; border-radius:6px; }
+    .shop h3 { margin:0 0 8px 0; color:var(--accent); }
+    .upgrade { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px; border-radius:6px; background:rgba(255,255,255,0.02); margin-bottom:8px; }
+    .upgrade .meta { font-size:0.9rem; color:var(--text); }
+    .upgrade .cost { font-size:0.9rem; color:var(--muted); }
+    .upgrade button { background:transparent; color:var(--accent); border:1px solid var(--accent); padding:6px 8px; border-radius:4px; cursor:pointer; }
+    .upgrade button:disabled { opacity:0.35; cursor:not-allowed; border-color: rgba(255,0,0,0.18); color: rgba(255,0,0,0.35); }
+    .footer { margin-top:12px; display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:0.85rem; }
+    .small { font-size:0.85rem; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <div class="header">
+        <div class="title">57 Alpha Clicker</div>
+        <div class="stats">
+            <div id="cpsText">CPS: 0</div>
+            <div id="clickPowerText" class="small">Click Power: 1</div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="cookie-area">
+            <div class="counts">
+                <div class="sub">Cookies</div>
+                <div id="cookies" class="big-num">0</div>
+            </div>
+
+            <div id="cookieBtn" class="cookie-btn" title="Click me!">CLICK</div>
+
+            <div class="sub">Tip: buy upgrades on the right to increase CPS or click power. Progress auto-saves.</div>
+        </div>
+
+        <div class="shop" aria-label="Shop">
+            <h3>Shop</h3>
+
+            <div class="upgrade">
+                <div>
+                    <div class="meta">Cursor (+1 CPS)</div>
+                    <div class="cost">Owned: <span id="cursorOwned">0</span></div>
+                </div>
+                <div>
+                    <div class="cost">Cost: <span id="cursorCost">15</span></div>
+                    <button id="buyCursor">Buy</button>
+                </div>
+            </div>
+
+            <div class="upgrade">
+                <div>
+                    <div class="meta">Grandma (+10 CPS)</div>
+                    <div class="cost">Owned: <span id="grandmaOwned">0</span></div>
+                </div>
+                <div>
+                    <div class="cost">Cost: <span id="grandmaCost">100</span></div>
+                    <button id="buyGrandma">Buy</button>
+                </div>
+            </div>
+
+            <div class="upgrade">
+                <div>
+                    <div class="meta">Double Click Power (x2)</div>
+                    <div class="cost">Times bought: <span id="doubleOwned">0</span></div>
+                </div>
+                <div>
+                    <div class="cost">Cost: <span id="doubleCost">50</span></div>
+                    <button id="buyDouble">Buy</button>
+                </div>
+            </div>
+
+            <div class="upgrade">
+                <div>
+                    <div class="meta">Reset (soft reset saves prestige cookies)</div>
+                    <div class="cost small">Not required — just a convenience button</div>
+                </div>
+                <div>
+                    <button id="resetBtn">Reset</button>
+                </div>
+            </div>
+
+            <div class="footer">
+                <div class="small">Saved: <span id="lastSaved">never</span></div>
+                <div class="small"><button id="exportBtn">Export</button></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    // state
+    const state = {
+        cookies: 0,
+        cps: 0,
+        clickPower: 1,
+        cursor: 0,
+        grandma: 0,
+        doubleBought: 0
+    };
+
+    // elements
+    const cookiesEl = document.getElementById('cookies');
+    const cpsText = document.getElementById('cpsText');
+    const clickPowerText = document.getElementById('clickPowerText');
+    const cookieBtn = document.getElementById('cookieBtn');
+
+    const cursorCostEl = document.getElementById('cursorCost');
+    const cursorOwnedEl = document.getElementById('cursorOwned');
+    const buyCursorBtn = document.getElementById('buyCursor');
+
+    const grandmaCostEl = document.getElementById('grandmaCost');
+    const grandmaOwnedEl = document.getElementById('grandmaOwned');
+    const buyGrandmaBtn = document.getElementById('buyGrandma');
+
+    const doubleCostEl = document.getElementById('doubleCost');
+    const doubleOwnedEl = document.getElementById('doubleOwned');
+    const buyDoubleBtn = document.getElementById('buyDouble');
+
+    const resetBtn = document.getElementById('resetBtn');
+    const lastSavedEl = document.getElementById('lastSaved');
+    const exportBtn = document.getElementById('exportBtn');
+
+    // helper cost functions (simple exponential scaling)
+    function costFor(base, owned) {
+        return Math.floor(base * Math.pow(1.15, owned));
+    }
+
+    function recalcCPS() {
+        state.cps = state.cursor * 1 + state.grandma * 10;
+    }
+
+    function format(n) {
+        if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
+        if (n >= 1e3) return (n/1e3).toFixed(2) + 'k';
+        if (Math.abs(n - Math.round(n)) < 0.0001) return String(Math.round(n));
+        return n.toFixed(2);
+    }
+
+    // load/save
+    function save() {
+        try {
+            const s = JSON.stringify(state);
+            localStorage.setItem('alphaClickerSave', s);
+            lastSavedEl.textContent = new Date().toLocaleTimeString();
+        } catch (e) { /* ignore */ }
+    }
+
+    function load() {
+        try {
+            const s = localStorage.getItem('alphaClickerSave');
+            if (!s) return;
+            const parsed = JSON.parse(s);
+            Object.assign(state, parsed);
+            recalcCPS();
+        } catch (e) { /* ignore */ }
+    }
+
+    function exportSave() {
+        const data = btoa(JSON.stringify(state));
+        prompt('Copy your save string:', data);
+    }
+
+    // UI updates
+    function updateUI() {
+        cookiesEl.textContent = format(state.cookies);
+        cpsText.textContent = 'CPS: ' + format(state.cps);
+        clickPowerText.textContent = 'Click Power: ' + format(state.clickPower);
+
+        const cursorCost = costFor(15, state.cursor);
+        const grandmaCost = costFor(100, state.grandma);
+        const doubleCost = 50 * Math.pow(2, state.doubleBought); // escalate
+
+        cursorCostEl.textContent = cursorCost;
+        cursorOwnedEl.textContent = state.cursor;
+
+        grandmaCostEl.textContent = grandmaCost;
+        grandmaOwnedEl.textContent = state.grandma;
+
+        doubleCostEl.textContent = doubleCost;
+        doubleOwnedEl.textContent = state.doubleBought;
+
+        buyCursorBtn.disabled = state.cookies < cursorCost;
+        buyGrandmaBtn.disabled = state.cookies < grandmaCost;
+        buyDoubleBtn.disabled = state.cookies < doubleCost;
+    }
+
+    // interactions
+    cookieBtn.addEventListener('click', () => {
+        state.cookies += state.clickPower;
+        // small click animation
+        cookieBtn.style.transform = 'scale(0.98)';
+        setTimeout(()=> cookieBtn.style.transform = '', 80);
+        updateUI();
+    });
+
+    buyCursorBtn.addEventListener('click', () => {
+        const cost = costFor(15, state.cursor);
+        if (state.cookies >= cost) {
+            state.cookies -= cost;
+            state.cursor += 1;
+            recalcCPS();
+            updateUI();
+        }
+    });
+
+    buyGrandmaBtn.addEventListener('click', () => {
+        const cost = costFor(100, state.grandma);
+        if (state.cookies >= cost) {
+            state.cookies -= cost;
+            state.grandma += 1;
+            recalcCPS();
+            updateUI();
+        }
+    });
+
+    buyDoubleBtn.addEventListener('click', () => {
+        const cost = 50 * Math.pow(2, state.doubleBought);
+        if (state.cookies >= cost) {
+            state.cookies -= cost;
+            state.doubleBought += 1;
+            state.clickPower *= 2;
+            updateUI();
+        }
+    });
+
+    resetBtn.addEventListener('click', () => {
+        if (!confirm('Reset and clear progress? This cannot be undone.')) return;
+        localStorage.removeItem('alphaClickerSave');
+        state.cookies = 0;
+        state.cps = 0;
+        state.clickPower = 1;
+        state.cursor = 0;
+        state.grandma = 0;
+        state.doubleBought = 0;
+        updateUI();
+        save();
+    });
+
+    exportBtn.addEventListener('click', exportSave);
+
+    // main loop: add cookies from CPS
+    let last = performance.now();
+    function tick(ts) {
+        const delta = (ts - last) / 1000;
+        last = ts;
+        // add accrual
+        state.cookies += state.cps * delta;
+        updateUI();
+        requestAnimationFrame(tick);
+    }
+
+    // autosave every 5 seconds
+    setInterval(save, 5000);
+
+    // allow import via URL or prompt if user wants to import
+    function tryImport() {
+        // nothing for now; placeholder to extend
+    }
+
+    // init
+    load();
+    recalcCPS();
+    updateUI();
+    lastSavedEl.textContent = 'never';
+    requestAnimationFrame(tick);
+
+    // expose quick keyboard: press "Escape" to return to index
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (confirm('Return to homepage?')) location.href = 'index.html';
+        }
+    });
+
+})();
+</script>
+</body>
+</html>
