@@ -601,6 +601,13 @@ Terminal Protcol Initiated [Website Version: 0.2]
             const normalized = cmd.trim().toLowerCase();
             if (!normalized) return;
 
+            // new: launch clicker game
+            if (normalized === '57alphaclicker') {
+                printLine('Launching Clicker Game...');
+                window.location.href = 'clicker.html';
+                return;
+            }
+
             if (normalized === '16zetatetris') {
                 printLine('Launching Tetris...');
                 window.location.href = 'tetris.html';
@@ -624,6 +631,8 @@ Terminal Protcol Initiated [Website Version: 0.2]
                 printLine('help/cmds/?/commands/command list/command - shows this message');
                 printLine('dog - plays a dog gif');
                 printLine('cat - plays a cat gif');
+                // new help entry
+                printLine('57alphaclicker - open the clicker game');
             } else {
                 printLine(`'${cmd}' is not recognized as an internal or external command.`);
             }
