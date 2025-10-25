@@ -233,6 +233,12 @@ let dropCounter = 0;
 let lastTime = 0;
 let paused = false;
 
+// Flash animation state for line clear
+let flashingRows = [];
+let flashElapsed = 0;
+const FLASH_DURATION = 200;   // total flash time in ms
+const FLASH_INTERVAL = 80;    // toggle interval in ms
+
 function collide(arena, player) {
     const m = player.matrix;
     const o = player.pos;
@@ -240,6 +246,19 @@ function collide(arena, player) {
         for (let x = 0; x < m[y].length; ++x) {
             if (m[y][x] !== 0 &&
                 (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// Collision check for arbitrary position (used by ghost)
+function collideAt(matrix, pos) {
+    for (let y = 0; y < matrix.length; ++y) {
+        for (let x = 0; x < matrix[y].length; ++x) {
+            if (matrix[y][x] !== 0 &&
+                (arena[y + pos.y] && arena[y + pos.y][x + pos.x]) !== 0) {
                 return true;
             }
         }
@@ -285,13 +304,31 @@ function playerMove(dir) {
     if (collide(arena, player)) player.pos.x -= dir;
 }
 
+function getFullRows() {
+    const rows = [];
+    for (let y = 0; y < arena.length; ++y) {
+        let full = true;
+        for (let x = 0; x < arena[y].length; ++x) {
+            if (arena[y][x] === 0) { full = false; break; }
+        }
+        if (full) rows.push(y);
+    }
+    return rows;
+}
+
 function playerDrop() {
     player.pos.y++;
     if (collide(arena, player)) {
         player.pos.y--;
         merge(arena, player);
-        arenaSweep();
-        playerReset();
+        const rows = getFullRows();
+        if (rows.length) {
+            // Start flash; actual clear happens after flash
+            flashingRows = rows;
+            flashElapsed = 0;
+        } else {
+            playerReset();
+        }
     }
     dropCounter = 0;
 }
@@ -352,11 +389,30 @@ function drawMatrix(matrix, offset) {
     });
 }
 
+// Compute ghost landing Y for current piece
+function getGhostY() {
+    let y = player.pos.y;
+    while (!collideAt(player.matrix, { x: player.pos.x, y: y + 1 })) {
+        y++;
+    }
+    return y;
+}
+
 function draw() {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     drawMatrix(arena, { x: 0, y: 0 });
-    drawMatrix(player.matrix, player.pos);
+
+    // Draw ghost only when piece is active (not flashing)
+    if (!flashingRows.length) {
+        const gy = getGhostY();
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        drawMatrix(player.matrix, { x: player.pos.x, y: gy });
+        ctx.restore();
+
+        drawMatrix(player.matrix, player.pos);
+    }
 
     // Pause indicator overlay
     if (paused) {
@@ -368,16 +424,42 @@ function draw() {
         ctx.textBaseline = 'middle';
         ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
     }
+
+    // Flash rows that will be cleared
+    if (flashingRows.length) {
+        const on = Math.floor(flashElapsed / FLASH_INTERVAL) % 2 === 0;
+        if (on) {
+            ctx.save();
+            ctx.globalAlpha = 0.85;
+            ctx.fillStyle = '#ffffff';
+            for (const y of flashingRows) {
+                ctx.fillRect(0, y * 24, canvas.width, 24);
+            }
+            ctx.restore();
+        }
+    }
 }
 
 function update(time = 0) {
     const delta = time - lastTime;
     lastTime = time;
+
     if (!paused) {
-        dropCounter += delta;
-        const speed = Math.max(120, 1000 - player.level * 75);
-        if (dropCounter > speed) playerDrop();
+        if (flashingRows.length) {
+            // Run flash animation; defer clearing until done
+            flashElapsed += delta;
+            if (flashElapsed >= FLASH_DURATION) {
+                flashingRows = [];
+                arenaSweep();      // clears and updates score/lines/level
+                playerReset();     // spawn next piece
+            }
+        } else {
+            dropCounter += delta;
+            const speed = Math.max(120, 1000 - player.level * 75);
+            if (dropCounter > speed) playerDrop();
+        }
     }
+
     draw();
     requestAnimationFrame(update);
 }
@@ -390,6 +472,13 @@ function updateScore() {
 
 document.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
+
+    // Ignore inputs during line-flash except Esc
+    if (flashingRows.length && k !== 'escape') {
+        e.preventDefault();
+        return;
+    }
+
     if (k === 'a') { e.preventDefault(); playerMove(-1); }
     else if (k === 'd') { e.preventDefault(); playerMove(1); }
     else if (k === 's') { e.preventDefault(); playerDrop(); }
@@ -424,6 +513,8 @@ document.addEventListener('keydown', (e) => {
     document.querySelectorAll('.touch-controls button').forEach(btn => {
         btn.addEventListener('click', () => {
             const act = btn.getAttribute('data-action');
+            // Ignore touch actions during flash except Back
+            if (flashingRows.length && act !== 'back') return;
             if (actions[act]) actions[act]();
         }, { passive: true });
     });
