@@ -170,7 +170,9 @@
             }
             
             h1 {
-                text-align: center;
+                /* text-align: center; */
+                /* The h1 is a flex container for its children, so we center it this way */
+                justify-content: center;
             }
             
             .expandable-box {
@@ -364,15 +366,23 @@ Terminal Protcol Initiated [Website Version: 0.2]
         ];
         let phraseIndex = 0;
         const header = document.getElementById('mainHeader');
+        const animationInterval = 3000;
+        let animationTimer;
 
         function slideText() {
-            const oldSpan = header.querySelector('span');
-            if (oldSpan) {
-                oldSpan.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
-                oldSpan.style.transform = 'translateY(-100%)';
-                oldSpan.style.opacity = '0';
-                oldSpan.addEventListener('transitionend', () => oldSpan.remove(), { once: true });
-            }
+            const oldSpans = header.querySelectorAll('span');
+            
+            oldSpans.forEach(span => {
+                if (span.style.transform === 'translateY(0px)') { // only animate the visible one
+                    span.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
+                    span.style.transform = 'translateY(-100%)';
+                    span.style.opacity = '0';
+                    span.addEventListener('transitionend', () => span.remove(), { once: true });
+                } else {
+                    // Clean up any stray spans that got stuck
+                    span.remove();
+                }
+            });
 
             phraseIndex = (phraseIndex + 1) % phrases.length;
             const newSpan = document.createElement('span');
@@ -390,6 +400,9 @@ Terminal Protcol Initiated [Website Version: 0.2]
             newSpan.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
             newSpan.style.transform = 'translateY(0)';
             newSpan.style.opacity = '1';
+
+            // Schedule the next animation
+            animationTimer = setTimeout(slideText, animationInterval);
         }
 
         // Initial setup
@@ -397,10 +410,11 @@ Terminal Protcol Initiated [Website Version: 0.2]
         initialSpan.textContent = phrases[0];
         header.innerHTML = '';
         header.appendChild(initialSpan);
+        initialSpan.style.transform = 'translateY(0)'; // Set initial state
         header.style.width = initialSpan.offsetWidth + 'px';
         phraseIndex = 0;
 
-        setInterval(slideText, 3000);
+        animationTimer = setTimeout(slideText, animationInterval);
         
         // Expandable boxes
         function toggleBox(boxId) {
