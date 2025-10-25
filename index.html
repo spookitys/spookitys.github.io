@@ -582,20 +582,21 @@ Terminal Protcol Initiated [Website Version: 0.2]
 
             if (normalized === 'cat') {
                 printLine('playing: cat.gif (one loop)');
-                showGifOnce('i.pinimg.com/originals/23/51/bc/2351bc65b2b5d75cef146b7edddf805b.gif', 3000);
+                showGifOnce('https://media.tenor.com/_WZy7E7hoTcAAAAM/cat-smile.gif', 3000);
                 return;
             }
 
             if (normalized === 'dog') {
                 printLine('playing: dog.gif (one loop)');
-                showGifOnce('media.tenor.com/7_KRHOBcSnEAAAAM', 3500);
+                showGifOnce('https://media.tenor.com/7_KRHOBcSnEAAAAM/happy-birthday-ashleigh.gif', 3500);
                 return;
             }
 
-            if (normalized === 'info') {
+            if (normalized === 'info' || normalized === 'help' || normalized === '?' || normalized === 'commands' || normalized === 'command list' || normalized === 'command' || normalized === 'cmds') {
                 printLine('welcome to the terminal. available commands:');
+                printLine('help/cmds/?/commands/command list/command - shows this message');
+                printLine('dog - plays a dog gif');
                 printLine('cat - plays a cat gif');
-                printLine('good luck finding the rest of them!');
             } else {
                 printLine(`'${cmd}' is not recognized as an internal or external command.`);
             }
