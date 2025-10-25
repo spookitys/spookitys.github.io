@@ -41,6 +41,9 @@
             width: fit-content;
             height: 1.5em;
             line-height: 1.5em;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
         }
         
         .expandable-box {
@@ -274,7 +277,7 @@
     
     <div class="content">
         <div class="header-container">
-            <h1 id="mainHeader">Welcome to my site!</h1>
+            <h1 id="mainHeader">Welcome to my Website!</h1>
         </div>
         
         <div class="expandable-box">
@@ -346,46 +349,48 @@ Terminal Protcol Initiated [Website Version: 0.2]
     </div>
 
     <script>
-        // Try to detect common fonts available on the device and cycle through them.
-        const fontCandidates = [
-            'Segoe UI','Roboto','Helvetica Neue','Helvetica','Arial','Verdana','Tahoma','Trebuchet MS',
-            'Georgia','Times New Roman','Times','Palatino Linotype','Book Antiqua','Garamond',
-            'Courier New','Lucida Console','Consolas','Monaco','Andale Mono','Impact','Comic Sans MS',
-            'Candara','Optima','Segoe UI Historic','System UI'
+        // Sliding header text
+        const phrases = [
+            "Welcome to my Website!",
+            "Greetings and Salutations!",
+            "Say hello to my slice of the internet!",
+            "Welcome in!",
+            "Hello, fellow internet traveler!"
         ];
+        let phraseIndex = 0;
+        const header = document.getElementById('mainHeader');
 
-        function isFontAvailable(font) {
-            const testStr = 'mmmmmmmmmmlli';
-            const size = '72px';
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            ctx.font = `${size} monospace`;
-            const baseline = ctx.measureText(testStr).width;
-            ctx.font = `${size} '${font}', monospace`;
-            const w = ctx.measureText(testStr).width;
-            return w !== baseline;
+        function slideText() {
+            const oldSpan = header.querySelector('span');
+            if (oldSpan) {
+                oldSpan.style.transition = 'transform 0.5s ease-in-out';
+                oldSpan.style.transform = 'translateY(-100%)';
+                oldSpan.addEventListener('transitionend', () => oldSpan.remove(), { once: true });
+            }
+
+            phraseIndex = (phraseIndex + 1) % phrases.length;
+            const newSpan = document.createElement('span');
+            newSpan.textContent = phrases[phraseIndex];
+            newSpan.style.transform = 'translateY(100%)';
+            newSpan.style.display = 'inline-block';
+            header.appendChild(newSpan);
+
+            // Force reflow to apply initial transform before transitioning
+            newSpan.getBoundingClientRect(); 
+
+            newSpan.style.transition = 'transform 0.5s ease-in-out';
+            newSpan.style.transform = 'translateY(0)';
         }
 
-        function detectAvailableFonts(list) {
-            return list.filter(f => {
-                try { return isFontAvailable(f); } catch (e) { return false; }
-            });
-        }
+        // Initial setup
+        const initialSpan = document.createElement('span');
+        initialSpan.textContent = phrases[0];
+        initialSpan.style.display = 'inline-block';
+        header.innerHTML = '';
+        header.appendChild(initialSpan);
+        phraseIndex = 0;
 
-        const availableFonts = (function(){
-            const detected = detectAvailableFonts(fontCandidates);
-            if (detected.length) return detected.map(f => `'${f}', sans-serif`);
-            // fallback to generic families if none detected
-            return ['"Courier New", monospace', 'sans-serif', 'serif'];
-        })();
-
-        let currentFontIndex = 0;
-        function rotateFont() {
-            const header = document.getElementById('mainHeader');
-            currentFontIndex = (currentFontIndex + 1) % availableFonts.length;
-            header.style.fontFamily = availableFonts[currentFontIndex];
-        }
-        setInterval(rotateFont, 100);
+        setInterval(slideText, 3000);
         
         // Expandable boxes
         function toggleBox(boxId) {
@@ -553,13 +558,13 @@ Terminal Protcol Initiated [Website Version: 0.2]
 
             if (normalized === 'cat') {
                 printLine('playing: cat.gif (one loop)');
-                showGifOnce('https://64.media.tumblr.com/1476d7ddf68fae20984f8abd5583e1cf/038127ab1e078d27-ac/s500x750/77bfea752a908a401e50e2035118e6ebe9d92859.gif', 3000);
+                showGifOnce('i.pinimg.com/originals/23/51/bc/2351bc65b2b5d75cef146b7edddf805b.gif', 3000);
                 return;
             }
 
             if (normalized === 'dog') {
                 printLine('playing: dog.gif (one loop)');
-                showGifOnce('https://media.tenor.com/7_KRHOBcSnEAAAAM/happy-birthday-ashleigh.gif', 3500);
+                showGifOnce('media.tenor.com/7_KRHOBcSnEAAAAM', 3500);
                 return;
             }
 
