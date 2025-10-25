@@ -74,16 +74,64 @@
             font-weight: bold;
         }
         .muted { opacity: 0.8; }
+        .board { position: relative; display: inline-block; }
+        .pause-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 32px;
+            letter-spacing: 4px;
+            text-shadow: 0 0 8px rgba(255, 48, 64, 0.7);
+        }
+        .hidden { display: none; }
+
+        /* Mobile controls */
+        .mobile-controls { display: none; }
+        .ctrl-btn {
+            appearance: none;
+            border: 1px solid var(--accent);
+            background: #1a1a24;
+            color: var(--fg);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-family: "Courier New", monospace;
+            font-weight: bold;
+            text-align: center;
+            user-select: none;
+        }
+        .ctrl-btn:active {
+            background: #222231;
+        }
         @media (max-width: 640px) {
             .game { grid-template-columns: 1fr; }
             .side { order: -1; }
+            .mobile-controls {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin-top: 10px;
+            }
+            .mobile-controls .wide {
+                grid-column: span 3;
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
         }
     </style>
 </head>
 <body>
 <div class="wrap">
     <div class="game">
-        <canvas id="tetris" width="240" height="480" aria-label="Tetris board"></canvas>
+        <div class="board">
+            <canvas id="tetris" width="240" height="480" aria-label="Tetris board"></canvas>
+            <div id="pauseOverlay" class="pause-overlay hidden" aria-live="polite">PAUSED</div>
+        </div>
         <div class="side">
             <div class="info">
                 <div class="title">Tetris</div>
@@ -93,16 +141,23 @@
             </div>
             <div class="info">
                 <div class="title">Controls</div>
-                <div>← →: Move</div>
-                <div>↑: Rotate</div>
-                <div>↓: Soft drop</div>
-                <div>Space: Hard drop</div>
+                <div>A / D: Move</div>
+                <div>S or Q: Soft drop</div>
                 <div>P: Pause</div>
                 <div>R: Restart</div>
                 <div class="muted">Esc: Back</div>
             </div>
             <div class="btns">
-                <a class="btn" href="MySite.html">Back</a>
+                <a class="btn" href="index.html">Back</a>
+            </div>
+            <div class="mobile-controls" aria-label="Mobile Controls">
+                <button id="btnLeft"  class="ctrl-btn">Left</button>
+                <button id="btnSoft"  class="ctrl-btn">Soft</button>
+                <button id="btnRight" class="ctrl-btn">Right</button>
+                <div class="wide">
+                    <button id="btnPause"   class="ctrl-btn">Pause</button>
+                    <button id="btnRestart" class="ctrl-btn">Restart</button>
+                </div>
             </div>
         </div>
     </div>
@@ -330,19 +385,42 @@ function updateScore() {
     document.getElementById('level').textContent = player.level;
 }
 
+function setPaused(p) {
+    paused = p;
+    const overlay = document.getElementById('pauseOverlay');
+    overlay.classList.toggle('hidden', !paused);
+}
+
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft') playerMove(-1);
-    else if (e.key === 'ArrowRight') playerMove(1);
-    else if (e.key === 'ArrowDown') playerDrop();
-    else if (e.key === 'ArrowUp') playerRotate(1);
-    else if (e.key === ' ') hardDrop();
-    else if (e.key === 'p' || e.key === 'P') paused = !paused;
+    if (e.key === 'a' || e.key === 'A') playerMove(-1);
+    else if (e.key === 'd' || e.key === 'D') playerMove(1);
+    else if (e.key === 's' || e.key === 'S' || e.key === 'q' || e.key === 'Q') playerDrop();
+    else if (e.key === 'p' || e.key === 'P') setPaused(!paused);
     else if (e.key === 'r' || e.key === 'R') {
         arena.forEach(row => row.fill(0));
         player.score = 0; player.lines = 0; player.level = 0;
         playerReset(); updateScore();
     }
     else if (e.key === 'Escape') window.location.href = 'MySite.html';
+});
+
+// Mobile control bindings
+function bindBtn(id, handler) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const run = (ev) => { ev.preventDefault(); handler(); };
+    el.addEventListener('pointerdown', run);
+    el.addEventListener('click', run);
+}
+
+bindBtn('btnLeft',  () => playerMove(-1));
+bindBtn('btnRight', () => playerMove(1));
+bindBtn('btnSoft',  () => playerDrop());
+bindBtn('btnPause', () => setPaused(!paused));
+bindBtn('btnRestart', () => {
+    arena.forEach(row => row.fill(0));
+    player.score = 0; player.lines = 0; player.level = 0;
+    playerReset(); updateScore();
 });
 
 playerReset();
