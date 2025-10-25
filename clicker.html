@@ -55,8 +55,21 @@
   .panel{background:#0d0d0d;padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.03)}
   .title{color:var(--accent);font-weight:bold;margin-bottom:6px}
   .shop-list{display:flex;flex-direction:column;gap:8px; max-height:220px; overflow-y:auto; padding-right:6px;}
-  .shop-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:6px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02)}
-  .shop-item button{background:var(--accent);color:#08080f;border:none;padding:8px 10px;border-radius:6px;font-weight:bold;cursor:pointer}
+
+  /* themed scrollbars for webkit */
+  .shop-list::-webkit-scrollbar { width: 10px; }
+  .shop-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius:6px; }
+  .shop-list::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #ff707a, #ff3040); border-radius:6px; border:2px solid rgba(0,0,0,0.25); }
+
+  /* global small scrollbar for body too */
+  body::-webkit-scrollbar { width: 12px; height: 12px; }
+  body::-webkit-scrollbar-track { background: #070707; }
+  body::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#ff5866,#ff3040); border-radius:10px; }
+
+  /* Firefox */
+  .shop-list { scrollbar-width: thin; scrollbar-color: #ff3040 rgba(255,255,255,0.02); }
+  body { scrollbar-width: thin; scrollbar-color: #ff3040 #070707; }
+
   .muted{color:var(--muted);font-size:0.9em}
   .controls{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
   .btn{background:transparent;color:var(--accent);border:2px solid var(--accent);padding:6px 10px;border-radius:6px;cursor:pointer}
@@ -118,8 +131,9 @@
           </div>
 
           <div class="controls">
-            <button id="buyAuto" class="btn small">Buy Auto (A)</button>
-            <button id="buyMult" class="btn small">Buy Mult (M)</button>
+            <!-- replaced individual buy buttons with bulk actions -->
+            <button id="buyAllPrograms" class="btn small">Buy All Programs</button>
+            <button id="buyAllUpgrades" class="btn small">Buy All Upgrades</button>
           </div>
         </div>
 
@@ -149,7 +163,7 @@
     bought: {} // counts per itemKey
   };
 
-  // Items: key => { category, name, baseCost, cps/add/mult, description }
+  // Items: key => { category, name, baseCost, cps/add/mult, description, oneTime? }
   const ITEMS = {
     // Programs (passive CPS)
     auto: { category: 'program', name: 'Auto-Clicker', baseCost: 25, cps: 1, desc: 'Adds 1 CPS' },
@@ -157,10 +171,10 @@
     scanner: { category: 'program', name: 'Packet Scanner', baseCost: 140, cps: 5, desc: 'Adds 5 CPS' },
     helper: { category: 'program', name: 'Background Helper', baseCost: 320, cps: 12, desc: 'Adds 12 CPS' },
 
-    // Upgrades (affect per-click or other)
-    mult: { category: 'upgrade', name: 'Multiplier', baseCost: 50, multiplier: 1.5, desc: 'x1.5 per purchase' },
-    boost: { category: 'upgrade', name: 'Click Boost', baseCost: 30, add: 1, desc: '+1 per click' },
-    precision: { category: 'upgrade', name: 'Precision', baseCost: 120, multiplier: 1.2, desc: 'x1.2 per purchase' }
+    // Upgrades (one-time purchases)
+    mult: { category: 'upgrade', name: 'Multiplier', baseCost: 50, multiplier: 1.5, desc: 'x1.5 per purchase', oneTime: true },
+    boost: { category: 'upgrade', name: 'Click Boost', baseCost: 30, add: 1, desc: '+1 per click', oneTime: true },
+    precision: { category: 'upgrade', name: 'Precision', baseCost: 120, multiplier: 1.2, desc: 'x1.2 per purchase', oneTime: true }
   };
 
   let state = loadState();
@@ -174,8 +188,8 @@
   const clickBtn = document.getElementById('clickBtn');
   const programShopEl = document.getElementById('programShop');
   const upgradeShopEl = document.getElementById('upgradeShop');
-  const buyAutoBtn = document.getElementById('buyAuto');
-  const buyMultBtn = document.getElementById('buyMult');
+  const buyAllProgramsBtn = document.getElementById('buyAllPrograms');
+  const buyAllUpgradesBtn = document.getElementById('buyAllUpgrades');
   const resetBtn = document.getElementById('resetBtn');
 
   // Helpers
@@ -221,6 +235,10 @@
 
     for (const key in ITEMS){
       const item = ITEMS[key];
+
+      // Skip upgrade if oneTime and already purchased
+      if (item.category === 'upgrade' && item.oneTime && (state.bought[key] || 0) > 0) continue;
+
       const cost = costFor(key);
       const el = makeShopItem(item.name, item.desc, cost, key);
       if (item.category === 'program') programShopEl.appendChild(el);
@@ -240,10 +258,20 @@
     const costEl = document.createElement('div');
     costEl.className = 'muted';
     costEl.textContent = cost;
+
     const btn = document.createElement('button');
-    btn.textContent = state.score >= cost ? 'Buy' : 'Insufficient';
-    btn.disabled = state.score < cost;
-    btn.addEventListener('click', () => buy(key));
+    const item = ITEMS[key];
+
+    // determine button state
+    if (item.category === 'upgrade' && item.oneTime && (state.bought[key] || 0) > 0) {
+      btn.textContent = 'Purchased';
+      btn.disabled = true;
+    } else {
+      btn.textContent = state.score >= cost ? 'Buy' : 'Insufficient';
+      btn.disabled = state.score < cost;
+      btn.addEventListener('click', () => buy(key));
+    }
+
     right.appendChild(costEl);
     right.appendChild(btn);
     wrap.appendChild(left);
@@ -263,10 +291,16 @@
   function buy(key){
     const c = costFor(key);
     if (state.score < c) return;
-    state.score -= c;
-    state.bought[key] = (state.bought[key] || 0) + 1;
-
     const item = ITEMS[key];
+
+    // If one-time upgrade and already owned, bail
+    if (item.oneTime && (state.bought[key] || 0) > 0) return;
+
+    state.score -= c;
+    // upgrades that are oneTime set to 1, programs increment
+    if (item.oneTime) state.bought[key] = 1;
+    else state.bought[key] = (state.bought[key] || 0) + 1;
+
     // apply effects for upgrades directly; programs provide passive CPS via counts
     if (item.category === 'upgrade') {
       if (item.multiplier) {
@@ -278,6 +312,46 @@
     }
 
     saveStateDebounced();
+    updateUI();
+  }
+
+  // Buy all programs (most expensive first, buy repeatedly while affordable)
+  function buyAllPrograms(){
+    // collect program keys sorted by current cost descending
+    const programKeys = Object.keys(ITEMS).filter(k => ITEMS[k].category === 'program');
+    // repeatedly attempt purchases prioritizing highest base cost (or dynamic cost)
+    // sort by current cost descending each iteration to prioritize expensive ones
+    let anyBought = false;
+    while (true) {
+      // compute affordable option with highest cost
+      const affordable = programKeys
+        .map(k => ({ key: k, cost: costFor(k) }))
+        .filter(x => x.cost <= state.score)
+        .sort((a,b) => b.cost - a.cost);
+      if (affordable.length === 0) break;
+      // buy the most expensive affordable once
+      buy(affordable[0].key);
+      anyBought = true;
+    }
+    if (anyBought) saveStateDebounced();
+    updateUI();
+  }
+
+  // Buy all upgrades (buy any one-time upgrades that are affordable)
+  function buyAllUpgrades(){
+    // attempt purchases; prefer cheaper first so you can buy more upgrades
+    const upgradeKeys = Object.keys(ITEMS).filter(k => ITEMS[k].category === 'upgrade' && ITEMS[k].oneTime && !(state.bought[k]||0));
+    // sort ascending cost
+    upgradeKeys.sort((a,b) => costFor(a) - costFor(b));
+    let any = false;
+    for (const k of upgradeKeys) {
+      const c = costFor(k);
+      if (state.score >= c) {
+        buy(k);
+        any = true;
+      }
+    }
+    if (any) saveStateDebounced();
     updateUI();
   }
 
@@ -332,8 +406,8 @@
   // UI wiring
   clickBtn.addEventListener('click', clickAction);
   clickBtn.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); clickAction(); }});
-  buyAutoBtn.addEventListener('click', ()=>buy('auto'));
-  buyMultBtn.addEventListener('click', ()=>buy('mult'));
+  buyAllProgramsBtn.addEventListener('click', buyAllPrograms);
+  buyAllUpgradesBtn.addEventListener('click', buyAllUpgrades);
   resetBtn.addEventListener('click', resetState);
 
   // Keyboard shortcuts (A -> auto program, M -> multiplier upgrade)
