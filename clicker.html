@@ -54,7 +54,7 @@
   .right{display:flex;flex-direction:column;gap:8px}
   .panel{background:#0d0d0d;padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.03)}
   .title{color:var(--accent);font-weight:bold;margin-bottom:6px}
-  .shop-list{display:flex;flex-direction:column;gap:8px}
+  .shop-list{display:flex;flex-direction:column;gap:8px; max-height:220px; overflow-y:auto; padding-right:6px;}
   .shop-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:6px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02)}
   .shop-item button{background:var(--accent);color:#08080f;border:none;padding:8px 10px;border-radius:6px;font-weight:bold;cursor:pointer}
   .muted{color:var(--muted);font-size:0.9em}
@@ -91,17 +91,17 @@
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;width:100%">
           <button id="resetBtn" class="btn small">Reset</button>
           <a class="btn small" href="index.html">Back</a>
-          <div class="muted" style="margin-left:8px">Shortcuts: Space=Click · A=Buy Auto · M=Buy Mult</div>
+          <div class="muted" style="margin-left:8px">Shortcuts: Space=Click · A = Buy Auto · M = Buy Mult</div>
         </div>
 
-        <footer>57Alpha Clicker — autosaves every 3s</footer>
+        <footer>spookitys clicker — autosaves every 3s</footer>
       </div>
 
       <div class="right">
         <div class="panel">
-          <div class="title">Upgrades</div>
-          <div class="shop-list" id="shop">
-            <!-- items injected by JS -->
+          <div class="title">Programs</div>
+          <div class="shop-list" id="programShop">
+            <!-- program items injected by JS -->
           </div>
         </div>
 
@@ -113,8 +113,8 @@
           </div>
           <div style="height:8px"></div>
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <div class="muted">Auto-Clickers</div>
-            <div id="autoCount">0</div>
+            <div class="muted">Programs</div>
+            <div id="programCount">0</div>
           </div>
 
           <div class="controls">
@@ -124,70 +124,108 @@
         </div>
 
         <div class="panel">
+          <div class="title">Upgrades</div>
+          <div class="shop-list" id="upgradeShop">
+            <!-- upgrade items injected by JS -->
+          </div>
+        </div>
+
+        <div class="panel">
           <div class="title">Help</div>
-          <div class="muted">Click the big button to earn points. Buy Auto-Clickers to gain passive CPS. Buy Multipliers to improve per-click value. Costs scale with purchases. Press Esc to return.</div>
+          <div class="muted">Click the big button to earn points. Buy Programs to gain passive CPS. Buy Upgrades to improve per-click value or other effects. Costs scale with purchases. Press Esc to return.</div>
         </div>
       </div>
     </div>
   </div>
 
 <script>
-  // Simple clicker implementation with persistence
+  // filepath: c:\Users\ginge\Downloads\clicker.html
+  // Items map: program vs upgrade entries
   const KEY = 'alpha_clicker_v1';
   const defaultState = {
     score: 0,
     perClick: 1,
-    autoCount: 0,
     totalClicks: 0,
-    bought: { auto:0, mult:0 }
+    bought: {} // counts per itemKey
+  };
+
+  // Items: key => { category, name, baseCost, cps/add/mult, description }
+  const ITEMS = {
+    // Programs (passive CPS)
+    auto: { category: 'program', name: 'Auto-Clicker', baseCost: 25, cps: 1, desc: 'Adds 1 CPS' },
+    miner: { category: 'program', name: 'Miner Script', baseCost: 60, cps: 2, desc: 'Adds 2 CPS' },
+    scanner: { category: 'program', name: 'Packet Scanner', baseCost: 140, cps: 5, desc: 'Adds 5 CPS' },
+    helper: { category: 'program', name: 'Background Helper', baseCost: 320, cps: 12, desc: 'Adds 12 CPS' },
+
+    // Upgrades (affect per-click or other)
+    mult: { category: 'upgrade', name: 'Multiplier', baseCost: 50, multiplier: 1.5, desc: 'x1.5 per purchase' },
+    boost: { category: 'upgrade', name: 'Click Boost', baseCost: 30, add: 1, desc: '+1 per click' },
+    precision: { category: 'upgrade', name: 'Precision', baseCost: 120, multiplier: 1.2, desc: 'x1.2 per purchase' }
   };
 
   let state = loadState();
-
-  // Shop definitions
-  const SHOP = {
-    auto: { baseCost: 25, cps: 1 },
-    mult: { baseCost: 50, multiplier: 1.5 }
-  };
 
   // DOM
   const scoreEl = document.getElementById('score');
   const perClickEl = document.getElementById('perClick');
   const cpsEl = document.getElementById('cps');
   const totalClicksEl = document.getElementById('totalClicks');
-  const autoCountEl = document.getElementById('autoCount');
+  const programCountEl = document.getElementById('programCount');
   const clickBtn = document.getElementById('clickBtn');
-  const shopEl = document.getElementById('shop');
+  const programShopEl = document.getElementById('programShop');
+  const upgradeShopEl = document.getElementById('upgradeShop');
   const buyAutoBtn = document.getElementById('buyAuto');
   const buyMultBtn = document.getElementById('buyMult');
   const resetBtn = document.getElementById('resetBtn');
 
   // Helpers
   function format(n){ return Math.floor(n); }
-  function costFor(item){
-    const times = state.bought[item] || 0;
-    const base = SHOP[item].baseCost;
+
+  function costFor(key){
+    const times = state.bought[key] || 0;
+    const base = ITEMS[key].baseCost;
     return Math.max(1, Math.round(base * Math.pow(1.6, times)));
+  }
+
+  function totalCPS(){
+    let cps = 0;
+    for (const key in ITEMS){
+      if (ITEMS[key].cps) {
+        const count = state.bought[key] || 0;
+        cps += count * ITEMS[key].cps;
+      }
+    }
+    return cps;
+  }
+
+  function programCount(){
+    let sum = 0;
+    for (const key in ITEMS){
+      if (ITEMS[key].category === 'program') sum += (state.bought[key] || 0);
+    }
+    return sum;
   }
 
   function updateUI(){
     scoreEl.textContent = format(state.score);
     perClickEl.textContent = (state.perClick % 1 === 0) ? state.perClick : state.perClick.toFixed(2);
-    cpsEl.textContent = (state.autoCount * SHOP.auto.cps).toFixed(2);
+    cpsEl.textContent = totalCPS().toFixed(2);
     totalClicksEl.textContent = state.totalClicks;
-    autoCountEl.textContent = state.autoCount;
-    renderShop();
+    programCountEl.textContent = programCount();
+    renderShops();
   }
 
-  function renderShop(){
-    shopEl.innerHTML = '';
-    // Auto item
-    const autoCost = costFor('auto');
-    const multCost = costFor('mult');
-    const autoItem = makeShopItem('Auto-Clicker', `Adds ${SHOP.auto.cps} CPS`, autoCost, 'auto');
-    const multItem = makeShopItem('Multiplier', `x${SHOP.mult.multiplier.toFixed(2)} per purchase`, multCost, 'mult');
-    shopEl.appendChild(autoItem);
-    shopEl.appendChild(multItem);
+  function renderShops(){
+    programShopEl.innerHTML = '';
+    upgradeShopEl.innerHTML = '';
+
+    for (const key in ITEMS){
+      const item = ITEMS[key];
+      const cost = costFor(key);
+      const el = makeShopItem(item.name, item.desc, cost, key);
+      if (item.category === 'program') programShopEl.appendChild(el);
+      else upgradeShopEl.appendChild(el);
+    }
   }
 
   function makeShopItem(title, desc, cost, key){
@@ -222,17 +260,23 @@
     updateUI();
   }
 
-  function buy(item){
-    const c = costFor(item);
+  function buy(key){
+    const c = costFor(key);
     if (state.score < c) return;
     state.score -= c;
-    state.bought[item] = (state.bought[item] || 0) + 1;
-    if (item === 'auto') {
-      state.autoCount += 1;
-    } else if (item === 'mult') {
-      // multiply perClick
-      state.perClick = +(state.perClick * SHOP.mult.multiplier).toFixed(4);
+    state.bought[key] = (state.bought[key] || 0) + 1;
+
+    const item = ITEMS[key];
+    // apply effects for upgrades directly; programs provide passive CPS via counts
+    if (item.category === 'upgrade') {
+      if (item.multiplier) {
+        state.perClick = +(state.perClick * item.multiplier).toFixed(4);
+      }
+      if (item.add) {
+        state.perClick = +(state.perClick + item.add).toFixed(4);
+      }
     }
+
     saveStateDebounced();
     updateUI();
   }
@@ -244,22 +288,19 @@
     updateUI();
   }
 
-  // Auto-click loop
+  // Auto-click loop (applies CPS * perClick continuously)
   let lastTick = performance.now();
   function tick(now){
     const dt = now - lastTick;
     lastTick = now;
-    const cps = state.autoCount * SHOP.auto.cps;
+    const cps = totalCPS();
     if (cps > 0) {
-      // accumulate fractional clicks based on dt
       const clicks = (cps * dt) / 1000;
       state.score += clicks * state.perClick;
     }
-    // update UI frequently but not every frame
     requestAnimationFrame(tick);
   }
 
-  // Small click pop animation
   function popClickAnim(){
     clickBtn.animate([
       { transform: 'scale(1)' },
@@ -295,7 +336,7 @@
   buyMultBtn.addEventListener('click', ()=>buy('mult'));
   resetBtn.addEventListener('click', resetState);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts (A -> auto program, M -> multiplier upgrade)
   document.addEventListener('keydown', (e)=>{
     if (e.key === ' ') { e.preventDefault(); clickAction(); }
     else if (e.key.toLowerCase() === 'a') { buy('auto'); }
