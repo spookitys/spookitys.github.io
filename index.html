@@ -6,7 +6,7 @@
     <title>My Site</title>
     <style>
         body {
-            background-color: #08080f;
+            background-color: #0c0c0c;
             margin: 0;
             font-family: 'Courier New', monospace;
             overflow: hidden;
@@ -467,6 +467,11 @@ Spookitys Protcol Initiated [Website Version: 0.0102]
         function handleCommand(cmd) {
             const normalized = cmd.trim().toLowerCase();
             if (!normalized) return;
+            if (normalized === '16zetatetris') {
+                printLine('Launching Tetris...');
+                window.location.href = 'tetris.html';
+                return;
+            }
             if (normalized === 'info') {
                 printLine('info here');
             } else {
@@ -486,11 +491,6 @@ Spookitys Protcol Initiated [Website Version: 0.0102]
             } else if (e.key === 'Escape') {
                 toggleTerminal(false);
             }
-        });
-
-        // Prevent right-click context menu
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
         });
     </script>
 </body>
