@@ -589,28 +589,47 @@ Terminal Protcol Initiated [Website Version: 0.2]
             if (show) setTimeout(() => terminalInput.focus(), 0);
         }
 
-        function printLine(text = '') {
+        // add admin storage key
+        const ADMIN_KEY = 'alpha_admin_v1';
+
+        function printLine(text = '', color = 'red') {
             const line = document.createElement('div');
             line.textContent = text;
-            line.style.color = 'red';
+            line.style.color = color;
             terminalOutput.appendChild(line);
             terminalOutput.scrollTop = terminalOutput.scrollHeight;
         }
 
         function handleCommand(cmd) {
-            const normalized = cmd.trim().toLowerCase();
-            if (!normalized) return;
+            if (!cmd) return;
+            const raw = cmd.trim();
+            const normalized = raw.toLowerCase();
 
-            // new: launch clicker game
+            // secret (case-sensitive) grants admin
+            if (raw === 'bH4zR0TnC7mYx2pV5jLq9wS3fA1uE6gK8oNrdZtFvMhQ') {
+                try { localStorage.setItem(ADMIN_KEY, '1'); } catch (e) {}
+                printLine('admin granted', '#00ff66'); // green
+                return;
+            }
+
+            // require admin for game launches
             if (normalized === '57alphaclicker') {
-                printLine('Launching Clicker Game...');
-                window.location.href = 'clicker.html';
+                if (localStorage.getItem(ADMIN_KEY) === '1') {
+                    printLine('Launching Clicker Game...');
+                    window.location.href = 'clicker.html';
+                } else {
+                    printLine('access denied: admin required', 'orange');
+                }
                 return;
             }
 
             if (normalized === '16zetatetris') {
-                printLine('Launching Tetris...');
-                window.location.href = 'tetris.html';
+                if (localStorage.getItem(ADMIN_KEY) === '1') {
+                    printLine('Launching Tetris...');
+                    window.location.href = 'Tetris.html';
+                } else {
+                    printLine('access denied: admin required', 'orange');
+                }
                 return;
             }
 
@@ -631,8 +650,8 @@ Terminal Protcol Initiated [Website Version: 0.2]
                 printLine('help/cmds/?/commands/command list/command - shows this message');
                 printLine('dog - plays a dog gif');
                 printLine('cat - plays a cat gif');
-                // new help entry
-                printLine('57alphaclicker - open the clicker game');
+                printLine('57alphaclicker - open the clicker game (admin only)');
+                printLine('16zetatetris - open the tetris game (admin only)');
             } else {
                 printLine(`'${cmd}' is not recognized as an internal or external command.`);
             }
