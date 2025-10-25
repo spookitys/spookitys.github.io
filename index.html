@@ -250,6 +250,23 @@
                 height: 45vh;
             }
         }
+
+        /* Centered GIF overlay */
+        .gif-overlay {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            z-index: 10; /* above terminal/ui */
+            pointer-events: none; /* don't block input */
+        }
+        .gif-overlay img {
+            max-width: min(70vw, 420px);
+            max-height: min(70vh, 420px);
+            border: 2px solid red;
+            border-radius: 6px;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -444,6 +461,43 @@ Spookitys Protcol Initiated [Website Version: 0.0102]
             });
         }
 
+        // GIF overlay helpers
+        let currentGifEl = null;
+        let currentGifTimer = null;
+
+        function hideGif() {
+            if (currentGifTimer) {
+                clearTimeout(currentGifTimer);
+                currentGifTimer = null;
+            }
+            if (currentGifEl) {
+                currentGifEl.remove();
+                currentGifEl = null;
+            }
+        }
+
+        function showGifOnce(url, estDurationMs = 3000) {
+            // Clear previous overlay if any
+            hideGif();
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'gif-overlay';
+
+            const img = document.createElement('img');
+            img.alt = 'animated overlay';
+            img.decoding = 'async';
+            // Cache-bust to restart GIF from first frame each time
+            img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+
+            wrapper.appendChild(img);
+            currentGifEl = wrapper;
+
+            img.addEventListener('load', () => {
+                document.body.appendChild(wrapper);
+                currentGifTimer = setTimeout(hideGif, estDurationMs);
+            });
+        }
+
         // Terminal logic
         const terminalBtn = document.getElementById('terminalButton');
         const terminalPanel = document.getElementById('terminalPanel');
@@ -467,13 +521,29 @@ Spookitys Protcol Initiated [Website Version: 0.0102]
         function handleCommand(cmd) {
             const normalized = cmd.trim().toLowerCase();
             if (!normalized) return;
+
             if (normalized === '16zetatetris') {
                 printLine('Launching Tetris...');
                 window.location.href = 'tetris.html';
                 return;
             }
+
+            if (normalized === 'cat') {
+                printLine('playing: cat.gif (one loop)');
+                showGifOnce('https://64.media.tumblr.com/1476d7ddf68fae20984f8abd5583e1cf/038127ab1e078d27-ac/s500x750/77bfea752a908a401e50e2035118e6ebe9d92859.gif', 3000);
+                return;
+            }
+
+            if (normalized === 'dog') {
+                printLine('playing: dog.gif (one loop)');
+                showGifOnce('https://media.tenor.com/7_KRHOBcSnEAAAAM/happy-birthday-ashleigh.gif', 3500);
+                return;
+            }
+
             if (normalized === 'info') {
-                printLine('info here');
+                printLine('welcome to the terminal. available commands:');
+                printLine('cat - plays a cat gif');
+                printLine('good luck finding the rest of them!');
             } else {
                 printLine(`'${cmd}' is not recognized as an internal or external command.`);
             }
@@ -491,9 +561,6 @@ Spookitys Protcol Initiated [Website Version: 0.0102]
             } else if (e.key === 'Escape') {
                 toggleTerminal(false);
             }
-        });
-        document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
         });
     </script>
 </body>
