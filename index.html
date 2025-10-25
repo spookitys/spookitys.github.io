@@ -30,7 +30,7 @@
         .header-container {
             margin-bottom: 20px;
             padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            border-bottom: 1px solid rgb(43, 43, 43);
         }
         
         h1 {
@@ -61,7 +61,7 @@
             border: 2px solid white;
             padding: 10px;
             width: fit-content;
-            background-color: #15151f;
+            background-color: #1b1b1b;
         }
         
         .box-header:hover {
@@ -86,7 +86,7 @@
         .box-content-inner {
             padding: 10px;
             border: 2px solid white;
-            background-color: #15151f;
+            background-color: #1b1b1b;
             width: fit-content;
             min-width: 300px;
         }
@@ -179,9 +179,9 @@
             z-index: 4;
             width: 40px;
             height: 40px;
-            background: red;
-            color: #08080f;
-            border: none;
+            background: #08080f;        /* black box */
+            color: red;                /* red text */
+            border: 2px solid red;     /* red outline */
             border-radius: 6px;
             font-weight: bold;
             font-family: 'Courier New', monospace;
@@ -199,7 +199,7 @@
             max-width: 800px;
             min-width: 300px;
             height: 40vh;
-            background: rgba(8, 8, 15, 0.95);
+            background: rgba(8, 8, 8, 0.95);
             border: 2px solid red;
             border-radius: 6px;
             color: red;
@@ -335,7 +335,7 @@
     <button id="terminalButton" class="terminal-button">\</button>
     <div id="terminalPanel" class="terminal hidden" aria-label="Terminal">
         <div id="terminalOutput" class="terminal-output">
-Spookitys Protcol Initiated [Website Version: 0.0102]
+Terminal Protcol Initiated [Website Version: 0.2]
 © Copyright Legal Registration. All rights reserved.
 
         </div>
@@ -346,22 +346,45 @@ Spookitys Protcol Initiated [Website Version: 0.0102]
     </div>
 
     <script>
-        // Font rotation for header
-        const fonts = [
-            '"Courier New", monospace',
-            '"Lucida Console", Monaco, monospace',
-            '"Consolas", monospace',
-            '"Monaco", monospace',
-            '"Andale Mono", monospace'
+        // Try to detect common fonts available on the device and cycle through them.
+        const fontCandidates = [
+            'Segoe UI','Roboto','Helvetica Neue','Helvetica','Arial','Verdana','Tahoma','Trebuchet MS',
+            'Georgia','Times New Roman','Times','Palatino Linotype','Book Antiqua','Garamond',
+            'Courier New','Lucida Console','Consolas','Monaco','Andale Mono','Impact','Comic Sans MS',
+            'Candara','Optima','Segoe UI Historic','System UI'
         ];
+
+        function isFontAvailable(font) {
+            const testStr = 'mmmmmmmmmmlli';
+            const size = '72px';
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.font = `${size} monospace`;
+            const baseline = ctx.measureText(testStr).width;
+            ctx.font = `${size} '${font}', monospace`;
+            const w = ctx.measureText(testStr).width;
+            return w !== baseline;
+        }
+
+        function detectAvailableFonts(list) {
+            return list.filter(f => {
+                try { return isFontAvailable(f); } catch (e) { return false; }
+            });
+        }
+
+        const availableFonts = (function(){
+            const detected = detectAvailableFonts(fontCandidates);
+            if (detected.length) return detected.map(f => `'${f}', sans-serif`);
+            // fallback to generic families if none detected
+            return ['"Courier New", monospace', 'sans-serif', 'serif'];
+        })();
+
         let currentFontIndex = 0;
-        
         function rotateFont() {
             const header = document.getElementById('mainHeader');
-            currentFontIndex = (currentFontIndex + 1) % fonts.length;
-            header.style.fontFamily = fonts[currentFontIndex];
+            currentFontIndex = (currentFontIndex + 1) % availableFonts.length;
+            header.style.fontFamily = availableFonts[currentFontIndex];
         }
-        
         setInterval(rotateFont, 100);
         
         // Expandable boxes
