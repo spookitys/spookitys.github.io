@@ -156,14 +156,16 @@
 </div>
 
 <script>
-  // admin guard: redirect to index if not admin
+  // admin guard: redirect to index if not launched from terminal
   (function(){
     try {
-      if (localStorage.getItem('alpha_admin_v1') !== '1') {
-        alert('Access denied. Admin required.');
+      if (sessionStorage.getItem('launch_tetris') !== '1') {
+        alert('Access denied. Launch Tetris from the terminal on the homepage.');
         window.location.href = 'index.html';
         return;
       }
+      // consume the one-time launch flag
+      sessionStorage.removeItem('launch_tetris');
     } catch(e) {
       window.location.href = 'index.html';
       return;
