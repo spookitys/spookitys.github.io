@@ -572,45 +572,53 @@ Terminal Protcol Initiated [Website Version: 0.2]
         }
 
         function printLine(text = '', color = 'red') {
-             const line = document.createElement('div');
-             line.textContent = text;
-             line.style.color = color;
-             terminalOutput.appendChild(line);
-             terminalOutput.scrollTop = terminalOutput.scrollHeight;
-         }
- 
-         function handleCommand(cmd) {
-             if (!cmd) return;
-             const raw = cmd.trim();
-             const normalized = raw.toLowerCase();
- 
-            // Launch Clicker (sets a one-time session flag so the page can validate it)
-            if (normalized === '57alphaclicker' || normalized === 'launch clicker' || normalized === 'clicker') {
-                try { sessionStorage.setItem('launch_clicker', '1'); } catch (e) {}
-                printLine('Launching Clicker Game...');
-                window.location.href = 'clicker.html';
+            const line = document.createElement('div');
+            line.textContent = text;
+            line.style.color = color;
+            terminalOutput.appendChild(line);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        // create a short-lived launch token and navigate to the requested game
+        function createLaunchAndNavigate(path, friendlyName) {
+            const token = Math.random().toString(36).slice(2, 12);
+            const expiry = Date.now() + 30_000; // token valid for 30 seconds
+            try {
+                sessionStorage.setItem('alpha_launch_token', token);
+                sessionStorage.setItem('alpha_launch_expiry', String(expiry));
+            } catch (e) {}
+            printLine(`Launching ${friendlyName}...`);
+            window.location.href = `${path}?lt=${encodeURIComponent(token)}`;
+        }
+
+        function handleCommand(cmd) {
+            if (!cmd) return;
+            const raw = cmd.trim();
+            const normalized = raw.toLowerCase();
+
+            // Launch clicker via terminal (no admin required)
+            if (normalized === '57alphaclicker') {
+                createLaunchAndNavigate('clicker.html', 'Clicker Game');
                 return;
             }
-+
-+            // Launch Tetris (sets a one-time session flag so the page can validate it)
-+            if (normalized === '16zetatetris' || normalized === 'launch tetris' || normalized === 'tetris') {
-+                try { sessionStorage.setItem('launch_tetris', '1'); } catch (e) {}
-+                printLine('Launching Tetris...');
-+                window.location.href = 'tetris.html';
-+                return;
-+            }
- 
-             if (normalized === 'cat') {
-                 printLine('playing: cat.gif');
-                 showGifOnce('https://media.tenor.com/_WZy7E7hoTcAAAAM/cat-smile.gif', 3000);
-                 return;
-             }
- 
-             if (normalized === 'dog') {
-                 printLine('playing: dog.gif');
-                 showGifOnce('https://media.tenor.com/7_KRHOBcSnEAAAAM/happy-birthday-ashleigh.gif', 3500);
-                 return;
-             }
+
+            // Launch tetris via terminal (no admin required)
+            if (normalized === '16zetatetris') {
+                createLaunchAndNavigate('tetris.html', 'Tetris');
+                return;
+            }
+
+            if (normalized === 'cat') {
+                printLine('playing: cat.gif');
+                showGifOnce('https://media.tenor.com/_WZy7E7hoTcAAAAM/cat-smile.gif', 3000);
+                return;
+            }
+
+            if (normalized === 'dog') {
+                printLine('playing: dog.gif');
+                showGifOnce('https://media.tenor.com/7_KRHOBcSnEAAAAM/happy-birthday-ashleigh.gif', 3500);
+                return;
+            }
 
 
             if (normalized === 'info' || normalized === 'help' || normalized === '?' || normalized === 'commands' || normalized === 'command list' || normalized === 'command' || normalized === 'cmds') {
