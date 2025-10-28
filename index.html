@@ -38,7 +38,6 @@
             font-weight: bold;
             margin: 0;
             font-size: 1.5em;
-            /* width: fit-content; */
             height: 1.5em;
             line-height: 1.5em;
             overflow: hidden;
@@ -170,8 +169,7 @@
             }
             
             h1 {
-                /* text-align: center; */
-                /* The h1 is a flex container for its children, so we center it this way */
+
                 justify-content: center;
             }
             
@@ -181,7 +179,6 @@
             }
         }
 
-        /* Terminal toggle button */
         .terminal-button {
             position: fixed;
             left: 12px;
@@ -189,9 +186,9 @@
             z-index: 4;
             width: 40px;
             height: 40px;
-            background: #0c0c0c;        /* black box */
-            color: red;                /* red text */
-            border: 2px solid red;     /* red outline */
+            background: #0c0c0c;        
+            color: red;                
+            border: 2px solid red;     
             border-radius: 6px;
             font-weight: bold;
             font-family: 'Courier New', monospace;
@@ -199,7 +196,6 @@
             user-select: none;
         }
 
-        /* Terminal panel */
         .terminal {
             position: fixed;
             left: 12px;
@@ -252,7 +248,6 @@
         }
 
         @media (max-width: 768px), (orientation: portrait) {
-            /* ...existing code... */
             .terminal {
                 width: 92vw;
                 left: 4vw;
@@ -261,14 +256,13 @@
             }
         }
 
-        /* Centered GIF overlay */
         .gif-overlay {
             position: fixed;
             inset: 0;
             display: grid;
             place-items: center;
-            z-index: 10; /* above terminal/ui */
-            pointer-events: none; /* don't block input */
+            z-index: 10; 
+            pointer-events: none; 
         }
         .gif-overlay img {
             max-width: min(70vw, 420px);
@@ -383,7 +377,6 @@ Terminal Protcol Initiated [Website Version: 0.2]
     </div>
 
     <script>
-        // Sliding header text
         const phrases = [
             "Welcome to my Website!",
             "Greetings and Salutations!",
@@ -400,13 +393,12 @@ Terminal Protcol Initiated [Website Version: 0.2]
             const oldSpans = header.querySelectorAll('span');
             
             oldSpans.forEach(span => {
-                if (span.style.transform === 'translateY(0px)') { // only animate the visible one
+                if (span.style.transform === 'translateY(0px)') { 
                     span.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
                     span.style.transform = 'translateY(-100%)';
                     span.style.opacity = '0';
                     span.addEventListener('transitionend', () => span.remove(), { once: true });
                 } else {
-                    // Clean up any stray spans that got stuck
                     span.remove();
                 }
             });
@@ -418,38 +410,32 @@ Terminal Protcol Initiated [Website Version: 0.2]
             newSpan.style.opacity = '0';
             header.appendChild(newSpan);
 
-            // Animate width and slide in new text
             header.style.width = newSpan.offsetWidth + 'px';
             
-            // Force reflow to apply initial transform before transitioning
             newSpan.getBoundingClientRect(); 
 
             newSpan.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
             newSpan.style.transform = 'translateY(0)';
             newSpan.style.opacity = '1';
 
-            // Schedule the next animation
             animationTimer = setTimeout(slideText, animationInterval);
         }
 
-        // Initial setup
         const initialSpan = document.createElement('span');
         initialSpan.textContent = phrases[0];
         header.innerHTML = '';
         header.appendChild(initialSpan);
-        initialSpan.style.transform = 'translateY(0)'; // Set initial state
+        initialSpan.style.transform = 'translateY(0)'; 
         header.style.width = initialSpan.offsetWidth + 'px';
         phraseIndex = 0;
 
         animationTimer = setTimeout(slideText, animationInterval);
         
-        // Expandable boxes
         function toggleBox(boxId) {
             const box = document.getElementById(boxId);
             box.classList.toggle('expanded');
         }
         
-        // Number background animation
         const canvas = document.getElementById('numberCanvas');
         const ctx = canvas.getContext('2d');
         
@@ -540,7 +526,6 @@ Terminal Protcol Initiated [Website Version: 0.2]
             });
         }
 
-        // GIF overlay helpers
         let currentGifEl = null;
         let currentGifTimer = null;
 
@@ -556,7 +541,6 @@ Terminal Protcol Initiated [Website Version: 0.2]
         }
 
         function showGifOnce(url, estDurationMs = 3000) {
-            // Clear previous overlay if any
             hideGif();
 
             const wrapper = document.createElement('div');
@@ -565,7 +549,6 @@ Terminal Protcol Initiated [Website Version: 0.2]
             const img = document.createElement('img');
             img.alt = 'animated overlay';
             img.decoding = 'async';
-            // Cache-bust to restart GIF from first frame each time
             img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
 
             wrapper.appendChild(img);
@@ -577,7 +560,6 @@ Terminal Protcol Initiated [Website Version: 0.2]
             });
         }
 
-        // Terminal logic
         const terminalBtn = document.getElementById('terminalButton');
         const terminalPanel = document.getElementById('terminalPanel');
         const terminalOutput = document.getElementById('terminalOutput');
@@ -589,69 +571,53 @@ Terminal Protcol Initiated [Website Version: 0.2]
             if (show) setTimeout(() => terminalInput.focus(), 0);
         }
 
-        // add admin storage key
-        const ADMIN_KEY = 'alpha_admin_v1';
-
         function printLine(text = '', color = 'red') {
-            const line = document.createElement('div');
-            line.textContent = text;
-            line.style.color = color;
-            terminalOutput.appendChild(line);
-            terminalOutput.scrollTop = terminalOutput.scrollHeight;
-        }
-
-        function handleCommand(cmd) {
-            if (!cmd) return;
-            const raw = cmd.trim();
-            const normalized = raw.toLowerCase();
-
-            // secret (case-sensitive) grants admin
-            if (raw === 'bH4zR0TnC7mYx2pV5jLq9wS3fA1uE6gK8oNrdZtFvMhQ') {
-                try { localStorage.setItem(ADMIN_KEY, '1'); } catch (e) {}
-                printLine('admin granted', '#00ff66'); // green
+             const line = document.createElement('div');
+             line.textContent = text;
+             line.style.color = color;
+             terminalOutput.appendChild(line);
+             terminalOutput.scrollTop = terminalOutput.scrollHeight;
+         }
+ 
+         function handleCommand(cmd) {
+             if (!cmd) return;
+             const raw = cmd.trim();
+             const normalized = raw.toLowerCase();
+ 
+            // Launch Clicker (sets a one-time session flag so the page can validate it)
+            if (normalized === '57alphaclicker' || normalized === 'launch clicker' || normalized === 'clicker') {
+                try { sessionStorage.setItem('launch_clicker', '1'); } catch (e) {}
+                printLine('Launching Clicker Game...');
+                window.location.href = 'clicker.html';
                 return;
             }
++
++            // Launch Tetris (sets a one-time session flag so the page can validate it)
++            if (normalized === '16zetatetris' || normalized === 'launch tetris' || normalized === 'tetris') {
++                try { sessionStorage.setItem('launch_tetris', '1'); } catch (e) {}
++                printLine('Launching Tetris...');
++                window.location.href = 'tetris.html';
++                return;
++            }
+ 
+             if (normalized === 'cat') {
+                 printLine('playing: cat.gif');
+                 showGifOnce('https://media.tenor.com/_WZy7E7hoTcAAAAM/cat-smile.gif', 3000);
+                 return;
+             }
+ 
+             if (normalized === 'dog') {
+                 printLine('playing: dog.gif');
+                 showGifOnce('https://media.tenor.com/7_KRHOBcSnEAAAAM/happy-birthday-ashleigh.gif', 3500);
+                 return;
+             }
 
-            // require admin for game launches
-            if (normalized === '57alphaclicker') {
-                if (localStorage.getItem(ADMIN_KEY) === '1') {
-                    printLine('Launching Clicker Game...');
-                    window.location.href = 'clicker.html';
-                } else {
-                    printLine('access denied: admin required', 'orange');
-                }
-                return;
-            }
-
-            if (normalized === '16zetatetris') {
-                if (localStorage.getItem(ADMIN_KEY) === '1') {
-                    printLine('Launching Tetris...');
-                    window.location.href = 'Tetris.html';
-                } else {
-                    printLine('access denied: admin required', 'orange');
-                }
-                return;
-            }
-
-            if (normalized === 'cat') {
-                printLine('playing: cat.gif (one loop)');
-                showGifOnce('https://media.tenor.com/_WZy7E7hoTcAAAAM/cat-smile.gif', 3000);
-                return;
-            }
-
-            if (normalized === 'dog') {
-                printLine('playing: dog.gif (one loop)');
-                showGifOnce('https://media.tenor.com/7_KRHOBcSnEAAAAM/happy-birthday-ashleigh.gif', 3500);
-                return;
-            }
 
             if (normalized === 'info' || normalized === 'help' || normalized === '?' || normalized === 'commands' || normalized === 'command list' || normalized === 'command' || normalized === 'cmds') {
                 printLine('welcome to the terminal. available commands:');
                 printLine('help/cmds/?/commands/command list/command - shows this message');
                 printLine('dog - plays a dog gif');
                 printLine('cat - plays a cat gif');
-                printLine('57alphaclicker - open the clicker game (admin only)');
-                printLine('16zetatetris - open the tetris game (admin only)');
             } else {
                 printLine(`'${cmd}' is not recognized as an internal or external command.`);
             }
