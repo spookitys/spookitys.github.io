@@ -154,14 +154,16 @@
 
 <script>
   // filepath: c:\Users\ginge\Downloads\clicker.html
-  // admin guard: redirect to index if not admin
+  // admin guard: redirect to index if not launched from terminal
   (function(){
     try {
-      if (localStorage.getItem('alpha_admin_v1') !== '1') {
-        alert('Access denied. Admin required.');
+      if (sessionStorage.getItem('launch_clicker') !== '1') {
+        alert('Access denied. Launch the Clicker from the terminal on the homepage.');
         window.location.href = 'index.html';
         return;
       }
+      // consume the one-time launch flag
+      sessionStorage.removeItem('launch_clicker');
     } catch(e) {
       window.location.href = 'index.html';
       return;
