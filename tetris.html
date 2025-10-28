@@ -156,16 +156,25 @@
 </div>
 
 <script>
-  // admin guard: redirect to index if not launched from terminal
+  // admin guard: redirect to index if not admin
+  // launch-token guard: only allow if launched from terminal (short-lived token)
   (function(){
     try {
-      if (sessionStorage.getItem('launch_tetris') !== '1') {
-        alert('Access denied. Launch Tetris from the terminal on the homepage.');
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('lt');
+      const stored = sessionStorage.getItem('alpha_launch_token');
+      const expiry = parseInt(sessionStorage.getItem('alpha_launch_expiry') || '0', 10);
+      if (!token || !stored || token !== stored || Date.now() > expiry) {
+        alert('Access denied. Game must be launched from the terminal.');
         window.location.href = 'index.html';
         return;
       }
-      // consume the one-time launch flag
-      sessionStorage.removeItem('launch_tetris');
+      // consume token and clean URL
+      sessionStorage.removeItem('alpha_launch_token');
+      sessionStorage.removeItem('alpha_launch_expiry');
+      const url = new URL(window.location);
+      url.searchParams.delete('lt');
+      window.history.replaceState({}, '', url.pathname + url.search + url.hash);
     } catch(e) {
       window.location.href = 'index.html';
       return;
