@@ -6,22 +6,20 @@
     <title>Tetris</title>
     <style>
         :root {
-            --bg: linear-gradient(135deg, #0a0a14 0%, #1a0a2e 100%);
-            --panel: rgba(21, 21, 31, 0.6);
-            --fg: #fff;
-            --accent: #ff3060;
-            --accent-glow: rgba(255, 48, 96, 0.4);
+            --bg: #090a10;
+            --bg2: #0c0f1a;
+            --panel: #10121fcc;
+            --fg: #f6f7ff;
+            --accent: #ff3040;
+            --glow: #ff4055;
         }
         html, body {
             height: 100%;
             margin: 0;
-            background: #0a0a14;
+            background: radial-gradient(1200px 800px at 20% 10%, #111428, var(--bg)) fixed,
+                        radial-gradient(900px 900px at 80% 100%, #0a0d20, var(--bg2)) fixed;
             color: var(--fg);
             font-family: "Courier New", monospace;
-        }
-        body {
-            background: linear-gradient(135deg, #0a0a14 0%, #1a0a2e 50%, #0a0a14 100%);
-            background-attachment: fixed;
         }
         .wrap {
             min-height: 100%;
@@ -30,68 +28,52 @@
             padding: 20px;
         }
         .game {
-            background: var(--panel);
-            backdrop-filter: blur(10px);
-            border: 2px solid var(--accent);
+            background: linear-gradient(180deg, #0e1120cc, #0a0d18cc);
+            border: 1px solid rgba(255, 64, 85, 0.35);
             border-radius: 12px;
-            padding: 20px;
+            padding: 14px;
+            box-shadow:
+              0 0 0 1px rgba(255, 64, 85, 0.2) inset,
+              0 10px 30px rgba(0,0,0,0.6),
+              0 0 30px rgba(255, 64, 85, 0.15);
+            backdrop-filter: blur(6px);
             display: grid;
-            grid-template-columns: auto 180px;
-            gap: 20px;
-            box-shadow: 0 8px 32px rgba(255, 48, 96, 0.2), 
-                        0 0 60px rgba(255, 48, 96, 0.1),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            transition: transform 0.3s ease;
-        }
-        .game:hover {
-            transform: translateY(-2px);
+            grid-template-columns: auto 200px;
+            gap: 14px;
         }
         canvas {
-            background: linear-gradient(180deg, #000000 0%, #0a0514 100%);
+            background: transparent; /* background drawn in canvas now */
             image-rendering: pixelated;
+            border-radius: 10px;
+            box-shadow:
+              0 0 0 1px rgba(255,255,255,0.06) inset,
+              0 10px 30px rgba(0,0,0,0.5),
+              0 0 40px rgba(255, 64, 85, 0.12);
             width: min(90vw, 360px);
             height: calc(min(90vw, 360px) * 2);
             max-width: 360px;
             max-height: 720px;
-            border-radius: 8px;
-            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8),
-                        0 4px 20px rgba(0, 0, 0, 0.5);
         }
         .side {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            min-width: 160px;
+            gap: 8px;
+            min-width: 180px;
         }
         .info {
-            border: 1px solid rgba(255, 48, 96, 0.3);
-            padding: 12px;
-            border-radius: 8px;
-            background: rgba(13, 13, 20, 0.7);
-            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 10px;
+            border-radius: 10px;
+            background: linear-gradient(180deg, #0f1222, #0d1020);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 20px rgba(255, 64, 85, 0.08) inset;
             font-size: 14px;
-            line-height: 1.6;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            transition: all 0.3s ease;
-        }
-        .info:hover {
-            border-color: rgba(255, 48, 96, 0.6);
-            box-shadow: 0 4px 20px rgba(255, 48, 96, 0.2),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
         .title {
             font-weight: bold;
             color: var(--accent);
+            text-shadow: 0 0 10px rgba(255,48,64,0.35);
+            letter-spacing: 0.5px;
             margin-bottom: 8px;
-            font-size: 16px;
-            text-shadow: 0 0 10px var(--accent-glow);
-        }
-        .info > div:not(.title) {
-            transition: transform 0.2s ease;
-        }
-        .info > div:not(.title):hover {
-            transform: translateX(3px);
         }
         .btns {
             display: flex;
@@ -99,35 +81,20 @@
             flex-wrap: wrap;
         }
         a.btn {
-            color: #08080f;
-            background: linear-gradient(135deg, var(--accent) 0%, #ff4070 100%);
+            color: #0b0d16;
+            background: linear-gradient(180deg, #ff5a6a, #ff3040);
             text-decoration: none;
-            padding: 8px 14px;
-            border-radius: 6px;
+            padding: 8px 12px;
+            border-radius: 8px;
             font-weight: bold;
-            box-shadow: 0 4px 15px rgba(255, 48, 96, 0.3);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            box-shadow:
+              0 6px 16px rgba(255,48,64,0.35),
+              0 0 0 1px rgba(255,255,255,0.1) inset;
+            transition: transform .08s ease, filter .08s ease;
         }
-        a.btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s ease;
-        }
-        a.btn:hover::before {
-            left: 100%;
-        }
-        a.btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 48, 96, 0.5);
-        }
-        .muted { opacity: 0.6; }
+        a.btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+        .muted { opacity: 0.8; }
+
         @media (max-width: 640px) {
             .game { grid-template-columns: 1fr; }
             .side { order: -1; }
@@ -138,39 +105,51 @@
             display: none;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            margin-top: 8px;
+            margin-top: 10px;
         }
         .touch-controls .row {
             display: contents;
         }
         .touch-controls button {
-            background: linear-gradient(135deg, var(--accent) 0%, #ff4070 100%);
-            color: #fff;
+            background: linear-gradient(180deg, #ff6d7a, #ff3040);
+            color: #0b0d16;
             border: none;
-            border-radius: 8px;
-            padding: 12px;
+            border-radius: 10px;
+            padding: 10px 12px;
             font-weight: bold;
             font-family: "Courier New", monospace;
             cursor: pointer;
             user-select: none;
-            box-shadow: 0 4px 12px rgba(255, 48, 96, 0.3);
-            transition: all 0.2s ease;
-            font-size: 14px;
+            box-shadow:
+              0 8px 18px rgba(255,48,64,0.35),
+              0 0 0 1px rgba(255,255,255,0.1) inset;
+            transition: transform .06s ease, filter .06s ease;
         }
-        .touch-controls button:active { 
-            transform: scale(0.95);
-            box-shadow: 0 2px 8px rgba(255, 48, 96, 0.4);
-        }
+        .touch-controls button:active { filter: brightness(0.92); transform: translateY(1px); }
         @media (max-width: 640px) {
             .touch-controls { display: grid; }
         }
 
-        @keyframes scoreUpdate {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); color: var(--accent); }
+        /* Subtle animated scanlines overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+              repeating-linear-gradient(
+                to bottom,
+                rgba(255,255,255,0.04),
+                rgba(255,255,255,0.04) 1px,
+                transparent 3px,
+                transparent 4px
+              );
+            mix-blend-mode: soft-light;
+            animation: sl 6s linear infinite;
         }
-        .score-update {
-            animation: scoreUpdate 0.3s ease;
+        @keyframes sl {
+            from { transform: translateY(0); }
+            to   { transform: translateY(4px); }
         }
     </style>
 </head>
@@ -180,13 +159,13 @@
         <canvas id="tetris" width="240" height="480" aria-label="Tetris board"></canvas>
         <div class="side">
             <div class="info">
-                <div class="title">◆ TETRIS ◆</div>
+                <div class="title">Tetris</div>
                 <div>Score: <span id="score">0</span></div>
                 <div>Lines: <span id="lines">0</span></div>
                 <div>Level: <span id="level">0</span></div>
             </div>
             <div class="info">
-                <div class="title">⌨ Controls</div>
+                <div class="title">Controls</div>
                 <div>A: Move left</div>
                 <div>D: Move right</div>
                 <div>R: Rotate</div>
@@ -217,7 +196,7 @@
             </div>
 
             <div class="btns">
-                <a class="btn" href="index.html">← Back</a>
+                <a class="btn" href="index.html">Back</a>
             </div>
         </div>
     </div>
@@ -253,39 +232,11 @@
   const ctx = canvas.getContext('2d');
 
   const COLS = 10, ROWS = 20, SIZE = 24;
-  ctx.scale(SIZE/24, SIZE/24);
+  ctx.scale(SIZE/24, SIZE/24); // keep logical pixels at 24px blocks
 
-  // Particle system for line clear effects
+  // Visual/FX state
   const particles = [];
-  
-  class Particle {
-      constructor(x, y, color) {
-          this.x = x;
-          this.y = y;
-          this.vx = (Math.random() - 0.5) * 4;
-          this.vy = (Math.random() - 0.5) * 4 - 2;
-          this.life = 1.0;
-          this.color = color;
-          this.size = Math.random() * 3 + 2;
-      }
-      
-      update(delta) {
-          this.x += this.vx;
-          this.y += this.vy;
-          this.vy += 0.15; // gravity
-          this.life -= delta / 500;
-      }
-      
-      draw(ctx) {
-          ctx.save();
-          ctx.globalAlpha = this.life;
-          ctx.fillStyle = this.color;
-          ctx.beginPath();
-          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-      }
-  }
+  let nowMs = 0;
 
   function createMatrix(w, h) {
       const m = [];
@@ -335,24 +286,13 @@
 
   const colors = [
       null,
-      '#a000f0', // T - purple
-      '#f0f000', // O - yellow
-      '#f0a000', // L - orange
-      '#0000f0', // J - blue
-      '#00f0f0', // I - cyan
-      '#00f000', // S - green
-      '#f00000', // Z - red
-  ];
-
-  const colorGradients = [
-      null,
-      ['#c040ff', '#8000d0'], // T
-      ['#ffff40', '#d0d000'], // O
-      ['#ffc040', '#d08000'], // L
-      ['#4040ff', '#0000d0'], // J
-      ['#40ffff', '#00d0d0'], // I
-      ['#40ff40', '#00d000'], // S
-      ['#ff4040', '#d00000'], // Z
+      '#a000f0', // T
+      '#f0f000', // O
+      '#f0a000', // L
+      '#0000f0', // J
+      '#00f0f0', // I
+      '#00f000', // S
+      '#f00000', // Z
   ];
 
   const arena = createMatrix(COLS, ROWS);
@@ -369,14 +309,11 @@
   let lastTime = 0;
   let paused = false;
 
+  // Flash animation state for line clear
   let flashingRows = [];
   let flashElapsed = 0;
-  const FLASH_DURATION = 400;
-  const FLASH_INTERVAL = 80;
-
-  // Placement animation
-  let placementAnim = 0;
-  const PLACEMENT_DURATION = 150;
+  const FLASH_DURATION = 200;   // total flash time in ms
+  const FLASH_INTERVAL = 80;    // toggle interval in ms
 
   function collide(arena, player) {
       const m = player.matrix;
@@ -392,6 +329,7 @@
       return false;
   }
 
+  // Collision check for arbitrary position (used by ghost)
   function collideAt(matrix, pos) {
       for (let y = 0; y < matrix.length; ++y) {
           for (let x = 0; x < matrix[y].length; ++x) {
@@ -413,6 +351,7 @@
   }
 
   function rotate(matrix, dir) {
+      // transpose
       for (let y = 0; y < matrix.length; ++y) {
           for (let x = 0; x < y; ++x) {
               [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
@@ -453,23 +392,6 @@
       return rows;
   }
 
-  function createParticlesForRows(rows) {
-      rows.forEach(y => {
-          for (let x = 0; x < COLS; x++) {
-              const colorIdx = arena[y][x];
-              if (colorIdx !== 0) {
-                  for (let i = 0; i < 3; i++) {
-                      particles.push(new Particle(
-                          x * 24 + 12,
-                          y * 24 + 12,
-                          colors[colorIdx]
-                      ));
-                  }
-              }
-          }
-      });
-  }
-
   function playerDrop() {
       player.pos.y++;
       if (collide(arena, player)) {
@@ -479,24 +401,24 @@
           if (rows.length) {
               flashingRows = rows;
               flashElapsed = 0;
-              createParticlesForRows(rows);
+              spawnLineParticles(rows);
           } else {
-              placementAnim = PLACEMENT_DURATION;
-              setTimeout(() => playerReset(), PLACEMENT_DURATION);
+              playerReset();
           }
       }
       dropCounter = 0;
   }
 
   function hardDrop() {
+      // same gameplay, add a burst when piece lands
       do {
           player.pos.y++;
       } while (!collide(arena, player));
       player.pos.y--;
       merge(arena, player);
+      spawnPieceBurst(player); // visual only
       arenaSweep();
-      placementAnim = PLACEMENT_DURATION;
-      setTimeout(() => playerReset(), PLACEMENT_DURATION / 2);
+      playerReset();
       dropCounter = 0;
   }
 
@@ -532,44 +454,103 @@
       updateScore();
   }
 
-  function drawBlock(x, y, colorIdx) {
-      const px = x * 24;
-      const py = y * 24;
-      
-      // Main gradient
-      const grad = ctx.createLinearGradient(px, py, px + 24, py + 24);
-      grad.addColorStop(0, colorGradients[colorIdx][0]);
-      grad.addColorStop(1, colorGradients[colorIdx][1]);
-      ctx.fillStyle = grad;
-      ctx.fillRect(px, py, 24, 24);
-      
-      // Highlight
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.fillRect(px + 1, py + 1, 22, 8);
-      
-      // Border with glow
-      ctx.strokeStyle = colorGradients[colorIdx][1];
+  // Helper: draw glossy cell with soft glow
+  function drawCell(px, py, color, opts = {}) {
+      const { ghost = false } = opts;
+      const x = px * 24, y = py * 24;
+
+      if (!ghost) {
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = color;
+      } else {
+          ctx.shadowBlur = 0;
+      }
+
+      // base
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, 24, 24);
+
+      // glossy overlay
+      const g = ctx.createLinearGradient(x, y, x, y + 24);
+      g.addColorStop(0, 'rgba(255,255,255,0.28)');
+      g.addColorStop(0.4, 'rgba(255,255,255,0.08)');
+      g.addColorStop(1, 'rgba(0,0,0,0.3)');
+      ctx.fillStyle = g;
+      ctx.fillRect(x, y, 24, 24);
+
+      // border
       ctx.lineWidth = 1;
-      ctx.strokeRect(px + 0.5, py + 0.5, 23, 23);
-      
-      // Inner border
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-      ctx.strokeRect(px + 2.5, py + 2.5, 19, 19);
+      ctx.strokeStyle = ghost ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.55)';
+      ctx.strokeRect(x + 0.5, y + 0.5, 23, 23);
+
+      // reset shadow
+      ctx.shadowBlur = 0;
   }
 
-  function drawMatrix(matrix, offset, alpha = 1) {
-      ctx.save();
-      ctx.globalAlpha = alpha;
+  function drawMatrix(matrix, offset, opts = {}) {
       matrix.forEach((row, y) => {
           row.forEach((v, x) => {
               if (v !== 0) {
-                  drawBlock(x + offset.x, y + offset.y, v);
+                  const color = colors[v];
+                  if (opts.ghost) {
+                      ctx.save();
+                      ctx.globalAlpha = 0.22;
+                      drawCell(x + offset.x, y + offset.y, '#ffffff', { ghost: true });
+                      ctx.restore();
+                  } else {
+                      drawCell(x + offset.x, y + offset.y, color);
+                  }
               }
           });
       });
+  }
+
+  // Subtle grid
+  function drawGrid() {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= COLS; x++) {
+          ctx.beginPath();
+          ctx.moveTo(x * 24 + 0.5, 0);
+          ctx.lineTo(x * 24 + 0.5, ROWS * 24);
+          ctx.stroke();
+      }
+      for (let y = 0; y <= ROWS; y++) {
+          ctx.beginPath();
+          ctx.moveTo(0, y * 24 + 0.5);
+          ctx.lineTo(COLS * 24, y * 24 + 0.5);
+          ctx.stroke();
+      }
       ctx.restore();
   }
 
+  // Animated background inside canvas
+  function drawBackground(t) {
+      const w = canvas.width, h = canvas.height;
+      const cx = w * 0.5 + Math.sin(t * 0.0004) * 40;
+      const cy = h * 0.35 + Math.cos(t * 0.0005) * 30;
+
+      const rg = ctx.createRadialGradient(cx, cy, 20, w*0.5, h*0.6, Math.max(w,h));
+      rg.addColorStop(0, 'rgba(255,64,85,0.12)');
+      rg.addColorStop(0.45, 'rgba(30,36,66,0.85)');
+      rg.addColorStop(1, 'rgba(5,7,14,1)');
+
+      ctx.fillStyle = rg;
+      ctx.fillRect(0, 0, w, h);
+
+      // floating vignette
+      ctx.save();
+      ctx.globalCompositeOperation = 'soft-light';
+      ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      const off = (t * 0.03) % 24;
+      for (let y = -24 + off; y < h; y += 24) {
+          ctx.fillRect(0, y, w, 2);
+      }
+      ctx.restore();
+    }
+
+  // Ghost Y stays the same
   function getGhostY() {
       let y = player.pos.y;
       while (!collideAt(player.matrix, { x: player.pos.x, y: y + 1 })) {
@@ -578,106 +559,135 @@
       return y;
   }
 
+  // Particles
+  function spawnLineParticles(rows) {
+      const cellSize = 24;
+      rows.forEach((ry) => {
+          for (let i = 0; i < COLS * 2; i++) {
+              const x = (Math.random() * COLS) * cellSize + cellSize * 0.5;
+              const y = ry * cellSize + 12 + (Math.random() - 0.5) * 8;
+              const vx = (Math.random() - 0.5) * 140;
+              const vy = -80 - Math.random() * 60;
+              particles.push({
+                  x, y, vx, vy,
+                  life: 0.6 + Math.random() * 0.6,
+                  a: 1,
+                  size: 2 + Math.random() * 2,
+                  color: 'rgba(255,220,240,1)'
+              });
+          }
+      });
+  }
+
+  function spawnPieceBurst(p) {
+      const cellSize = 24;
+      p.matrix.forEach((row, y) => {
+          row.forEach((v, x) => {
+              if (!v) return;
+              const cx = (p.pos.x + x) * cellSize + 12;
+              const cy = (p.pos.y + y) * cellSize + 12;
+              for (let i = 0; i < 3; i++) {
+                  const ang = Math.random() * Math.PI * 2;
+                  const sp = 80 + Math.random() * 120;
+                  particles.push({
+                      x: cx, y: cy,
+                      vx: Math.cos(ang) * sp,
+                      vy: Math.sin(ang) * sp,
+                      life: 0.35 + Math.random() * 0.4,
+                      a: 1,
+                      size: 2 + Math.random() * 2,
+                      color: 'rgba(255,90,110,1)'
+                  });
+              }
+          });
+      });
+  }
+
+  function updateParticles(dt) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.life -= dt;
+          if (p.life <= 0) { particles.splice(i, 1); continue; }
+          p.vy += 260 * dt; // gravity
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+      }
+  }
+
+  function drawParticles() {
+      if (!particles.length) return;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      particles.forEach(p => {
+          const alpha = Math.max(0, Math.min(1, p.life));
+          ctx.fillStyle = p.color.replace(',1)', `,${alpha})`);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+      });
+      ctx.restore();
+  }
+
+  // Flash animation state remains
+  // ...existing code (flashingRows, flashElapsed, FLASH_DURATION, FLASH_INTERVAL)...
+
   function draw() {
-      // Background gradient
-      const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      bgGrad.addColorStop(0, '#000000');
-      bgGrad.addColorStop(1, '#0a0514');
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Grid pattern
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-      ctx.lineWidth = 0.5;
-      for (let x = 0; x <= COLS; x++) {
-          ctx.beginPath();
-          ctx.moveTo(x * 24, 0);
-          ctx.lineTo(x * 24, canvas.height);
-          ctx.stroke();
-      }
-      for (let y = 0; y <= ROWS; y++) {
-          ctx.beginPath();
-          ctx.moveTo(0, y * 24);
-          ctx.lineTo(canvas.width, y * 24);
-          ctx.stroke();
-      }
-      
+      // Background + grid
+      drawBackground(nowMs);
+      drawGrid();
+
+      // Arena
       drawMatrix(arena, { x: 0, y: 0 });
 
-      // Update and draw particles
-      for (let i = particles.length - 1; i >= 0; i--) {
-          if (particles[i].life <= 0) {
-              particles.splice(i, 1);
-          } else {
-              particles[i].draw(ctx);
-          }
-      }
-
-      if (!flashingRows.length && placementAnim === 0) {
+      // Ghost + active piece (only when not flashing)
+      if (!flashingRows.length) {
           const gy = getGhostY();
-          drawMatrix(player.matrix, { x: player.pos.x, y: gy }, 0.15);
+          drawMatrix(player.matrix, { x: player.pos.x, y: gy }, { ghost: true });
           drawMatrix(player.matrix, player.pos);
       }
 
+      // Pause overlay
       if (paused) {
-          ctx.fillStyle = 'rgba(0,0,0,0.7)';
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          // Animated pause text
-          ctx.save();
-          ctx.shadowColor = 'rgba(255, 48, 96, 0.8)';
-          ctx.shadowBlur = 20;
-          ctx.fillStyle = '#ff3060';
-          ctx.font = 'bold 32px "Courier New", monospace';
+          ctx.fillStyle = '#ffcad0';
+          ctx.shadowColor = '#ff3040';
+          ctx.shadowBlur = 14;
+          ctx.font = 'bold 30px "Courier New", monospace';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillText('❚❚ PAUSED', canvas.width / 2, canvas.height / 2 - 10);
-          ctx.restore();
-          
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-          ctx.font = '14px "Courier New", monospace';
-          ctx.fillText('Press P to resume', canvas.width / 2, canvas.height / 2 + 20);
+          ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+          ctx.shadowBlur = 0;
       }
 
+      // Flash rows that will be cleared
       if (flashingRows.length) {
-          const progress = flashElapsed / FLASH_DURATION;
           const on = Math.floor(flashElapsed / FLASH_INTERVAL) % 2 === 0;
-          
-          ctx.save();
-          for (const y of flashingRows) {
-              if (on) {
-                  const grad = ctx.createLinearGradient(0, y * 24, canvas.width, y * 24);
-                  grad.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
-                  grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.9)');
-                  grad.addColorStop(1, 'rgba(255, 255, 255, 0.3)');
-                  ctx.fillStyle = grad;
-              } else {
-                  ctx.fillStyle = 'rgba(255, 100, 150, 0.5)';
+          if (on) {
+              ctx.save();
+              ctx.globalAlpha = 0.85;
+              ctx.fillStyle = '#ffffff';
+              for (const y of flashingRows) {
+                  ctx.fillRect(0, y * 24, canvas.width, 24);
               }
-              ctx.fillRect(0, y * 24, canvas.width, 24);
-              
-              // Glow effect
-              ctx.shadowColor = 'rgba(255, 48, 96, 0.8)';
-              ctx.shadowBlur = 15;
-              ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-              ctx.lineWidth = 2;
-              ctx.strokeRect(0, y * 24, canvas.width, 24);
+              ctx.restore();
           }
-          ctx.restore();
       }
+
+      // Particles last (over everything)
+      drawParticles();
   }
 
   function update(time = 0) {
       const delta = time - lastTime;
       lastTime = time;
+      nowMs = time;
 
-      // Update particles
-      particles.forEach(p => p.update(delta));
+      const dt = delta / 1000;
+      updateParticles(dt);
 
       if (!paused) {
-          if (placementAnim > 0) {
-              placementAnim = Math.max(0, placementAnim - delta);
-          } else if (flashingRows.length) {
+          if (flashingRows.length) {
               flashElapsed += delta;
               if (flashElapsed >= FLASH_DURATION) {
                   flashingRows = [];
@@ -696,27 +706,21 @@
   }
 
   function updateScore() {
-      const scoreEl = document.getElementById('score');
-      const linesEl = document.getElementById('lines');
-      const levelEl = document.getElementById('level');
-      
-      scoreEl.textContent = player.score;
-      linesEl.textContent = player.lines;
-      levelEl.textContent = player.level;
-      
-      // Animate score update
-      scoreEl.classList.add('score-update');
-      setTimeout(() => scoreEl.classList.remove('score-update'), 300);
+      document.getElementById('score').textContent = player.score;
+      document.getElementById('lines').textContent = player.lines;
+      document.getElementById('level').textContent = player.level;
   }
 
   document.addEventListener('keydown', (e) => {
       const k = e.key.toLowerCase();
 
+      // Ignore inputs during line-flash except Esc
       if (flashingRows.length && k !== 'escape') {
           e.preventDefault();
           return;
       }
 
+      // When paused, only allow pause toggle and escape
       if (paused && k !== 'p' && k !== 'escape') {
           e.preventDefault();
           return;
@@ -737,6 +741,7 @@
       else if (k === 'escape') { window.location.href = 'index.html'; }
   });
 
+  // Mobile buttons hook
   (function wireTouchControls(){
       const actions = {
           left: () => playerMove(-1),
@@ -755,7 +760,9 @@
       document.querySelectorAll('.touch-controls button').forEach(btn => {
           btn.addEventListener('click', () => {
               const act = btn.getAttribute('data-action');
+              // Ignore touch actions during flash except Back
               if (flashingRows.length && act !== 'back') return;
+              // When paused, only allow pause toggle and back
               if (paused && act !== 'pause' && act !== 'back') return;
               if (actions[act]) actions[act]();
           }, { passive: true });
