@@ -1,169 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width,initial-scale=1.0" />
-	<title>Tetris</title>
-	<style>
-		:root {
-			--bg: #090a10;
-			--bg2: #0c0f1a;
-			--panel: #10121fcc;
-			--fg: #f6f7ff;
-			--accent: #ff3040;
-			--glow: #ff4055;
-		}
-		html, body {
-			height: 100%;
-			margin: 0;
-			background: radial-gradient(1200px 800px at 20% 10%, #111428, var(--bg)) fixed,
-						radial-gradient(900px 900px at 80% 100%, #0a0d20, var(--bg2)) fixed;
-			color: var(--fg);
-			font-family: "Courier New", monospace;
-		}
-		.wrap {
-			min-height: 100%;
-			display: grid;
-			place-items: center;
-			padding: 20px;
-		}
-		.game {
-			background: linear-gradient(180deg, #0e1120cc, #0a0d18cc);
-			border: 1px solid rgba(255, 64, 85, 0.35);
-			border-radius: 12px;
-			padding: 14px;
-			box-shadow:
-			  0 0 0 1px rgba(255, 64, 85, 0.2) inset,
-			  0 10px 30px rgba(0,0,0,0.6),
-			  0 0 30px rgba(255, 64, 85, 0.15);
-			backdrop-filter: blur(6px);
-			display: grid;
-			grid-template-columns: auto 200px;
-			gap: 14px;
-		}
-		canvas {
-			background: transparent; /* background drawn in canvas now */
-			image-rendering: pixelated;
-			border-radius: 10px;
-			box-shadow:
-			  0 0 0 1px rgba(255,255,255,0.06) inset,
-			  0 10px 30px rgba(0,0,0,0.5),
-			  0 0 40px rgba(255, 64, 85, 0.12);
-			width: min(90vw, 360px);
-			height: calc(min(90vw, 360px) * 2);
-			max-width: 360px;
-			max-height: 720px;
-		}
-		.side {
-			display: flex;
-			flex-direction: column;
-			gap: 8px;
-			min-width: 180px;
-		}
-		.info {
-			border: 1px solid rgba(255,255,255,0.08);
-			padding: 10px;
-			border-radius: 10px;
-			background: linear-gradient(180deg, #0f1222, #0d1020);
-			box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 20px rgba(255, 64, 85, 0.08) inset;
-			font-size: 14px;
-		}
-		.title {
-			font-weight: bold;
-			color: var(--accent);
-			text-shadow: 0 0 10px rgba(255,48,64,0.35);
-			letter-spacing: 0.5px;
-			margin-bottom: 8px;
-		}
-		.btns {
-			display: flex;
-			gap: 8px;
-			flex-wrap: wrap;
-		}
-		a.btn {
-			color: #0b0d16;
-			background: linear-gradient(180deg, #ff5a6a, #ff3040);
-			text-decoration: none;
-			padding: 8px 12px;
-			border-radius: 8px;
-			font-weight: bold;
-			box-shadow:
-			  0 6px 16px rgba(255,48,64,0.35),
-			  0 0 0 1px rgba(255,255,255,0.1) inset;
-			transition: transform .08s ease, filter .08s ease;
-		}
-		a.btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
-		.muted { opacity: 0.8; }
-
-		@media (max-width: 640px) {
-			.game { grid-template-columns: 1fr; }
-			.side { order: -1; }
-		}
-
-		/* Mobile controls */
-		.touch-controls {
-			display: none;
-			grid-template-columns: repeat(3, 1fr);
-			gap: 8px;
-			margin-top: 10px;
-		}
-		.touch-controls .row {
-			display: contents;
-		}
-		.touch-controls button {
-			background: linear-gradient(180deg, #ff6d7a, #ff3040);
-			color: #0b0d16;
-			border: none;
-			border-radius: 10px;
-			padding: 10px 12px;
-			font-weight: bold;
-			font-family: "Courier New", monospace;
-			cursor: pointer;
-			user-select: none;
-			box-shadow:
-			  0 8px 18px rgba(255,48,64,0.35),
-			  0 0 0 1px rgba(255,255,255,0.1) inset;
-			transition: transform .06s ease, filter .06s ease;
-		}
-		.touch-controls button:active { filter: brightness(0.92); transform: translateY(1px); }
-		@media (max-width: 640px) {
-			.touch-controls { display: grid; }
-		}
-
-		/* Subtle animated scanlines overlay */
-		body::after {
-			content: '';
-			position: fixed;
-			inset: 0;
-			pointer-events: none;
-			background:
-			  repeating-linear-gradient(
-				to bottom,
-				rgba(255,255,255,0.04),
-				rgba(255,255,255,0.04) 1px,
-				transparent 3px,
-				transparent 4px
-			  );
-			mix-blend-mode: soft-light;
-			animation: sl 6s linear infinite;
-		}
-		@keyframes sl {
-			from { transform: translateY(0); }
-			to   { transform: translateY(4px); }
-		}
-
-        /* small preview canvas in sidebar */
-        #next {
-            width: 120px;
-            height: 120px;
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Tetris</title>
+    <style>
+        :root {
+            --bg: #090a10;
+            --bg2: #0c0f1a;
+            --panel: #10121fcc;
+            --fg: #f6f7ff;
+            --accent: #ff3040;
+            --glow: #ff4055;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            background: radial-gradient(1200px 800px at 20% 10%, #111428, var(--bg)) fixed,
+                        radial-gradient(900px 900px at 80% 100%, #0a0d20, var(--bg2)) fixed;
+            color: var(--fg);
+            font-family: "Courier New", monospace;
+        }
+        .wrap {
+            min-height: 100%;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+        }
+        .game {
+            background: linear-gradient(180deg, #0e1120cc, #0a0d18cc);
+            border: 1px solid rgba(255, 64, 85, 0.35);
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow:
+              0 0 0 1px rgba(255, 64, 85, 0.2) inset,
+              0 10px 30px rgba(0,0,0,0.6),
+              0 0 30px rgba(255, 64, 85, 0.15);
+            backdrop-filter: blur(6px);
+            display: grid;
+            grid-template-columns: auto 200px;
+            gap: 14px;
+        }
+        canvas {
+            background: transparent; /* background drawn in canvas now */
             image-rendering: pixelated;
-            background: transparent;
+            border-radius: 10px;
+            box-shadow:
+              0 0 0 1px rgba(255,255,255,0.06) inset,
+              0 10px 30px rgba(0,0,0,0.5),
+              0 0 40px rgba(255, 64, 85, 0.12);
+            width: min(90vw, 360px);
+            height: calc(min(90vw, 360px) * 2);
+            max-width: 360px;
+            max-height: 720px;
+        }
+        .side {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 180px;
+        }
+        .info {
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 10px;
+            border-radius: 10px;
+            background: linear-gradient(180deg, #0f1222, #0d1020);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 20px rgba(255, 64, 85, 0.08) inset;
+            font-size: 14px;
+        }
+        .title {
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(255,48,64,0.35);
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .btns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        a.btn {
+            color: #0b0d16;
+            background: linear-gradient(180deg, #ff5a6a, #ff3040);
+            text-decoration: none;
+            padding: 8px 12px;
             border-radius: 8px;
+            font-weight: bold;
+            box-shadow:
+              0 6px 16px rgba(255,48,64,0.35),
+              0 0 0 1px rgba(255,255,255,0.1) inset;
+            transition: transform .08s ease, filter .08s ease;
+        }
+        a.btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+        .muted { opacity: 0.8; }
+
+        @media (max-width: 640px) {
+            .game { grid-template-columns: 1fr; }
+            .side { order: -1; }
+        }
+
+        /* Mobile controls */
+        .touch-controls {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .touch-controls .row {
+            display: contents;
+        }
+        .touch-controls button {
+            background: linear-gradient(180deg, #ff6d7a, #ff3040);
+            color: #0b0d16;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-weight: bold;
+            font-family: "Courier New", monospace;
+            cursor: pointer;
+            user-select: none;
+            box-shadow:
+              0 8px 18px rgba(255,48,64,0.35),
+              0 0 0 1px rgba(255,255,255,0.1) inset;
+            transition: transform .06s ease, filter .06s ease;
+        }
+        .touch-controls button:active { filter: brightness(0.92); transform: translateY(1px); }
+        @media (max-width: 640px) {
+            .touch-controls { display: grid; }
+        }
+
+        /* Subtle animated scanlines overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background:
+              repeating-linear-gradient(
+                to bottom,
+                rgba(255,255,255,0.04),
+                rgba(255,255,255,0.04) 1px,
+                transparent 3px,
+                transparent 4px
+              );
+            mix-blend-mode: soft-light;
+            animation: sl 6s linear infinite;
+        }
+        @keyframes sl {
+            from { transform: translateY(0); }
+            to   { transform: translateY(4px); }
+        }
+
+        /* Small preview canvas styling */
+        #next {
+            width: 96px;
+            height: 96px;
+            image-rendering: pixelated;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #0f1222, #0d1020);
             box-shadow:
               0 6px 16px rgba(0,0,0,0.35),
-              0 0 10px rgba(255, 64, 85, 0.04) inset;
+              0 0 10px rgba(255,64,85,0.04) inset;
         }
-	</style>
+    </style>
 </head>
 <body>
 <div class="wrap">
@@ -188,8 +188,8 @@
                 <div class="muted">Esc: Back</div>
             </div>
 
-            <!-- Next preview -->
-            <div class="info" aria-label="Next piece">
+            <!-- Next piece preview -->
+            <div class="info">
                 <div class="title">Next</div>
                 <canvas id="next" width="96" height="96" aria-label="Next piece preview"></canvas>
             </div>
@@ -249,8 +249,9 @@
   const canvas = document.getElementById('tetris');
   const ctx = canvas.getContext('2d');
 
+  // New: preview canvas/context
   const nextCanvas = document.getElementById('next');
-  const ctxNext = nextCanvas.getContext('2d');
+  const nctx = nextCanvas.getContext('2d');
 
   const COLS = 10, ROWS = 20, SIZE = 24;
   ctx.scale(SIZE/24, SIZE/24); // keep logical pixels at 24px blocks
@@ -321,7 +322,6 @@
   const player = {
       pos: { x: 0, y: 0 },
       matrix: null,
-      next: null,
       score: 0,
       lines: 0,
       level: 0,
@@ -383,16 +383,18 @@
       else matrix.reverse();
   }
 
+  // Adjusted playerReset to use/produce a nextPiece (queue of 1)
   function playerReset() {
-      if (!player.next) {
-          const pieces = 'TJLOSZI';
-          player.matrix = createPiece(pieces[(pieces.length * Math.random()) | 0]);
-      } else {
-          player.matrix = player.next;
-      }
-      // generate new next
       const pieces = 'TJLOSZI';
-      player.next = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+      // current becomes previously queued next if available, otherwise random
+      if (nextPiece) {
+          player.matrix = nextPiece;
+      } else {
+          player.matrix = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+      }
+      // queue the next piece
+      nextPiece = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+      drawNext();
 
       player.pos.y = 0;
       player.pos.x = ((COLS / 2) | 0) - ((player.matrix[0].length / 2) | 0);
@@ -403,7 +405,6 @@
           player.level = 0;
           updateScore();
       }
-      drawNextPreview();
   }
 
   function playerMove(dir) {
@@ -485,28 +486,15 @@
       updateScore();
   }
 
-  // Helper: rounded rect path
-  function roundedRectPath(x, y, w, h, r) {
-      const R = Math.min(r, w/2, h/2);
-      ctx.beginPath();
-      ctx.moveTo(x + R, y);
-      ctx.arcTo(x + w, y, x + w, y + h, R);
-      ctx.arcTo(x + w, y + h, x, y + h, R);
-      ctx.arcTo(x, y + h, x, y, R);
-      ctx.arcTo(x, y, x + w, y, R);
-      ctx.closePath();
-  }
-
-  // Helper: draw glossy cell with soft glow (reduced glow)
+  // Reduce block glow drastically: subtle neutral shadow instead of strong colored glow
   function drawCell(px, py, color, opts = {}) {
       const { ghost = false } = opts;
       const x = px * 24, y = py * 24;
 
       if (!ghost) {
-          // drastically reduce glow: small blur and faint alpha
+          // much smaller blur + neutral low-alpha shadow to reduce intensity ~90%
           ctx.shadowBlur = 1;
-          // ensure a faint shadow color (use color but low alpha)
-          ctx.shadowColor = color.replace(')', ',0.08)').replace('rgb','rgba').replace('RGB','rgba');
+          ctx.shadowColor = 'rgba(0,0,0,0.12)';
       } else {
           ctx.shadowBlur = 0;
       }
@@ -532,47 +520,7 @@
       ctx.shadowBlur = 0;
   }
 
-  // drawMatrix now can optionally clip (round the piece as a whole)
   function drawMatrix(matrix, offset, opts = {}) {
-      const { ghost = false, round = false } = opts;
-
-      if (round && !ghost) {
-          // find bounding box of non-zero cells
-          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-          for (let y = 0; y < matrix.length; y++) {
-              for (let x = 0; x < matrix[y].length; x++) {
-                  if (matrix[y][x]) {
-                      if (x < minX) minX = x;
-                      if (y < minY) minY = y;
-                      if (x > maxX) maxX = x;
-                      if (y > maxY) maxY = y;
-                  }
-              }
-          }
-          if (minX <= maxX) {
-              const px = (minX + offset.x) * 24;
-              const py = (minY + offset.y) * 24;
-              const w = (maxX - minX + 1) * 24;
-              const h = (maxY - minY + 1) * 24;
-              ctx.save();
-              // clip to rounded bounding box to round the piece silhouette corners
-              roundedRectPath(px, py, w, h, 6);
-              ctx.clip();
-              // draw cells inside the clip
-              matrix.forEach((row, y) => {
-                  row.forEach((v, x) => {
-                      if (v !== 0) {
-                          const color = colors[v];
-                          drawCell(x + offset.x, y + offset.y, color, { ghost: !!ghost });
-                      }
-                  });
-              });
-              ctx.restore();
-              return;
-          }
-      }
-
-      // default (no rounding) behavior
       matrix.forEach((row, y) => {
           row.forEach((v, x) => {
               if (v !== 0) {
@@ -617,8 +565,8 @@
       const cy = h * 0.35 + Math.cos(t * 0.0005) * 30;
 
       const rg = ctx.createRadialGradient(cx, cy, 20, w*0.5, h*0.6, Math.max(w,h));
-      // removed bright red center highlight
-      rg.addColorStop(0, 'rgba(255,64,85,0)'); // was 0.12
+      // reduce the red center glow significantly
+      rg.addColorStop(0, 'rgba(255,64,85,0.03)');
       rg.addColorStop(0.45, 'rgba(30,36,66,0.85)');
       rg.addColorStop(1, 'rgba(5,7,14,1)');
 
@@ -717,6 +665,47 @@
   // Flash animation state remains
   // ...existing code (flashingRows, flashElapsed, FLASH_DURATION, FLASH_INTERVAL)...
 
+  // Next-piece preview support
+  let nextPiece = null;
+
+  function drawNext() {
+      // clear preview
+      nctx.clearRect(0,0,nextCanvas.width,nextCanvas.height);
+      // subtle bg
+      nctx.fillStyle = 'rgba(10,12,22,0.8)';
+      nctx.fillRect(0,0,nextCanvas.width,nextCanvas.height);
+
+      if (!nextPiece) return;
+      const matrix = nextPiece;
+      const cell = 24;
+      const cols = nextCanvas.width / cell; // should be 4 for 96px
+      const rows = nextCanvas.height / cell;
+      const offsetX = Math.floor((nextCanvas.width - matrix[0].length * cell) / 2);
+      const offsetY = Math.floor((nextCanvas.height - matrix.length * cell) / 2);
+
+      matrix.forEach((row, y) => {
+          row.forEach((v, x) => {
+              if (v !== 0) {
+                  const color = colors[v] || '#ffffff';
+                  // draw simple cell in preview (lighter style)
+                  nctx.fillStyle = color;
+                  nctx.fillRect(offsetX + x*cell, offsetY + y*cell, cell, cell);
+                  // small glossy overlay
+                  const g = nctx.createLinearGradient(offsetX + x*cell, offsetY + y*cell, offsetX + x*cell, offsetY + y*cell + cell);
+                  g.addColorStop(0, 'rgba(255,255,255,0.22)');
+                  g.addColorStop(0.4, 'rgba(255,255,255,0.06)');
+                  g.addColorStop(1, 'rgba(0,0,0,0.18)');
+                  nctx.fillStyle = g;
+                  nctx.fillRect(offsetX + x*cell, offsetY + y*cell, cell, cell);
+                  // border
+                  nctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                  nctx.lineWidth = 1;
+                  nctx.strokeRect(offsetX + x*cell + 0.5, offsetY + y*cell + 0.5, cell-1, cell-1);
+              }
+          });
+      });
+  }
+
   function draw() {
       // Background + grid
       drawBackground(nowMs);
@@ -729,8 +718,7 @@
       if (!flashingRows.length) {
           const gy = getGhostY();
           drawMatrix(player.matrix, { x: player.pos.x, y: gy }, { ghost: true });
-          // draw active piece using rounded shape clipping
-          drawMatrix(player.matrix, player.pos, { round: true });
+          drawMatrix(player.matrix, player.pos);
       }
 
       // Pause overlay
@@ -763,6 +751,9 @@
 
       // Particles last (over everything)
       drawParticles();
+
+      // update next preview each frame (lightweight)
+      drawNext();
   }
 
   function update(time = 0) {
@@ -854,6 +845,13 @@
               if (actions[act]) actions[act]();
           }, { passive: true });
       });
+  })();
+
+  // initial queue setup
+  // ensure nextPiece exists before first playerReset
+  (function initNext(){
+      const pieces = 'TJLOSZI';
+      nextPiece = createPiece(pieces[(pieces.length * Math.random()) | 0]);
   })();
 
   playerReset();
