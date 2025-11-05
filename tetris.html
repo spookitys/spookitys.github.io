@@ -247,6 +247,31 @@
   const previewCtx = previewCanvas.getContext('2d');
 
   const COLS = 10, ROWS = 20, SIZE = 24;
+  // Use devicePixelRatio-aware sizing so drawing never ends up invisible due to transforms.
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+  function resizeCanvases() {
+       // main canvas: logical pixels = COLS * SIZE, ROWS * SIZE in CSS px
+       const cssW = COLS * SIZE;
+       const cssH = ROWS * SIZE;
+       canvas.style.width = cssW + 'px';
+       canvas.style.height = cssH + 'px';
+       canvas.width = Math.round(cssW * dpr);
+       canvas.height = Math.round(cssH * dpr);
+       // map CSS pixels to device pixels
+       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+       // preview canvas: keep fixed CSS size (96x96)
+       const previewCss = 96;
+       previewCanvas.style.width = previewCss + 'px';
+       previewCanvas.style.height = previewCss + 'px';
+       previewCanvas.width = Math.round(previewCss * dpr);
+       previewCanvas.height = Math.round(previewCss * dpr);
+       previewCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  // initial resize + keep in sync with window
+  resizeCanvases();
+  window.addEventListener('resize', resizeCanvases);
 
   // Visual/FX state
   const particles = [];
@@ -478,51 +503,50 @@
   // Helper: draw glossy cell with soft glow and rounded corners for shapes
   function drawCell(px, py, color, opts = {}) {
       const { ghost = false, isPartOfShape = false, shapeCorners = { tl: false, tr: false, bl: false, br: false } } = opts;
-      const x = px * SIZE, y = py * SIZE;
-      const radius = Math.max(1, Math.round(SIZE * 0.15)); // rounded corner size relative to block
+      const x = px * 24, y = py * 24;
+      const radius = isPartOfShape ? 4 : 0;
 
       if (!ghost) {
-          ctx.shadowBlur = 1.2; // very subtle glow
+          ctx.shadowBlur = 1.2; // reduced from 12
           ctx.shadowColor = color;
       } else {
           ctx.shadowBlur = 0;
       }
 
-      // base with rounded corners when part of a shape
+      // base with rounded corners
       ctx.fillStyle = color;
       if (isPartOfShape && (shapeCorners.tl || shapeCorners.tr || shapeCorners.bl || shapeCorners.br)) {
-          roundRect(ctx, x, y, SIZE, SIZE, {
+          roundRect(ctx, x, y, 24, 24, {
               tl: shapeCorners.tl ? radius : 0,
               tr: shapeCorners.tr ? radius : 0,
               bl: shapeCorners.bl ? radius : 0,
               br: shapeCorners.br ? radius : 0
           });
       } else {
-          ctx.fillRect(x, y, SIZE, SIZE);
+          ctx.fillRect(x, y, 24, 24);
       }
 
       // glossy overlay
-      const g = ctx.createLinearGradient(x, y, x, y + SIZE);
-      g.addColorStop(0, 'rgba(255,255,255,0.18)');
-      g.addColorStop(0.45, 'rgba(255,255,255,0.06)');
-      g.addColorStop(1, 'rgba(0,0,0,0.25)');
+      const g = ctx.createLinearGradient(x, y, x, y + 24);
+      g.addColorStop(0, 'rgba(255,255,255,0.28)');
+      g.addColorStop(0.4, 'rgba(255,255,255,0.08)');
+      g.addColorStop(1, 'rgba(0,0,0,0.3)');
       ctx.fillStyle = g;
       if (isPartOfShape && (shapeCorners.tl || shapeCorners.tr || shapeCorners.bl || shapeCorners.br)) {
-          roundRect(ctx, x, y, SIZE, SIZE, {
+          roundRect(ctx, x, y, 24, 24, {
               tl: shapeCorners.tl ? radius : 0,
               tr: shapeCorners.tr ? radius : 0,
               bl: shapeCorners.bl ? radius : 0,
               br: shapeCorners.br ? radius : 0
           });
       } else {
-          ctx.fillRect(x, y, SIZE, SIZE);
+          ctx.fillRect(x, y, 24, 24);
       }
 
-      // border (drawn as stroked rect for crisp edges)
+      // border
       ctx.lineWidth = 1;
-      ctx.strokeStyle = ghost ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.55)';
-      // stroke the whole block area (offset by 0.5 for crispness)
-      ctx.strokeRect(x + 0.5, y + 0.5, SIZE - 1, SIZE - 1);
+      ctx.strokeStyle = ghost ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.55)';
+      ctx.strokeRect(x + 0.5, y + 0.5, 23, 23);
 
       // reset shadow
       ctx.shadowBlur = 0;
@@ -722,9 +746,6 @@
           drawMatrix(player.matrix, player.pos);
       }
 
-      // ensure preview updates every frame (keeps it visible and in-sync)
-      drawPreview();
-      
       // Pause overlay
       if (paused) {
           ctx.fillStyle = 'rgba(0,0,0,0.5)';
@@ -848,6 +869,8 @@
       });
   })();
 
+  // ensure canvases are sized before starting
+  resizeCanvases();
   playerReset();
   updateScore();
   update();
