@@ -1,165 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Tetris</title>
-    <style>
-        :root {
-            --bg: #090a10;
-            --bg2: #0c0f1a;
-            --panel: #10121fcc;
-            --fg: #f6f7ff;
-            --accent: #ff3040;
-            --glow: #ff4055;
-        }
-        html, body {
-            height: 100%;
-            margin: 0;
-            background: radial-gradient(1200px 800px at 20% 10%, #111428, var(--bg)) fixed,
-                        radial-gradient(900px 900px at 80% 100%, #0a0d20, var(--bg2)) fixed;
-            color: var(--fg);
-            font-family: "Courier New", monospace;
-        }
-        .wrap {
-            min-height: 100%;
-            display: grid;
-            place-items: center;
-            padding: 20px;
-        }
-        .game {
-            background: linear-gradient(180deg, #0e1120cc, #0a0d18cc);
-            border: 1px solid rgba(255, 64, 85, 0.35);
-            border-radius: 12px;
-            padding: 14px;
-            box-shadow:
-              0 0 0 1px rgba(255, 64, 85, 0.2) inset,
-              0 10px 30px rgba(0,0,0,0.6),
-              0 0 30px rgba(255, 64, 85, 0.15);
-            backdrop-filter: blur(6px);
-            display: grid;
-            grid-template-columns: auto 200px;
-            gap: 14px;
-        }
-        canvas {
-            background: transparent; /* background drawn in canvas now */
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+	<title>Tetris</title>
+	<style>
+		:root {
+			--bg: #090a10;
+			--bg2: #0c0f1a;
+			--panel: #10121fcc;
+			--fg: #f6f7ff;
+			--accent: #ff3040;
+			--glow: #ff4055;
+		}
+		html, body {
+			height: 100%;
+			margin: 0;
+			background: radial-gradient(1200px 800px at 20% 10%, #111428, var(--bg)) fixed,
+						radial-gradient(900px 900px at 80% 100%, #0a0d20, var(--bg2)) fixed;
+			color: var(--fg);
+			font-family: "Courier New", monospace;
+		}
+		.wrap {
+			min-height: 100%;
+			display: grid;
+			place-items: center;
+			padding: 20px;
+		}
+		.game {
+			background: linear-gradient(180deg, #0e1120cc, #0a0d18cc);
+			border: 1px solid rgba(255, 64, 85, 0.35);
+			border-radius: 12px;
+			padding: 14px;
+			box-shadow:
+			  0 0 0 1px rgba(255, 64, 85, 0.2) inset,
+			  0 10px 30px rgba(0,0,0,0.6),
+			  0 0 30px rgba(255, 64, 85, 0.15);
+			backdrop-filter: blur(6px);
+			display: grid;
+			grid-template-columns: auto 200px;
+			gap: 14px;
+		}
+		canvas {
+			background: transparent; /* background drawn in canvas now */
+			image-rendering: pixelated;
+			border-radius: 10px;
+			box-shadow:
+			  0 0 0 1px rgba(255,255,255,0.06) inset,
+			  0 10px 30px rgba(0,0,0,0.5),
+			  0 0 40px rgba(255, 64, 85, 0.12);
+			width: min(90vw, 360px);
+			height: calc(min(90vw, 360px) * 2);
+			max-width: 360px;
+			max-height: 720px;
+		}
+		.side {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			min-width: 180px;
+		}
+		.info {
+			border: 1px solid rgba(255,255,255,0.08);
+			padding: 10px;
+			border-radius: 10px;
+			background: linear-gradient(180deg, #0f1222, #0d1020);
+			box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 20px rgba(255, 64, 85, 0.08) inset;
+			font-size: 14px;
+		}
+		.title {
+			font-weight: bold;
+			color: var(--accent);
+			text-shadow: 0 0 10px rgba(255,48,64,0.35);
+			letter-spacing: 0.5px;
+			margin-bottom: 8px;
+		}
+		.btns {
+			display: flex;
+			gap: 8px;
+			flex-wrap: wrap;
+		}
+		a.btn {
+			color: #0b0d16;
+			background: linear-gradient(180deg, #ff5a6a, #ff3040);
+			text-decoration: none;
+			padding: 8px 12px;
+			border-radius: 8px;
+			font-weight: bold;
+			box-shadow:
+			  0 6px 16px rgba(255,48,64,0.35),
+			  0 0 0 1px rgba(255,255,255,0.1) inset;
+			transition: transform .08s ease, filter .08s ease;
+		}
+		a.btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+		.muted { opacity: 0.8; }
+
+		@media (max-width: 640px) {
+			.game { grid-template-columns: 1fr; }
+			.side { order: -1; }
+		}
+
+		/* Mobile controls */
+		.touch-controls {
+			display: none;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 8px;
+			margin-top: 10px;
+		}
+		.touch-controls .row {
+			display: contents;
+		}
+		.touch-controls button {
+			background: linear-gradient(180deg, #ff6d7a, #ff3040);
+			color: #0b0d16;
+			border: none;
+			border-radius: 10px;
+			padding: 10px 12px;
+			font-weight: bold;
+			font-family: "Courier New", monospace;
+			cursor: pointer;
+			user-select: none;
+			box-shadow:
+			  0 8px 18px rgba(255,48,64,0.35),
+			  0 0 0 1px rgba(255,255,255,0.1) inset;
+			transition: transform .06s ease, filter .06s ease;
+		}
+		.touch-controls button:active { filter: brightness(0.92); transform: translateY(1px); }
+		@media (max-width: 640px) {
+			.touch-controls { display: grid; }
+		}
+
+		/* Subtle animated scanlines overlay */
+		body::after {
+			content: '';
+			position: fixed;
+			inset: 0;
+			pointer-events: none;
+			background:
+			  repeating-linear-gradient(
+				to bottom,
+				rgba(255,255,255,0.04),
+				rgba(255,255,255,0.04) 1px,
+				transparent 3px,
+				transparent 4px
+			  );
+			mix-blend-mode: soft-light;
+			animation: sl 6s linear infinite;
+		}
+		@keyframes sl {
+			from { transform: translateY(0); }
+			to   { transform: translateY(4px); }
+		}
+
+        /* small preview canvas in sidebar */
+        #next {
+            width: 120px;
+            height: 120px;
             image-rendering: pixelated;
-            border-radius: 10px;
-            box-shadow:
-              0 0 0 1px rgba(255,255,255,0.06) inset,
-              0 10px 30px rgba(0,0,0,0.5),
-              0 0 40px rgba(255, 64, 85, 0.12);
-            width: min(90vw, 360px);
-            height: calc(min(90vw, 360px) * 2);
-            max-width: 360px;
-            max-height: 720px;
-        }
-        .side {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            min-width: 180px;
-        }
-        .info {
-            border: 1px solid rgba(255,255,255,0.08);
-            padding: 10px;
-            border-radius: 10px;
-            background: linear-gradient(180deg, #0f1222, #0d1020);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 20px rgba(255, 64, 85, 0.08) inset;
-            font-size: 14px;
-        }
-        .preview-canvas {
-            width: 100%;
-            height: 80px;
-            margin-top: 8px;
-            background: rgba(0,0,0,0.3);
+            background: transparent;
             border-radius: 8px;
-            image-rendering: pixelated;
-        }
-        .title {
-            font-weight: bold;
-            color: var(--accent);
-            text-shadow: 0 0 10px rgba(255,48,64,0.35);
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
-        .btns {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        a.btn {
-            color: #0b0d16;
-            background: linear-gradient(180deg, #ff5a6a, #ff3040);
-            text-decoration: none;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-weight: bold;
             box-shadow:
-              0 6px 16px rgba(255,48,64,0.35),
-              0 0 0 1px rgba(255,255,255,0.1) inset;
-            transition: transform .08s ease, filter .08s ease;
+              0 6px 16px rgba(0,0,0,0.35),
+              0 0 10px rgba(255, 64, 85, 0.04) inset;
         }
-        a.btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
-        .muted { opacity: 0.8; }
-
-        @media (max-width: 640px) {
-            .game { grid-template-columns: 1fr; }
-            .side { order: -1; }
-        }
-
-        /* Mobile controls */
-        .touch-controls {
-            display: none;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-top: 10px;
-        }
-        .touch-controls .row {
-            display: contents;
-        }
-        .touch-controls button {
-            background: linear-gradient(180deg, #ff6d7a, #ff3040);
-            color: #0b0d16;
-            border: none;
-            border-radius: 10px;
-            padding: 10px 12px;
-            font-weight: bold;
-            font-family: "Courier New", monospace;
-            cursor: pointer;
-            user-select: none;
-            box-shadow:
-              0 8px 18px rgba(255,48,64,0.35),
-              0 0 0 1px rgba(255,255,255,0.1) inset;
-            transition: transform .06s ease, filter .06s ease;
-        }
-        .touch-controls button:active { filter: brightness(0.92); transform: translateY(1px); }
-        @media (max-width: 640px) {
-            .touch-controls { display: grid; }
-        }
-
-        /* Subtle animated scanlines overlay */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            background:
-              repeating-linear-gradient(
-                to bottom,
-                rgba(255,255,255,0.04),
-                rgba(255,255,255,0.04) 1px,
-                transparent 3px,
-                transparent 4px
-              );
-            mix-blend-mode: soft-light;
-            animation: sl 6s linear infinite;
-        }
-        @keyframes sl {
-            from { transform: translateY(0); }
-            to   { transform: translateY(4px); }
-        }
-    </style>
+	</style>
 </head>
 <body>
 <div class="wrap">
@@ -173,10 +177,6 @@
                 <div>Level: <span id="level">0</span></div>
             </div>
             <div class="info">
-                <div class="title">Next</div>
-                <canvas id="preview" width="96" height="96" class="preview-canvas"></canvas>
-            </div>
-            <div class="info">
                 <div class="title">Controls</div>
                 <div>A: Move left</div>
                 <div>D: Move right</div>
@@ -186,6 +186,12 @@
                 <div>M: Restart</div>
                 <div>P: Pause</div>
                 <div class="muted">Esc: Back</div>
+            </div>
+
+            <!-- Next preview -->
+            <div class="info" aria-label="Next piece">
+                <div class="title">Next</div>
+                <canvas id="next" width="96" height="96" aria-label="Next piece preview"></canvas>
             </div>
 
             <!-- Mobile controls -->
@@ -242,36 +248,12 @@
 
   const canvas = document.getElementById('tetris');
   const ctx = canvas.getContext('2d');
-  
-  const previewCanvas = document.getElementById('preview');
-  const previewCtx = previewCanvas.getContext('2d');
+
+  const nextCanvas = document.getElementById('next');
+  const ctxNext = nextCanvas.getContext('2d');
 
   const COLS = 10, ROWS = 20, SIZE = 24;
-  // Use devicePixelRatio-aware sizing so drawing never ends up invisible due to transforms.
-  const dpr = Math.max(1, window.devicePixelRatio || 1);
-
-  function resizeCanvases() {
-       // main canvas: logical pixels = COLS * SIZE, ROWS * SIZE in CSS px
-       const cssW = COLS * SIZE;
-       const cssH = ROWS * SIZE;
-       canvas.style.width = cssW + 'px';
-       canvas.style.height = cssH + 'px';
-       canvas.width = Math.round(cssW * dpr);
-       canvas.height = Math.round(cssH * dpr);
-       // map CSS pixels to device pixels
-       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-       // preview canvas: keep fixed CSS size (96x96)
-       const previewCss = 96;
-       previewCanvas.style.width = previewCss + 'px';
-       previewCanvas.style.height = previewCss + 'px';
-       previewCanvas.width = Math.round(previewCss * dpr);
-       previewCanvas.height = Math.round(previewCss * dpr);
-       previewCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  // initial resize + keep in sync with window
-  resizeCanvases();
-  window.addEventListener('resize', resizeCanvases);
+  ctx.scale(SIZE/24, SIZE/24); // keep logical pixels at 24px blocks
 
   // Visual/FX state
   const particles = [];
@@ -339,12 +321,12 @@
   const player = {
       pos: { x: 0, y: 0 },
       matrix: null,
+      next: null,
       score: 0,
       lines: 0,
       level: 0,
   };
 
-  let nextPiece = null;
   let dropCounter = 0;
   let lastTime = 0;
   let paused = false;
@@ -402,14 +384,16 @@
   }
 
   function playerReset() {
-      const pieces = 'TJLOSZI';
-      if (!nextPiece) {
-          nextPiece = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+      if (!player.next) {
+          const pieces = 'TJLOSZI';
+          player.matrix = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+      } else {
+          player.matrix = player.next;
       }
-      player.matrix = nextPiece;
-      nextPiece = createPiece(pieces[(pieces.length * Math.random()) | 0]);
-      drawPreview();
-      
+      // generate new next
+      const pieces = 'TJLOSZI';
+      player.next = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+
       player.pos.y = 0;
       player.pos.x = ((COLS / 2) | 0) - ((player.matrix[0].length / 2) | 0);
       if (collide(arena, player)) {
@@ -419,6 +403,7 @@
           player.level = 0;
           updateScore();
       }
+      drawNextPreview();
   }
 
   function playerMove(dir) {
@@ -500,31 +485,35 @@
       updateScore();
   }
 
-  // Helper: draw glossy cell with soft glow and rounded corners for shapes
+  // Helper: rounded rect path
+  function roundedRectPath(x, y, w, h, r) {
+      const R = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x + R, y);
+      ctx.arcTo(x + w, y, x + w, y + h, R);
+      ctx.arcTo(x + w, y + h, x, y + h, R);
+      ctx.arcTo(x, y + h, x, y, R);
+      ctx.arcTo(x, y, x + w, y, R);
+      ctx.closePath();
+  }
+
+  // Helper: draw glossy cell with soft glow (reduced glow)
   function drawCell(px, py, color, opts = {}) {
-      const { ghost = false, isPartOfShape = false, shapeCorners = { tl: false, tr: false, bl: false, br: false } } = opts;
+      const { ghost = false } = opts;
       const x = px * 24, y = py * 24;
-      const radius = isPartOfShape ? 4 : 0;
 
       if (!ghost) {
-          ctx.shadowBlur = 1.2; // reduced from 12
-          ctx.shadowColor = color;
+          // drastically reduce glow: small blur and faint alpha
+          ctx.shadowBlur = 1;
+          // ensure a faint shadow color (use color but low alpha)
+          ctx.shadowColor = color.replace(')', ',0.08)').replace('rgb','rgba').replace('RGB','rgba');
       } else {
           ctx.shadowBlur = 0;
       }
 
-      // base with rounded corners
+      // base
       ctx.fillStyle = color;
-      if (isPartOfShape && (shapeCorners.tl || shapeCorners.tr || shapeCorners.bl || shapeCorners.br)) {
-          roundRect(ctx, x, y, 24, 24, {
-              tl: shapeCorners.tl ? radius : 0,
-              tr: shapeCorners.tr ? radius : 0,
-              bl: shapeCorners.bl ? radius : 0,
-              br: shapeCorners.br ? radius : 0
-          });
-      } else {
-          ctx.fillRect(x, y, 24, 24);
-      }
+      ctx.fillRect(x, y, 24, 24);
 
       // glossy overlay
       const g = ctx.createLinearGradient(x, y, x, y + 24);
@@ -532,16 +521,7 @@
       g.addColorStop(0.4, 'rgba(255,255,255,0.08)');
       g.addColorStop(1, 'rgba(0,0,0,0.3)');
       ctx.fillStyle = g;
-      if (isPartOfShape && (shapeCorners.tl || shapeCorners.tr || shapeCorners.bl || shapeCorners.br)) {
-          roundRect(ctx, x, y, 24, 24, {
-              tl: shapeCorners.tl ? radius : 0,
-              tr: shapeCorners.tr ? radius : 0,
-              bl: shapeCorners.bl ? radius : 0,
-              br: shapeCorners.br ? radius : 0
-          });
-      } else {
-          ctx.fillRect(x, y, 24, 24);
-      }
+      ctx.fillRect(x, y, 24, 24);
 
       // border
       ctx.lineWidth = 1;
@@ -552,53 +532,58 @@
       ctx.shadowBlur = 0;
   }
 
-  // Helper to draw rounded rectangles
-  function roundRect(ctx, x, y, width, height, radius) {
-      if (typeof radius === 'number') {
-          radius = { tl: radius, tr: radius, br: radius, bl: radius };
-      }
-      ctx.beginPath();
-      ctx.moveTo(x + radius.tl, y);
-      ctx.lineTo(x + width - radius.tr, y);
-      ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
-      ctx.lineTo(x + width, y + height - radius.br);
-      ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
-      ctx.lineTo(x + radius.bl, y + height);
-      ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
-      ctx.lineTo(x, y + radius.tl);
-      ctx.quadraticCurveTo(x, y, x + radius.tl, y);
-      ctx.closePath();
-      ctx.fill();
-  }
-
-  // Determine which corners of a cell should be rounded
-  function getShapeCorners(matrix, y, x) {
-      const hasTop = y > 0 && matrix[y - 1][x] !== 0;
-      const hasBottom = y < matrix.length - 1 && matrix[y + 1][x] !== 0;
-      const hasLeft = x > 0 && matrix[y][x - 1] !== 0;
-      const hasRight = x < matrix[y].length - 1 && matrix[y][x + 1] !== 0;
-
-      return {
-          tl: !hasTop && !hasLeft,
-          tr: !hasTop && !hasRight,
-          bl: !hasBottom && !hasLeft,
-          br: !hasBottom && !hasRight
-      };
-  }
-
+  // drawMatrix now can optionally clip (round the piece as a whole)
   function drawMatrix(matrix, offset, opts = {}) {
+      const { ghost = false, round = false } = opts;
+
+      if (round && !ghost) {
+          // find bounding box of non-zero cells
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          for (let y = 0; y < matrix.length; y++) {
+              for (let x = 0; x < matrix[y].length; x++) {
+                  if (matrix[y][x]) {
+                      if (x < minX) minX = x;
+                      if (y < minY) minY = y;
+                      if (x > maxX) maxX = x;
+                      if (y > maxY) maxY = y;
+                  }
+              }
+          }
+          if (minX <= maxX) {
+              const px = (minX + offset.x) * 24;
+              const py = (minY + offset.y) * 24;
+              const w = (maxX - minX + 1) * 24;
+              const h = (maxY - minY + 1) * 24;
+              ctx.save();
+              // clip to rounded bounding box to round the piece silhouette corners
+              roundedRectPath(px, py, w, h, 6);
+              ctx.clip();
+              // draw cells inside the clip
+              matrix.forEach((row, y) => {
+                  row.forEach((v, x) => {
+                      if (v !== 0) {
+                          const color = colors[v];
+                          drawCell(x + offset.x, y + offset.y, color, { ghost: !!ghost });
+                      }
+                  });
+              });
+              ctx.restore();
+              return;
+          }
+      }
+
+      // default (no rounding) behavior
       matrix.forEach((row, y) => {
           row.forEach((v, x) => {
               if (v !== 0) {
                   const color = colors[v];
-                  const shapeCorners = getShapeCorners(matrix, y, x);
                   if (opts.ghost) {
                       ctx.save();
                       ctx.globalAlpha = 0.22;
                       drawCell(x + offset.x, y + offset.y, '#ffffff', { ghost: true });
                       ctx.restore();
                   } else {
-                      drawCell(x + offset.x, y + offset.y, color, { isPartOfShape: true, shapeCorners });
+                      drawCell(x + offset.x, y + offset.y, color);
                   }
               }
           });
@@ -625,14 +610,15 @@
       ctx.restore();
   }
 
-  // Animated background inside canvas (remove red glow)
+  // Animated background inside canvas
   function drawBackground(t) {
       const w = canvas.width, h = canvas.height;
       const cx = w * 0.5 + Math.sin(t * 0.0004) * 40;
       const cy = h * 0.35 + Math.cos(t * 0.0005) * 30;
 
       const rg = ctx.createRadialGradient(cx, cy, 20, w*0.5, h*0.6, Math.max(w,h));
-      rg.addColorStop(0, 'rgba(30,36,66,0.15)'); // removed red glow
+      // removed bright red center highlight
+      rg.addColorStop(0, 'rgba(255,64,85,0)'); // was 0.12
       rg.addColorStop(0.45, 'rgba(30,36,66,0.85)');
       rg.addColorStop(1, 'rgba(5,7,14,1)');
 
@@ -743,7 +729,8 @@
       if (!flashingRows.length) {
           const gy = getGhostY();
           drawMatrix(player.matrix, { x: player.pos.x, y: gy }, { ghost: true });
-          drawMatrix(player.matrix, player.pos);
+          // draw active piece using rounded shape clipping
+          drawMatrix(player.matrix, player.pos, { round: true });
       }
 
       // Pause overlay
@@ -869,8 +856,6 @@
       });
   })();
 
-  // ensure canvases are sized before starting
-  resizeCanvases();
   playerReset();
   updateScore();
   update();
