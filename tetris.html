@@ -54,18 +54,6 @@
             max-width: 360px;
             max-height: 720px;
         }
-
-        /* small preview canvas */
-        #next {
-            width: 96px;
-            height: 96px;
-            max-width: 96px;
-            max-height: 96px;
-            border-radius: 10px;
-            background: linear-gradient(180deg,#0f1222,#0d1020);
-            box-shadow: 0 6px 14px rgba(0,0,0,0.45);
-            image-rendering: pixelated;
-        }
         .side {
             display: flex;
             flex-direction: column;
@@ -79,6 +67,14 @@
             background: linear-gradient(180deg, #0f1222, #0d1020);
             box-shadow: 0 6px 16px rgba(0,0,0,0.35), 0 0 20px rgba(255, 64, 85, 0.08) inset;
             font-size: 14px;
+        }
+        .preview-canvas {
+            width: 100%;
+            height: 80px;
+            margin-top: 8px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            image-rendering: pixelated;
         }
         .title {
             font-weight: bold;
@@ -177,6 +173,10 @@
                 <div>Level: <span id="level">0</span></div>
             </div>
             <div class="info">
+                <div class="title">Next</div>
+                <canvas id="preview" width="96" height="96" class="preview-canvas"></canvas>
+            </div>
+            <div class="info">
                 <div class="title">Controls</div>
                 <div>A: Move left</div>
                 <div>D: Move right</div>
@@ -186,12 +186,6 @@
                 <div>M: Restart</div>
                 <div>P: Pause</div>
                 <div class="muted">Esc: Back</div>
-
-                <!-- next-piece preview -->
-                <div style="margin-top:10px; display:flex; gap:8px; align-items:center;">
-                    <div style="font-size:13px; color:var(--accent); font-weight:bold;">Next</div>
-                    <canvas id="next" width="96" height="96" aria-label="Next piece preview"></canvas>
-                </div>
             </div>
 
             <!-- Mobile controls -->
@@ -248,13 +242,12 @@
 
   const canvas = document.getElementById('tetris');
   const ctx = canvas.getContext('2d');
+  
+  const previewCanvas = document.getElementById('preview');
+  const previewCtx = previewCanvas.getContext('2d');
 
   const COLS = 10, ROWS = 20, SIZE = 24;
   ctx.scale(SIZE/24, SIZE/24); // keep logical pixels at 24px blocks
-
-  // preview canvas
-  const previewCanv = document.getElementById('next');
-  const pctx = previewCanv.getContext('2d');
 
   // Visual/FX state
   const particles = [];
@@ -327,13 +320,7 @@
       level: 0,
   };
 
-  // next-piece state
-  const PIECES = 'TJLOSZI';
-  let nextType = PIECES[(PIECES.length * Math.random()) | 0];
-
-  // preview animation state ("motion-like")
-  const nextAnim = { pulseStart: 0, scale: 1, rot: 0 };
-
+  let nextPiece = null;
   let dropCounter = 0;
   let lastTime = 0;
   let paused = false;
@@ -390,13 +377,15 @@
       else matrix.reverse();
   }
 
-  // use nextType as upcoming piece and refresh nextType each spawn
   function playerReset() {
-      const pieces = PIECES;
-      player.matrix = createPiece(nextType);
-      nextType = pieces[(pieces.length * Math.random()) | 0];
-      // trigger preview pulse
-      nextAnim.pulseStart = nowMs;
+      const pieces = 'TJLOSZI';
+      if (!nextPiece) {
+          nextPiece = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+      }
+      player.matrix = nextPiece;
+      nextPiece = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+      drawPreview();
+      
       player.pos.y = 0;
       player.pos.x = ((COLS / 2) | 0) - ((player.matrix[0].length / 2) | 0);
       if (collide(arena, player)) {
@@ -487,86 +476,106 @@
       updateScore();
   }
 
-  // Helper: draw a rect with individually rounded corners
-  function roundedRectPath(ctxArg, x, y, w, h, rTL, rTR, rBR, rBL) {
-      const r = Math.max(0, Math.min(8, 6)); // base radius clamp
-      ctxArg.beginPath();
-      // top-left
-      if (rTL) ctxArg.moveTo(x + r, y);
-      else ctxArg.moveTo(x, y);
-      // top edge
-      if (rTR) ctxArg.lineTo(x + w - r, y), ctxArg.quadraticCurveTo(x + w, y, x + w, y + r);
-      else ctxArg.lineTo(x + w, y);
-      // right edge
-      if (rBR) ctxArg.lineTo(x + w, y + h - r), ctxArg.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      else ctxArg.lineTo(x + w, y + h);
-      // bottom edge
-      if (rBL) ctxArg.lineTo(x + r, y + h), ctxArg.quadraticCurveTo(x, y + h, x, y + h - r);
-      else ctxArg.lineTo(x, y + h);
-      // left edge
-      if (rTL) ctxArg.lineTo(x, y + r), ctxArg.quadraticCurveTo(x, y, x + r, y);
-      else ctxArg.lineTo(x, y);
-      ctxArg.closePath();
-  }
+  // Helper: draw glossy cell with soft glow and rounded corners for shapes
+  function drawCell(px, py, color, opts = {}) {
+      const { ghost = false, isPartOfShape = false, shapeCorners = { tl: false, tr: false, bl: false, br: false } } = opts;
+      const x = px * 24, y = py * 24;
+      const radius = isPartOfShape ? 4 : 0;
 
-  // check neighbor helper for any matrix-like (matrix[y][x])
-  function isFilledMatrix(matrix, y, x) {
-      return !!(matrix[y] && matrix[y][x]);
-  }
-
-  // Draw a single cell but only round exterior corners of shapes (based on surrounding filled cells)
-  function drawCellRounded(ctxArg, px, py, color, neighbors, opts = {}) {
-      const { ghost = false, cellSize = 24 } = opts;
-      const x = px * cellSize, y = py * cellSize, size = cellSize;
-      // corner booleans: true => round that corner
-      const tl = !neighbors.up && !neighbors.left;
-      const tr = !neighbors.up && !neighbors.right;
-      const br = !neighbors.down && !neighbors.right;
-      const bl = !neighbors.down && !neighbors.left;
-
-      // reduced glow: very subtle shadow
       if (!ghost) {
-          ctxArg.shadowBlur = 1; // ~90% reduced from original 12
-          ctxArg.shadowColor = 'rgba(0,0,0,0.25)';
+          ctx.shadowBlur = 1.2; // reduced from 12
+          ctx.shadowColor = color;
       } else {
-          ctxArg.shadowBlur = 0;
+          ctx.shadowBlur = 0;
       }
 
-      // base fill
-      ctxArg.fillStyle = color;
-      roundedRectPath(ctxArg, x, y, size, size, tl, tr, br, bl);
-      ctxArg.fill();
+      // base with rounded corners
+      ctx.fillStyle = color;
+      if (isPartOfShape && (shapeCorners.tl || shapeCorners.tr || shapeCorners.bl || shapeCorners.br)) {
+          roundRect(ctx, x, y, 24, 24, {
+              tl: shapeCorners.tl ? radius : 0,
+              tr: shapeCorners.tr ? radius : 0,
+              bl: shapeCorners.bl ? radius : 0,
+              br: shapeCorners.br ? radius : 0
+          });
+      } else {
+          ctx.fillRect(x, y, 24, 24);
+      }
 
-      // glossy overlay (subtle)
-      const g = ctxArg.createLinearGradient(x, y, x, y + size);
-      g.addColorStop(0, 'rgba(255,255,255,0.12)');
-      g.addColorStop(0.4, 'rgba(255,255,255,0.03)');
-      g.addColorStop(1, 'rgba(0,0,0,0.18)');
-      ctxArg.fillStyle = g;
-      roundedRectPath(ctxArg, x, y, size, size, tl, tr, br, bl);
-      ctxArg.fill();
+      // glossy overlay
+      const g = ctx.createLinearGradient(x, y, x, y + 24);
+      g.addColorStop(0, 'rgba(255,255,255,0.28)');
+      g.addColorStop(0.4, 'rgba(255,255,255,0.08)');
+      g.addColorStop(1, 'rgba(0,0,0,0.3)');
+      ctx.fillStyle = g;
+      if (isPartOfShape && (shapeCorners.tl || shapeCorners.tr || shapeCorners.bl || shapeCorners.br)) {
+          roundRect(ctx, x, y, 24, 24, {
+              tl: shapeCorners.tl ? radius : 0,
+              tr: shapeCorners.tr ? radius : 0,
+              bl: shapeCorners.bl ? radius : 0,
+              br: shapeCorners.br ? radius : 0
+          });
+      } else {
+          ctx.fillRect(x, y, 24, 24);
+      }
 
       // border
-      ctxArg.lineWidth = 1;
-      ctxArg.strokeStyle = ghost ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.55)';
-      ctxArg.stroke();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = ghost ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.55)';
+      ctx.strokeRect(x + 0.5, y + 0.5, 23, 23);
 
       // reset shadow
-      ctxArg.shadowBlur = 0;
+      ctx.shadowBlur = 0;
   }
 
-  // draw a matrix (arena or piece). ctxArg optional (defaults to main canvas ctx)
-  function drawMatrix(matrix, offset, opts = {}, ctxArg = ctx) {
+  // Helper to draw rounded rectangles
+  function roundRect(ctx, x, y, width, height, radius) {
+      if (typeof radius === 'number') {
+          radius = { tl: radius, tr: radius, br: radius, bl: radius };
+      }
+      ctx.beginPath();
+      ctx.moveTo(x + radius.tl, y);
+      ctx.lineTo(x + width - radius.tr, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+      ctx.lineTo(x + width, y + height - radius.br);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+      ctx.lineTo(x + radius.bl, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+      ctx.lineTo(x, y + radius.tl);
+      ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+      ctx.closePath();
+      ctx.fill();
+  }
+
+  // Determine which corners of a cell should be rounded
+  function getShapeCorners(matrix, y, x) {
+      const hasTop = y > 0 && matrix[y - 1][x] !== 0;
+      const hasBottom = y < matrix.length - 1 && matrix[y + 1][x] !== 0;
+      const hasLeft = x > 0 && matrix[y][x - 1] !== 0;
+      const hasRight = x < matrix[y].length - 1 && matrix[y][x + 1] !== 0;
+
+      return {
+          tl: !hasTop && !hasLeft,
+          tr: !hasTop && !hasRight,
+          bl: !hasBottom && !hasLeft,
+          br: !hasBottom && !hasRight
+      };
+  }
+
+  function drawMatrix(matrix, offset, opts = {}) {
       matrix.forEach((row, y) => {
           row.forEach((v, x) => {
               if (v !== 0) {
-                  const color = opts.ghost ? '#ffffff' : colors[v];
-                  // neighbors computed from the same matrix (for arena this gives shape edges)
-                  const left = isFilledMatrix(matrix, y, x - 1);
-                  const right = isFilledMatrix(matrix, y, x + 1);
-                  const up = isFilledMatrix(matrix, y - 1, x);
-                  const down = isFilledMatrix(matrix, y + 1, x);
-                  drawCellRounded(ctxArg, x + offset.x, y + offset.y, color, { left, right, up, down }, { ghost: opts.ghost });
+                  const color = colors[v];
+                  const shapeCorners = getShapeCorners(matrix, y, x);
+                  if (opts.ghost) {
+                      ctx.save();
+                      ctx.globalAlpha = 0.22;
+                      drawCell(x + offset.x, y + offset.y, '#ffffff', { ghost: true });
+                      ctx.restore();
+                  } else {
+                      drawCell(x + offset.x, y + offset.y, color, { isPartOfShape: true, shapeCorners });
+                  }
               }
           });
       });
@@ -592,15 +601,14 @@
       ctx.restore();
   }
 
-  // Animated background inside canvas
+  // Animated background inside canvas (remove red glow)
   function drawBackground(t) {
       const w = canvas.width, h = canvas.height;
       const cx = w * 0.5 + Math.sin(t * 0.0004) * 40;
       const cy = h * 0.35 + Math.cos(t * 0.0005) * 30;
 
       const rg = ctx.createRadialGradient(cx, cy, 20, w*0.5, h*0.6, Math.max(w,h));
-      // significantly reduce/remove bright red middle glow
-      rg.addColorStop(0, 'rgba(255,64,85,0.02)'); // almost gone
+      rg.addColorStop(0, 'rgba(30,36,66,0.15)'); // removed red glow
       rg.addColorStop(0.45, 'rgba(30,36,66,0.85)');
       rg.addColorStop(1, 'rgba(5,7,14,1)');
 
@@ -696,11 +704,8 @@
       ctx.restore();
   }
 
-  // Flash animation state for line clear
-  let flashingRows = [];
-  let flashElapsed = 0;
-  const FLASH_DURATION = 200;   // total flash time in ms
-  const FLASH_INTERVAL = 80;    // toggle interval in ms
+  // Flash animation state remains
+  // ...existing code (flashingRows, flashElapsed, FLASH_DURATION, FLASH_INTERVAL)...
 
   function draw() {
       // Background + grid
@@ -749,54 +754,6 @@
       drawParticles();
   }
 
-  // draw the next-piece preview onto its small canvas with simple motion
-  function drawNextPreview(time) {
-      const w = previewCanv.width, h = previewCanv.height;
-      pctx.clearRect(0, 0, w, h);
-
-      // background subtle
-      pctx.fillStyle = 'rgba(6,8,16,0.6)';
-      pctx.fillRect(0, 0, w, h);
-
-      // animate pulse/rotation (simple easing)
-      const pulseT = ((time - nextAnim.pulseStart) / 300);
-      // quick decay pulse when newly set, otherwise gentle idle bob
-      const pulse = Math.max(0, 1 - Math.abs(pulseT)) * 0.12 + 0.02 * Math.sin(time * 0.008);
-      nextAnim.scale = 1 + pulse;
-      nextAnim.rot = Math.sin(time * 0.002) * 0.06;
-
-      const cellSize = 18;
-      // construct small matrix for preview
-      const m = createPiece(nextType);
-      // center offsets
-      const sx = (w / 2) / cellSize - (m[0].length / 2);
-      const sy = (h / 2) / cellSize - (m.length / 2);
-
-      // transform for scale/rotation centered
-      pctx.save();
-      pctx.translate(w/2, h/2);
-      pctx.rotate(nextAnim.rot);
-      pctx.scale(nextAnim.scale, nextAnim.scale);
-      pctx.translate(-w/2, -h/2);
-
-      // draw matrix on preview ctx (reuse drawMatrix but with pctx and smaller cellSize)
-      // tile by tile
-      m.forEach((row, y) => {
-          row.forEach((v, x) => {
-              if (v !== 0) {
-                  const color = colors[v];
-                  const left = isFilledMatrix(m, y, x - 1);
-                  const right = isFilledMatrix(m, y, x + 1);
-                  const up = isFilledMatrix(m, y - 1, x);
-                  const down = isFilledMatrix(m, y + 1, x);
-                  drawCellRounded(pctx, x + sx, y + sy, color, { left, right, up, down }, { cellSize: cellSize });
-              }
-          });
-      });
-
-      pctx.restore();
-  }
-
   function update(time = 0) {
       const delta = time - lastTime;
       lastTime = time;
@@ -821,9 +778,6 @@
       }
 
       draw();
-      // always update preview
-      drawNextPreview(time);
-
       requestAnimationFrame(update);
   }
 
