@@ -68,6 +68,42 @@
                 0 10px 22px rgba(0,0,0,0.3),
                 0 0 0 1px rgba(255,255,255,0.03) inset;
         }
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 4px 0;
+        }
+        .control-label {
+            flex: 1;
+        }
+        .keybind-btn {
+            background: linear-gradient(180deg, rgba(255,106,154,0.3), rgba(255,47,109,0.3));
+            border: 1px solid rgba(255,47,109,0.4);
+            color: var(--accent);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            min-width: 50px;
+            text-align: center;
+            transition: all .1s ease;
+        }
+        .keybind-btn:hover {
+            background: linear-gradient(180deg, rgba(255,106,154,0.4), rgba(255,47,109,0.4));
+            border-color: rgba(255,47,109,0.6);
+        }
+        .keybind-btn.listening {
+            background: linear-gradient(180deg, #ff6a9a, #ff2f6d);
+            color: #0a0a12;
+            animation: pulse 0.8s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
         .next-preview {
             border: 1px solid rgba(255,47,109,0.35);
             padding: 10px;
@@ -205,6 +241,55 @@
             transition: transform .08s ease, filter .08s ease;
         }
         .overlay .btn-large:hover { filter: brightness(1.05); transform: translateY(-2px); }
+        
+        /* Start screen - minimal overlay */
+        #startScreen {
+            background: rgba(5, 5, 10, 0.92);
+        }
+        #startScreen .overlay-content {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 60px 40px;
+        }
+        #startScreen h1 {
+            font-size: 72px;
+            margin: 0;
+            letter-spacing: 8px;
+        }
+        #startScreen p {
+            font-size: 14px;
+            opacity: 0.5;
+            margin-top: 16px;
+            font-weight: normal;
+        }
+
+        /* Animated gradient for pause */
+        .pause-gradient {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, 
+                rgba(255,47,109,0.15), 
+                rgba(160,0,240,0.15), 
+                rgba(0,240,240,0.15),
+                rgba(255,47,109,0.15));
+            background-size: 400% 400%;
+            animation: gradientShift 3s ease infinite;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .pause-gradient.active {
+            opacity: 1;
+        }
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -228,14 +313,38 @@
             </div>
             <div class="info">
                 <div class="title">Controls</div>
-                <div>A: Move left</div>
-                <div>D: Move right</div>
-                <div>R: Rotate</div>
-                <div>S: Soft drop</div>
-                <div>Space: Hard drop</div>
-                <div>M: Restart</div>
-                <div>P: Pause</div>
-                <div class="muted">Esc: Back</div>
+                <div class="control-row">
+                    <span class="control-label">Move left:</span>
+                    <button class="keybind-btn" data-action="left" onclick="startKeybindListen('left')">A</button>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Move right:</span>
+                    <button class="keybind-btn" data-action="right" onclick="startKeybindListen('right')">D</button>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Rotate:</span>
+                    <button class="keybind-btn" data-action="rotate" onclick="startKeybindListen('rotate')">R</button>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Soft drop:</span>
+                    <button class="keybind-btn" data-action="soft" onclick="startKeybindListen('soft')">S</button>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Hard drop:</span>
+                    <button class="keybind-btn" data-action="hard" onclick="startKeybindListen('hard')">Space</button>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Restart:</span>
+                    <button class="keybind-btn" data-action="restart" onclick="startKeybindListen('restart')">M</button>
+                </div>
+                <div class="control-row">
+                    <span class="control-label">Pause:</span>
+                    <button class="keybind-btn" data-action="pause" onclick="startKeybindListen('pause')">P</button>
+                </div>
+                <div class="control-row muted">
+                    <span class="control-label">Back:</span>
+                    <button class="keybind-btn" data-action="back" onclick="startKeybindListen('back')">Esc</button>
+                </div>
             </div>
 
             <!-- Mobile controls -->
@@ -268,10 +377,7 @@
 <div id="startScreen" class="overlay active">
     <div class="overlay-content">
         <h1>TETRIS</h1>
-        <p>Use A/D to move, R to rotate</p>
-        <p>S for soft drop, Space for hard drop</p>
-        <p>Press P to pause, M to restart</p>
-        <button class="btn-large" onclick="startGame()">START GAME</button>
+        <p>press any control to start</p>
     </div>
 </div>
 
@@ -321,7 +427,70 @@
 
   const COLS = 10, ROWS = 20, SIZE = 24;
   ctx.scale(SIZE/24, SIZE/24);
-  nextCtx.scale(1, 1); // 96x96 canvas for preview
+  nextCtx.scale(1, 1);
+
+  // Game states
+  let gameState = 'start';
+  let nextPiece = null;
+
+  // Keybind system
+  let keybinds = {
+      left: 'a',
+      right: 'd',
+      rotate: 'r',
+      soft: 's',
+      hard: ' ',
+      restart: 'm',
+      pause: 'p',
+      back: 'escape'
+  };
+  let listeningForKey = null;
+
+  function startKeybindListen(action) {
+      if (listeningForKey) {
+          document.querySelector(`.keybind-btn[data-action="${listeningForKey}"]`)?.classList.remove('listening');
+      }
+      listeningForKey = action;
+      const btn = document.querySelector(`.keybind-btn[data-action="${action}"]`);
+      btn.classList.add('listening');
+      btn.textContent = '...';
+  }
+
+  function setKeybind(action, key) {
+      keybinds[action] = key;
+      const btn = document.querySelector(`.keybind-btn[data-action="${action}"]`);
+      btn.classList.remove('listening');
+      
+      // Format key display
+      let displayKey = key;
+      if (key === ' ') displayKey = 'Space';
+      else if (key === 'escape') displayKey = 'Esc';
+      else displayKey = key.toUpperCase();
+      
+      btn.textContent = displayKey;
+      listeningForKey = null;
+  }
+
+  // Load saved keybinds
+  (function loadKeybinds() {
+      const saved = localStorage.getItem('tetris_keybinds');
+      if (saved) {
+          try {
+              keybinds = { ...keybinds, ...JSON.parse(saved) };
+              // Update UI
+              for (const [action, key] of Object.entries(keybinds)) {
+                  const btn = document.querySelector(`.keybind-btn[data-action="${action}"]`);
+                  if (btn) {
+                      let displayKey = key;
+                      if (key === ' ') displayKey = 'Space';
+                      else if (key === 'escape') displayKey = 'Esc';
+                      else displayKey = key.toUpperCase();
+                      btn.textContent = displayKey;
+                  }
+              }
+          } catch(e) {}
+      }
+  })();
 
   // Game states
   let gameState = 'start'; // 'start' | 'playing' | 'paused' | 'gameover'
@@ -793,10 +962,27 @@
 
       drawParticles();
 
-      // Pause overlay - completely hide game
+      // Pause overlay with animated gradient
       if (gameState === 'paused') {
-          ctx.fillStyle = 'rgba(5, 5, 10, 0.98)';
+          // Base dark overlay
+          ctx.fillStyle = 'rgba(5, 5, 10, 0.95)';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Animated gradient effect
+          const time = Date.now() / 1000;
+          const grad = ctx.createLinearGradient(
+              0, 0,
+              canvas.width * Math.cos(time * 0.5),
+              canvas.height * Math.sin(time * 0.5)
+          );
+          grad.addColorStop(0, 'rgba(255,47,109,0.15)');
+          grad.addColorStop(0.33, 'rgba(160,0,240,0.15)');
+          grad.addColorStop(0.66, 'rgba(0,240,240,0.15)');
+          grad.addColorStop(1, 'rgba(255,47,109,0.15)');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Pause text
           ctx.fillStyle = '#ff2f6d';
           ctx.font = 'bold 28px "Courier New", monospace';
           ctx.textAlign = 'center';
@@ -883,37 +1069,50 @@
   document.addEventListener('keydown', (e) => {
       const k = e.key.toLowerCase();
 
+      // Handle keybind listening
+      if (listeningForKey) {
+          e.preventDefault();
+          setKeybind(listeningForKey, k);
+          localStorage.setItem('tetris_keybinds', JSON.stringify(keybinds));
+          return;
+      }
+
+      // Start game on any key press when on start screen
+      if (gameState === 'start') {
+          e.preventDefault();
+          startGame();
+          return;
+      }
+
       if (gameState !== 'playing' && gameState !== 'paused') {
-          if (k === 'escape') { window.location.href = 'index.html'; }
+          if (k === keybinds.back) { window.location.href = 'index.html'; }
           return;
       }
 
-      // Ignore inputs during line-flash except Esc
-      if (flashingRows.length && k !== 'escape') {
+      if (flashingRows.length && k !== keybinds.back) {
           e.preventDefault();
           return;
       }
 
-      // When paused, only allow pause toggle and escape
-      if (paused && k !== 'p' && k !== 'escape') {
+      if (gameState === 'paused' && k !== keybinds.pause && k !== keybinds.back) {
           e.preventDefault();
           return;
       }
 
-      if (k === 'a') { e.preventDefault(); playerMove(-1); }
-      else if (k === 'd') { e.preventDefault(); playerMove(1); }
-      else if (k === 's') { e.preventDefault(); playerDrop(); }
-      else if (k === 'r') { e.preventDefault(); playerRotate(1); }
-      else if (k === ' ') { e.preventDefault(); hardDrop(); }
-      else if (k === 'm') {
+      if (k === keybinds.left) { e.preventDefault(); playerMove(-1); }
+      else if (k === keybinds.right) { e.preventDefault(); playerMove(1); }
+      else if (k === keybinds.soft) { e.preventDefault(); playerDrop(); }
+      else if (k === keybinds.rotate) { e.preventDefault(); playerRotate(1); }
+      else if (k === keybinds.hard) { e.preventDefault(); hardDrop(); }
+      else if (k === keybinds.restart) {
           e.preventDefault();
           restartGame();
       }
-      else if (k === 'p') { 
+      else if (k === keybinds.pause) { 
           e.preventDefault(); 
           gameState = gameState === 'paused' ? 'playing' : 'paused';
       }
-      else if (k === 'escape') { window.location.href = 'index.html'; }
+      else if (k === keybinds.back) { window.location.href = 'index.html'; }
   });
 
   // Mobile buttons hook
@@ -935,6 +1134,13 @@
       document.querySelectorAll('.touch-controls button').forEach(btn => {
           btn.addEventListener('click', () => {
               const act = btn.getAttribute('data-action');
+              
+              // Start game on any touch control when on start screen
+              if (gameState === 'start') {
+                  startGame();
+                  return;
+              }
+              
               if (gameState !== 'playing' && gameState !== 'paused' && act !== 'back') return;
               if (flashingRows.length && act !== 'back') return;
               if (gameState === 'paused' && act !== 'pause' && act !== 'back') return;
