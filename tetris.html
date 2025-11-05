@@ -153,6 +153,12 @@
                 <div class="muted">Esc: Back</div>
             </div>
 
+            <!-- Next block preview -->
+            <div class="info">
+                <div class="title">Next</div>
+                <canvas id="preview" width="72" height="72" style="background:#000;border-radius:6px;box-shadow:0 4px 12px rgba(255,47,109,0.18);"></canvas>
+            </div>
+
             <!-- Mobile controls -->
             <div class="touch-controls" aria-label="Mobile Controls">
                 <div class="row">
@@ -460,13 +466,125 @@
       else matrix.reverse();
   }
 
+  // --- Next block preview ---
+  const previewCanvas = document.getElementById('preview');
+  const previewCtx = previewCanvas.getContext('2d');
+  let nextType = null;
+
+  function drawPreview() {
+      previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      if (!nextType) return;
+      const matrix = createPiece(nextType);
+      // Center the piece
+      const blockSize = 18;
+      const w = matrix[0].length * blockSize;
+      const h = matrix.length * blockSize;
+      const ox = ((previewCanvas.width - w) / 2) | 0;
+      const oy = ((previewCanvas.height - h) / 2) | 0;
+      matrix.forEach((row, y) => {
+          row.forEach((v, x) => {
+              if (v) {
+                  // glossy fill
+                  const g = previewCtx.createLinearGradient(ox+x*blockSize, oy+y*blockSize, ox+x*blockSize+blockSize, oy+y*blockSize+blockSize);
+                  g.addColorStop(0.0, adjustColor(colors[v], 60));
+                  g.addColorStop(0.55, colors[v]);
+                  g.addColorStop(1.0, adjustColor(colors[v], -40));
+                  previewCtx.fillStyle = g;
+                  previewCtx.fillRect(ox+x*blockSize, oy+y*blockSize, blockSize, blockSize);
+                  // bevel
+                  previewCtx.beginPath();
+                  previewCtx.moveTo(ox+x*blockSize+0.5, oy+y*blockSize+blockSize-0.5);
+                  previewCtx.lineTo(ox+x*blockSize+0.5, oy+y*blockSize+0.5);
+                  previewCtx.lineTo(ox+x*blockSize+blockSize-0.5, oy+y*blockSize+0.5);
+                  previewCtx.strokeStyle = 'rgba(255,255,255,0.18)';
+                  previewCtx.stroke();
+                  previewCtx.beginPath();
+                  previewCtx.moveTo(ox+x*blockSize+blockSize-0.5, oy+y*blockSize+0.5);
+                  previewCtx.lineTo(ox+x*blockSize+blockSize-0.5, oy+y*blockSize+blockSize-0.5);
+                  previewCtx.lineTo(ox+x*blockSize+0.5, oy+y*blockSize+blockSize-0.5);
+                  previewCtx.strokeStyle = 'rgba(0,0,0,0.35)';
+                  previewCtx.stroke();
+              }
+          });
+      });
+  }
+
+  // --- Block trail ---
+  const TRAIL_LENGTH = 12;
+  let pieceTrail = [];
+
+  function updateTrail() {
+      if (flashingRows.length) return;
+      // Record center of piece
+      const cx = (player.pos.x + player.matrix[0].length / 2) * 24;
+      const cy = (player.pos.y + player.matrix.length / 2) * 24;
+      pieceTrail.push({ x: cx, y: cy });
+      if (pieceTrail.length > TRAIL_LENGTH) pieceTrail.shift();
+  }
+
+  function drawTrail() {
+      if (pieceTrail.length < 2) return;
+      ctx.save();
+      ctx.globalAlpha = 0.22;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      for (let i = 0; i < pieceTrail.length; i++) {
+          const p = pieceTrail[i];
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 0.12;
+      ctx.lineWidth = 22;
+      ctx.beginPath();
+      for (let i = 0; i < pieceTrail.length; i++) {
+          const p = pieceTrail[i];
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+      }
+      ctx.stroke();
+      ctx.restore();
+  }
+
+  // --- Landing particles ---
+  function emitLandingParticles(matrix, pos) {
+      for (let y = 0; y < matrix.length; y++) {
+          for (let x = 0; x < matrix[y].length; x++) {
+              const v = matrix[y][x];
+              if (!v) continue;
+              const cx = (pos.x + x) * 24 + 12;
+              const cy = (pos.y + y) * 24 + 12;
+              for (let k = 0; k < 3; k++) {
+                  const ang = Math.random() * Math.PI * 2;
+                  const spd = 1.2 + Math.random() * 2.2;
+                  particles.push({
+                      x: cx, y: cy,
+                      vx: Math.cos(ang) * spd,
+                      vy: Math.sin(ang) * spd - (0.5 + Math.random()*0.6),
+                      life: 320 + Math.random()*120,
+                      age: 0,
+                      color: colors[v],
+                      size: 2 + Math.random()*2.5,
+                  });
+              }
+          }
+      }
+  }
+
+  // --- Modify playerReset to use nextType and set nextType for preview ---
   function playerReset() {
       const pieces = 'TJLOSZI';
-      player.matrix = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+      // Use nextType if available, else random
+      const type = nextType || pieces[(pieces.length * Math.random()) | 0];
+      player.matrix = createPiece(type);
       player.pos.y = 0;
       player.pos.x = ((COLS / 2) | 0) - ((player.matrix[0].length / 2) | 0);
-      // start spawn pop animation
       pieceSpawnT = PIECE_SPAWN_MS;
+      pieceTrail = []; // reset trail
+      // Set nextType for preview
+      nextType = pieces[(pieces.length * Math.random()) | 0];
+      drawPreview();
       if (collide(arena, player)) {
           arena.forEach(row => row.fill(0));
           player.score = 0;
@@ -476,28 +594,13 @@
       }
   }
 
-  function playerMove(dir) {
-      player.pos.x += dir;
-      if (collide(arena, player)) player.pos.x -= dir;
-  }
-
-  function getFullRows() {
-      const rows = [];
-      for (let y = 0; y < arena.length; ++y) {
-          let full = true;
-          for (let x = 0; x < arena[y].length; ++x) {
-              if (arena[y][x] === 0) { full = false; break; }
-          }
-          if (full) rows.push(y);
-      }
-      return rows;
-  }
-
+  // --- Emit landing particles in playerDrop and hardDrop ---
   function playerDrop() {
       player.pos.y++;
       if (collide(arena, player)) {
           player.pos.y--;
           merge(arena, player);
+          emitLandingParticles(player.matrix, player.pos); // <--- emit particles
           const rows = getFullRows();
           if (rows.length) {
               // Snapshot colors for particles before we start flashing
@@ -518,6 +621,7 @@
       } while (!collide(arena, player));
       player.pos.y--;
       merge(arena, player);
+      emitLandingParticles(player.matrix, player.pos); // <--- emit particles
       arenaSweep();
       playerReset();
       dropCounter = 0;
@@ -603,6 +707,7 @@
 
           // Drop shadow then the piece with a tiny spawn pop
           drawMatrix(player.matrix, player.pos, 'shadow');
+          drawTrail(); // <--- draw trail
           ctx.save();
           // spawn pop scale
           const t = Math.max(0, Math.min(1, 1 - (pieceSpawnT / PIECE_SPAWN_MS)));
@@ -668,6 +773,7 @@
               dropCounter += delta;
               const speed = Math.max(120, 1000 - player.level * 75);
               if (dropCounter > speed) playerDrop();
+              updateTrail(); // <--- update trail
           }
           // Visual timers
           if (pieceSpawnT > 0) pieceSpawnT -= delta;
@@ -741,6 +847,10 @@
           }, { passive: true });
       });
   })();
+
+  // --- Initialize preview and nextType ---
+  nextType = 'TJLOSZI'[(Math.random() * 7) | 0];
+  drawPreview();
 
   playerReset();
   updateScore();
