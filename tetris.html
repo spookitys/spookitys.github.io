@@ -68,13 +68,24 @@
                 0 10px 22px rgba(0,0,0,0.3),
                 0 0 0 1px rgba(255,255,255,0.03) inset;
         }
-        #next-piece {
+        .next-preview {
+            border: 1px solid rgba(255,47,109,0.35);
+            padding: 10px;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #0f0f18 0%, #0e0e16 100%);
+            box-shadow:
+                0 10px 22px rgba(0,0,0,0.3),
+                0 0 0 1px rgba(255,255,255,0.03) inset;
+        }
+        #nextCanvas {
             background: #000;
-            border-radius: 4px;
-            width: 100%;
-            height: auto;
-            aspect-ratio: 1;
             image-rendering: pixelated;
+            width: 96px;
+            height: 96px;
+            border-radius: 6px;
+            display: block;
+            margin: 8px auto 0;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset;
         }
         .title {
             font-weight: bold;
@@ -136,6 +147,68 @@
         @media (max-width: 640px) {
             .touch-controls { display: grid; }
         }
+
+        /* Overlay screens */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 5, 10, 0.97);
+            display: none;
+            place-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        .overlay.active { display: grid; }
+        .overlay-content {
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(180deg, rgba(18,18,27,0.95), rgba(18,18,27,0.85));
+            border: 1px solid rgba(255,47,109,0.35);
+            border-radius: 12px;
+            box-shadow:
+                0 20px 60px rgba(0,0,0,0.6),
+                0 0 0 2px rgba(255,47,109,0.08) inset,
+                0 0 32px rgba(255,47,109,0.15);
+            max-width: 90%;
+        }
+        .overlay h1 {
+            font-size: 48px;
+            margin: 0 0 20px 0;
+            color: var(--accent);
+            text-shadow: 0 0 16px rgba(255,47,109,0.5);
+            letter-spacing: 2px;
+        }
+        .overlay p {
+            font-size: 16px;
+            margin: 10px 0;
+            opacity: 0.9;
+        }
+        .overlay .btn-large {
+            margin-top: 20px;
+            display: inline-block;
+            color: #0a0a12;
+            background: linear-gradient(180deg, #ff6a9a, #ff2f6d);
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            font-family: "Courier New", monospace;
+            box-shadow:
+                0 10px 24px rgba(255,47,109,0.4),
+                0 0 0 1px rgba(255,255,255,0.08) inset;
+            transition: transform .08s ease, filter .08s ease;
+        }
+        .overlay .btn-large:hover { filter: brightness(1.05); transform: translateY(-2px); }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -143,15 +216,15 @@
     <div class="game">
         <canvas id="tetris" width="240" height="480" aria-label="Tetris board"></canvas>
         <div class="side">
+            <div class="next-preview">
+                <div class="title">Next</div>
+                <canvas id="nextCanvas" width="96" height="96"></canvas>
+            </div>
             <div class="info">
                 <div class="title">Tetris</div>
                 <div>Score: <span id="score">0</span></div>
                 <div>Lines: <span id="lines">0</span></div>
                 <div>Level: <span id="level">0</span></div>
-            </div>
-            <div class="info">
-                <div class="title">Next</div>
-                <canvas id="next-piece" width="96" height="96"></canvas>
             </div>
             <div class="info">
                 <div class="title">Controls</div>
@@ -191,6 +264,30 @@
     </div>
 </div>
 
+<!-- Start Screen -->
+<div id="startScreen" class="overlay active">
+    <div class="overlay-content">
+        <h1>TETRIS</h1>
+        <p>Use A/D to move, R to rotate</p>
+        <p>S for soft drop, Space for hard drop</p>
+        <p>Press P to pause, M to restart</p>
+        <button class="btn-large" onclick="startGame()">START GAME</button>
+    </div>
+</div>
+
+<!-- Game Over Screen -->
+<div id="gameOverScreen" class="overlay">
+    <div class="overlay-content">
+        <h1>GAME OVER</h1>
+        <p>Score: <span id="finalScore">0</span></p>
+        <p>Lines: <span id="finalLines">0</span></p>
+        <p>Level: <span id="finalLevel">0</span></p>
+        <button class="btn-large" onclick="restartGame()">PLAY AGAIN</button>
+        <br><br>
+        <a class="btn" href="index.html">Back to Menu</a>
+    </div>
+</div>
+
 <script>
   // admin guard: redirect to index if not admin
   // launch-token guard: only allow if launched from terminal (short-lived token)
@@ -219,12 +316,16 @@
 
   const canvas = document.getElementById('tetris');
   const ctx = canvas.getContext('2d');
-  const nextCanvas = document.getElementById('next-piece');
+  const nextCanvas = document.getElementById('nextCanvas');
   const nextCtx = nextCanvas.getContext('2d');
 
   const COLS = 10, ROWS = 20, SIZE = 24;
-  ctx.scale(SIZE/24, SIZE/24); // keep logical pixels at 24px blocks
-  nextCtx.scale(SIZE/24, SIZE/24);
+  ctx.scale(SIZE/24, SIZE/24);
+  nextCtx.scale(1, 1); // 96x96 canvas for preview
+
+  // Game states
+  let gameState = 'start'; // 'start' | 'playing' | 'paused' | 'gameover'
+  let nextPiece = null;
 
   // ----- Visual helpers -----
   function hexToRgb(hex) {
@@ -369,7 +470,6 @@
       level: 0,
   };
 
-  let nextPieceMatrix = null;
   let dropCounter = 0;
   let lastTime = 0;
   let paused = false;
@@ -380,10 +480,6 @@
   const FLASH_DURATION = 200;   // total flash time in ms
   const FLASH_INTERVAL = 80;    // toggle interval in ms
 
-  // Trail effect
-  const trail = [];
-  const TRAIL_MAX_AGE = 200; // ms
-
   // Visual extras
   let pieceSpawnT = 0;
   const PIECE_SPAWN_MS = 140;
@@ -391,6 +487,33 @@
 
   // Simple particle system for line clears
   const particles = [];
+  function emitLandingParticles(player) {
+      const m = player.matrix;
+      const o = player.pos;
+      for (let y = 0; y < m.length; y++) {
+          for (let x = 0; x < m[y].length; x++) {
+              if (m[y][x] !== 0) {
+                  const cx = (x + o.x) * 24 + 12;
+                  const cy = (y + o.y) * 24 + 12;
+                  const c = colors[m[y][x]] || '#ffffff';
+                  // spawn fewer particles for landing
+                  for (let k = 0; k < 3; k++) {
+                      const ang = Math.random() * Math.PI * 2;
+                      const spd = 0.8 + Math.random() * 1.5;
+                      particles.push({
+                          x: cx, y: cy,
+                          vx: Math.cos(ang) * spd,
+                          vy: Math.sin(ang) * spd - (0.3 + Math.random()*0.5),
+                          life: 400 + Math.random()*150,
+                          age: 0,
+                          color: c,
+                          size: 1.5 + Math.random()*1,
+                      });
+                  }
+              }
+          }
+      }
+  }
   function emitLineClearParticles(rows, colorRows) {
       for (let i = 0; i < rows.length; i++) {
           const y = rows[i];
@@ -415,31 +538,6 @@
               }
           }
       }
-  }
-  function emitLandingParticles(player) {
-      const matrix = player.matrix;
-      const offset = player.pos;
-      matrix.forEach((row, y) => {
-          row.forEach((v, x) => {
-              if (v === 0) return;
-              const c = colors[v];
-              for (let k = 0; k < 2; k++) {
-                  const cx = (offset.x + x) * 24 + 12;
-                  const cy = (offset.y + y) * 24 + 12;
-                  const ang = Math.random() * Math.PI * 2;
-                  const spd = 0.5 + Math.random() * 1.5;
-                  particles.push({
-                      x: cx, y: cy,
-                      vx: Math.cos(ang) * spd,
-                      vy: Math.sin(ang) * spd - (0.2 + Math.random()*0.4),
-                      life: 300 + Math.random()*150,
-                      age: 0,
-                      color: c,
-                      size: 1.5 + Math.random()*1.5,
-                  });
-              }
-          });
-      });
   }
   function updateParticles(dt) {
       for (let i = particles.length - 1; i >= 0; i--) {
@@ -505,45 +603,142 @@
       else matrix.reverse();
   }
 
-  function drawNextPiece() {
-      nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-      if (!nextPieceMatrix) return;
-      const matrix = nextPieceMatrix;
-      const color = colors[matrix.flat().find(v => v > 0)];
-      const scale = 24;
-      const w = matrix[0].length * scale;
-      const h = matrix.length * scale;
-      const x_off = (nextCanvas.width - w) / 2;
-      const y_off = (nextCanvas.height - h) / 2;
+  function getNextPiece() {
+      const pieces = 'TJLOSZI';
+      return pieces[(pieces.length * Math.random()) | 0];
+  }
 
+  function drawNextPiece() {
+      nextCtx.fillStyle = '#000';
+      nextCtx.fillRect(0, 0, 96, 96);
+      
+      if (!nextPiece) return;
+      
+      const matrix = createPiece(nextPiece);
+      const blockSize = 20;
+      const offsetX = (96 - matrix[0].length * blockSize) / 2;
+      const offsetY = (96 - matrix.length * blockSize) / 2;
+      
       matrix.forEach((row, y) => {
           row.forEach((v, x) => {
-              if (v !== 0) {
-                  drawBlock.call({ ctx: nextCtx }, x_off + x * scale, y_off + y * scale, color);
-              }
+              if (v === 0) return;
+              const px = offsetX + x * blockSize;
+              const py = offsetY + y * blockSize;
+              
+              // Simplified block for preview
+              const color = colors[v];
+              nextCtx.fillStyle = color;
+              nextCtx.fillRect(px, py, blockSize, blockSize);
+              
+              // Simple border
+              nextCtx.strokeStyle = 'rgba(255,255,255,0.2)';
+              nextCtx.strokeRect(px + 0.5, py + 0.5, blockSize - 1, blockSize - 1);
           });
       });
   }
 
-  function playerReset() {
-      const pieces = 'TJLOSZI';
-      if (!nextPieceMatrix) {
-          nextPieceMatrix = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+  const particles = [];
+  function emitLineClearParticles(rows, colorRows) {
+      for (let i = 0; i < rows.length; i++) {
+          const y = rows[i];
+          const rowColors = colorRows[i] || [];
+          for (let x = 0; x < COLS; x++) {
+              const c = rowColors[x] || '#ffffff';
+              // spawn a couple particles per cell
+              for (let k = 0; k < 2; k++) {
+                  const cx = x * 24 + 12;
+                  const cy = y * 24 + 12;
+                  const ang = (Math.random() * Math.PI) - Math.PI/2; // mostly sideways
+                  const spd = 1.2 + Math.random() * 2.2;
+                  particles.push({
+                      x: cx, y: cy,
+                      vx: Math.cos(ang) * spd,
+                      vy: Math.sin(ang) * spd - (0.5 + Math.random()*0.6),
+                      life: 520 + Math.random()*200,
+                      age: 0,
+                      color: c,
+                      size: 2 + Math.random()*1.5,
+                  });
+              }
+          }
       }
-      player.matrix = nextPieceMatrix;
-      nextPieceMatrix = createPiece(pieces[(pieces.length * Math.random()) | 0]);
-      drawNextPiece();
+  }
+  function updateParticles(dt) {
+      for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.age += dt;
+          if (p.age >= p.life) { particles.splice(i,1); continue; }
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.03; // gravity
+      }
+  }
+  function drawParticles() {
+      for (const p of particles) {
+          const a = 1 - (p.age / p.life);
+          ctx.fillStyle = rgba(p.color, Math.max(0, a*0.9));
+          ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+      }
+  }
 
+  function collide(arena, player) {
+      const m = player.matrix;
+      const o = player.pos;
+      for (let y = 0; y < m.length; ++y) {
+          for (let x = 0; x < m[y].length; ++x) {
+              if (m[y][x] !== 0 &&
+                  (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
+                  return true;
+              }
+          }
+      }
+      return false;
+  }
+
+  // Collision check for arbitrary position (used by ghost)
+  function collideAt(matrix, pos) {
+      for (let y = 0; y < matrix.length; ++y) {
+          for (let x = 0; x < matrix[y].length; ++x) {
+              if (matrix[y][x] !== 0 &&
+                  (arena[y + pos.y] && arena[y + pos.y][x + pos.x]) !== 0) {
+                  return true;
+              }
+          }
+      }
+      return false;
+  }
+
+  function merge(arena, player) {
+      player.matrix.forEach((row, y) => {
+          row.forEach((v, x) => {
+              if (v !== 0) arena[y + player.pos.y][x + player.pos.x] = v;
+          });
+      });
+  }
+
+  function rotate(matrix, dir) {
+      // transpose
+      for (let y = 0; y < matrix.length; ++y) {
+          for (let x = 0; x < y; ++x) {
+              [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+          }
+      }
+      if (dir > 0) matrix.forEach(row => row.reverse());
+      else matrix.reverse();
+  }
+
+  function playerReset() {
+      const piece = nextPiece || getNextPiece();
+      player.matrix = createPiece(piece);
+      nextPiece = getNextPiece();
+      drawNextPiece();
+      
       player.pos.y = 0;
       player.pos.x = ((COLS / 2) | 0) - ((player.matrix[0].length / 2) | 0);
       // start spawn pop animation
       pieceSpawnT = PIECE_SPAWN_MS;
       if (collide(arena, player)) {
-          arena.forEach(row => row.fill(0));
-          player.score = 0;
-          player.lines = 0;
-          player.level = 0;
-          updateScore();
+          gameOver();
       }
   }
 
@@ -568,8 +763,8 @@
       player.pos.y++;
       if (collide(arena, player)) {
           player.pos.y--;
-          merge(arena, player);
           emitLandingParticles(player);
+          merge(arena, player);
           const rows = getFullRows();
           if (rows.length) {
               // Snapshot colors for particles before we start flashing
@@ -589,8 +784,8 @@
           player.pos.y++;
       } while (!collide(arena, player));
       player.pos.y--;
-      merge(arena, player);
       emitLandingParticles(player);
+      merge(arena, player);
       arenaSweep();
       playerReset();
       dropCounter = 0;
@@ -662,30 +857,19 @@
   }
 
   function draw() {
-      // Background and grid
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawBackground();
-
-      // Trail
-      for (const t of trail) {
-          const a = 1 - (t.age / TRAIL_MAX_AGE);
-          ctx.globalAlpha = a * 0.25;
-          drawMatrix(t.matrix, t.pos, 'solid');
-          ctx.globalAlpha = 1;
-      }
 
       // Arena
       drawMatrix(arena, { x: 0, y: 0 }, 'solid');
 
       // Draw ghost only when piece is active (not flashing)
-      if (!flashingRows.length) {
+      if (!flashingRows.length && gameState === 'playing') {
           const gy = getGhostY();
           drawMatrix(player.matrix, { x: player.pos.x, y: gy }, 'ghost');
 
-          // Drop shadow then the piece with a tiny spawn pop
           drawMatrix(player.matrix, player.pos, 'shadow');
           ctx.save();
-          // spawn pop scale
           const t = Math.max(0, Math.min(1, 1 - (pieceSpawnT / PIECE_SPAWN_MS)));
           const s = 0.94 + 0.06 * t;
           const cx = (player.pos.x + player.matrix[0].length / 2) * 24;
@@ -697,12 +881,11 @@
           ctx.restore();
       }
 
-      // Particles (above blocks)
       drawParticles();
 
-      // Pause indicator overlay
-      if (paused) {
-          ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      // Pause overlay - completely hide game
+      if (gameState === 'paused') {
+          ctx.fillStyle = 'rgba(5, 5, 10, 0.98)';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.fillStyle = '#ff2f6d';
           ctx.font = 'bold 28px "Courier New", monospace';
@@ -733,37 +916,21 @@
       const delta = time - lastTime;
       lastTime = time;
 
-      if (!paused) {
-          // Update trail
-          for (let i = trail.length - 1; i >= 0; i--) {
-              trail[i].age += delta;
-              if (trail[i].age > TRAIL_MAX_AGE) trail.splice(i, 1);
-          }
-          if (!flashingRows.length) {
-              trail.push({
-                  matrix: player.matrix,
-                  pos: { ...player.pos },
-                  age: 0
-              });
-          }
-
+      if (gameState === 'playing') {
           if (flashingRows.length) {
-              // Run flash animation; defer clearing until done
               flashElapsed += delta;
               if (flashElapsed >= FLASH_DURATION) {
-                  // particle burst before we mutate arena
                   emitLineClearParticles(flashingRows, clearColors);
                   flashingRows = [];
                   clearColors = [];
-                  arenaSweep();      // clears and updates score/lines/level
-                  playerReset();     // spawn next piece
+                  arenaSweep();
+                  playerReset();
               }
           } else {
               dropCounter += delta;
               const speed = Math.max(120, 1000 - player.level * 75);
               if (dropCounter > speed) playerDrop();
           }
-          // Visual timers
           if (pieceSpawnT > 0) pieceSpawnT -= delta;
           updateParticles(delta);
       }
@@ -778,8 +945,38 @@
       document.getElementById('level').textContent = player.level;
   }
 
+  function startGame() {
+      gameState = 'playing';
+      document.getElementById('startScreen').classList.remove('active');
+      arena.forEach(row => row.fill(0));
+      player.score = 0;
+      player.lines = 0;
+      player.level = 0;
+      nextPiece = getNextPiece();
+      playerReset();
+      updateScore();
+  }
+
+  function gameOver() {
+      gameState = 'gameover';
+      document.getElementById('finalScore').textContent = player.score;
+      document.getElementById('finalLines').textContent = player.lines;
+      document.getElementById('finalLevel').textContent = player.level;
+      document.getElementById('gameOverScreen').classList.add('active');
+  }
+
+  function restartGame() {
+      document.getElementById('gameOverScreen').classList.remove('active');
+      startGame();
+  }
+
   document.addEventListener('keydown', (e) => {
       const k = e.key.toLowerCase();
+
+      if (gameState !== 'playing' && gameState !== 'paused') {
+          if (k === 'escape') { window.location.href = 'index.html'; }
+          return;
+      }
 
       // Ignore inputs during line-flash except Esc
       if (flashingRows.length && k !== 'escape') {
@@ -800,11 +997,12 @@
       else if (k === ' ') { e.preventDefault(); hardDrop(); }
       else if (k === 'm') {
           e.preventDefault();
-          arena.forEach(row => row.fill(0));
-          player.score = 0; player.lines = 0; player.level = 0;
-          playerReset(); updateScore();
+          restartGame();
       }
-      else if (k === 'p') { e.preventDefault(); paused = !paused; }
+      else if (k === 'p') { 
+          e.preventDefault(); 
+          gameState = gameState === 'paused' ? 'playing' : 'paused';
+      }
       else if (k === 'escape') { window.location.href = 'index.html'; }
   });
 
@@ -816,27 +1014,27 @@
           rotate: () => playerRotate(1),
           soft: () => playerDrop(),
           hard: () => hardDrop(),
-          pause: () => { paused = !paused; },
+          pause: () => { 
+              gameState = gameState === 'paused' ? 'playing' : 'paused';
+          },
           restart: () => {
-              arena.forEach(row => row.fill(0));
-              player.score = 0; player.lines = 0; player.level = 0;
-              playerReset(); updateScore();
+              restartGame();
           },
           back: () => { window.location.href = 'index.html'; }
       };
       document.querySelectorAll('.touch-controls button').forEach(btn => {
           btn.addEventListener('click', () => {
               const act = btn.getAttribute('data-action');
-              // Ignore touch actions during flash except Back
+              if (gameState !== 'playing' && gameState !== 'paused' && act !== 'back') return;
               if (flashingRows.length && act !== 'back') return;
-              // When paused, only allow pause toggle and back
-              if (paused && act !== 'pause' && act !== 'back') return;
+              if (gameState === 'paused' && act !== 'pause' && act !== 'back') return;
               if (actions[act]) actions[act]();
           }, { passive: true });
       });
   })();
 
-  playerReset();
+  // Don't auto-start, wait for user
+  drawNextPiece();
   updateScore();
   update();
 </script>
