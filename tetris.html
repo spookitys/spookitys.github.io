@@ -94,6 +94,7 @@
         }
         a.btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
         .muted { opacity: 0.8; }
+        .small { font-size: 12px; opacity: 0.7; margin-top: 4px; }
 
         @media (max-width: 640px) {
             .game { grid-template-columns: 1fr; }
@@ -152,56 +153,100 @@
             to   { transform: translateY(4px); }
         }
 
-        /* --- Start / End Screen Styles --- */
-        #startScreen, #endScreen {
-            position: fixed;
-            inset: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            pointer-events: auto;
-            z-index: 100;
+        /* Small preview canvas styling */
+        #next {
+            width: 96px;
+            height: 96px;
+            image-rendering: pixelated;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #0f1222, #0d1020);
+            box-shadow:
+              0 6px 16px rgba(0,0,0,0.35),
+              0 0 10px rgba(255,64,85,0.04) inset;
         }
-        #startScreen > div, #endScreen > div {
-            background: linear-gradient(180deg,#0f1222ee,#0d1020ee);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-            width: 260px;
+
+        /* Start screen / mode buttons */
+        .start-modes {
+            display: flex;
+            gap: 8px;
+        }
+        .mode {
+            flex: 1;
             text-align: center;
         }
-        #startScreen .title, #endScreen .title {
-            font-weight: bold;
-            color: #ff3040;
-            margin-bottom: 12px;
-            font-size: 20px;
-        }
-        #startScreen button, #endScreen button {
-            padding: 10px;
+        .mode-btn {
+            width: 100%;
+            background: linear-gradient(180deg, #fff 0%, #ffd0d5 100%);
             border-radius: 8px;
-            background: #ff5a6a;
-            border: none;
+            padding: 8px;
             font-weight: bold;
             cursor: pointer;
-            margin-top: 10px;
-            display: block;
-            width: 100%;
+            border: none;
+            color: #0b0d16;
+            box-shadow: 0 6px 18px rgba(255,48,64,0.15);
         }
-        #endScreen {
-            display: none;
+        .start-overlay, .end-overlay {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            pointer-events: none;
+        }
+        .overlay-panel {
+            pointer-events: auto;
+            background: linear-gradient(180deg,#0c0f1aee,#0b0d16cc);
+            padding: 18px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            text-align: center;
+            min-width: 260px;
         }
     </style>
 </head>
 <body>
 <div class="wrap">
-    <div class="game">
+    <div class="game" style="position:relative;">
         <canvas id="tetris" width="240" height="480" aria-label="Tetris board"></canvas>
+
+        <!-- Start overlay (initial) -->
+        <div id="startOverlay" class="start-overlay" aria-hidden="true" style="display:none;">
+            <div class="overlay-panel">
+                <div class="title">Choose Mode</div>
+                <div class="start-modes" style="margin-bottom:10px;">
+                    <div class="mode">
+                        <button class="mode-btn" data-mode="classic">Classic</button>
+                        <div class="small muted">The classic Tetris experience!<br><span class="muted small">(1x speed, 1x scaling, 1x points)</span></div>
+                    </div>
+                    <div class="mode">
+                        <button class="mode-btn" data-mode="hard">Hard</button>
+                        <div class="small muted">For more experienced players<br><span class="muted small">(2x speed, 2x scaling, 1.5x points)</span></div>
+                    </div>
+                    <div class="mode">
+                        <button class="mode-btn" data-mode="ability">Ability</button>
+                        <div class="small muted">For a chaotic and fun time!<br><span class="muted small">(1.5x speed, 1.5x scaling, 0.5x points)</span></div>
+                    </div>
+                </div>
+                <div class="muted small">Select a mode to begin</div>
+            </div>
+        </div>
+
+        <!-- End overlay -->
+        <div id="endOverlay" class="end-overlay" aria-hidden="true" style="display:none;">
+            <div class="overlay-panel">
+                <div class="title">Game Over</div>
+                <div>Final Score: <span id="finalScore">0</span></div>
+                <div style="margin-top:10px;">
+                    <button id="playAgain" class="mode-btn" style="width:120px;">Play Again</button>
+                </div>
+            </div>
+        </div>
+
         <div class="side">
             <div class="info">
                 <div class="title">Tetris</div>
                 <div>Score: <span id="score">0</span></div>
-                <div>Lines: <span id="lines">0</span></div>
-                <div>Level: <span id="level">0</span></div>
+                <!-- Lines and Level removed per request -->
             </div>
             <div class="info">
                 <div class="title">Controls</div>
@@ -213,6 +258,12 @@
                 <div>M: Restart</div>
                 <div>P: Pause</div>
                 <div class="muted">Esc: Back</div>
+            </div>
+
+            <!-- Next piece preview -->
+            <div class="info">
+                <div class="title">Next</div>
+                <canvas id="next" width="96" height="96" aria-label="Next piece preview"></canvas>
             </div>
 
             <!-- Mobile controls -->
@@ -239,29 +290,6 @@
             </div>
         </div>
     </div>
-</div>
-
-<!-- START SCREEN OVERLAY -->
-<div id="startScreen" style="position:fixed; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:auto;">
-  <div style="background:linear-gradient(180deg,#0f1222ee,#0d1020ee); border-radius:12px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.6); width:260px; text-align:center;">
-    <div style="font-weight:bold; color:#ff3040; margin-bottom:12px; font-size:20px;">Choose Game Mode</div>
-    <div style="display:flex; flex-direction:column; gap:10px;">
-      <button id="btnClassic" style="padding:10px; border-radius:8px; background:#ff5a6a; border:none; font-weight:bold; cursor:pointer;">Classic</button>
-      <button id="btnHard" style="padding:10px; border-radius:8px; background:#ff5a6a; border:none; font-weight:bold; cursor:pointer;">Hard</button>
-      <button id="btnAbility" style="padding:10px; border-radius:8px; background:#ff5a6a; border:none; font-weight:bold; cursor:pointer;">Ability</button>
-    </div>
-  </div>
-</div>
-
-<!-- END SCREEN OVERLAY -->
-<div id="endScreen" style="position:fixed; inset:0; display:none; align-items:center; justify-content:center; pointer-events:auto;">
-  <div style="background:linear-gradient(180deg,#0f1222ee,#0d1020ee); border-radius:12px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,0.6); width:260px; text-align:center;">
-    <div style="font-weight:bold; color:#ff3040; margin-bottom:12px; font-size:20px;">Game Over</div>
-    <div style="margin-bottom:12px;">Score: <span id="endScore">0</span></div>
-    <div style="display:flex; gap:10px; justify-content:center;">
-      <button id="btnPlayAgain" style="padding:10px; border-radius:8px; background:#ff5a6a; border:none; font-weight:bold; cursor:pointer;">Play Again</button>
-    </div>
-  </div>
 </div>
 
 <script>
@@ -293,32 +321,16 @@
   const canvas = document.getElementById('tetris');
   let ctx = canvas.getContext('2d');
 
-  const COLS = 10, ROWS = 20;
-  const BASE_CELL = 24; // base logical cell size
-  let SCALE = 1;        // 1 = normal, 2 = hard mode
-  let CELL = BASE_CELL * SCALE;
+  // New: preview canvas/context
+  const nextCanvas = document.getElementById('next');
+  let nctx = nextCanvas.getContext('2d');
 
-  // gameplay mode & state
-  let gameState = 'start'; // 'start' | 'running' | 'gameover'
-  let mode = 'classic';    // 'classic' | 'hard' | 'ability'
-  let speedMultiplier = 1; // 2 for hard mode
+  const COLS = 10, ROWS = 20;
+  let CELL = 24; // will be modified by chosen mode
 
   // Visual/FX state
   const particles = [];
   let nowMs = 0;
-
-  function initCanvas() {
-      CELL = BASE_CELL * SCALE;
-      // set internal canvas resolution to match cell size
-      canvas.width = COLS * CELL;
-      canvas.height = ROWS * CELL;
-      // preserve crisp pixel look
-      ctx = canvas.getContext('2d', { alpha: true });
-      ctx.imageSmoothingEnabled = false;
-      // CSS sizing remains unchanged so canvas will be scaled to fit UI
-  }
-
-  initCanvas();
 
   function createMatrix(w, h) {
       const m = [];
@@ -382,20 +394,27 @@
   const player = {
       pos: { x: 0, y: 0 },
       matrix: null,
-      score: 0,
-      lines: 0,
-      level: 0,
+      score: 0
   };
 
   let dropCounter = 0;
   let lastTime = 0;
-  let paused = false;
+  let paused = true;     // start paused until mode selected
+  let gameStarted = false;
 
   // Flash animation state for line clear
   let flashingRows = [];
   let flashElapsed = 0;
   const FLASH_DURATION = 200;   // total flash time in ms
   const FLASH_INTERVAL = 80;    // toggle interval in ms
+
+  // current game mode multipliers
+  const modes = {
+      classic: { speed: 1.0, scale: 1.0, points: 1.0 },
+      hard:    { speed: 2.0, scale: 2.0, points: 1.5 },
+      ability: { speed: 1.5, scale: 1.5, points: 0.5 }
+  };
+  let gameMode = modes.classic;
 
   function collide(arena, player) {
       const m = player.matrix;
@@ -443,29 +462,30 @@
       else matrix.reverse();
   }
 
+  // Adjusted playerReset to use/produce a nextPiece (queue of 1)
   function playerReset() {
       const pieces = 'TJLOSZI';
-      player.matrix = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+      // current becomes previously queued next if available, otherwise random
+      if (nextPiece) {
+          player.matrix = nextPiece;
+      } else {
+          player.matrix = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+      }
+      // queue the next piece
+      nextPiece = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+      drawNext();
+
       player.pos.y = 0;
       player.pos.x = ((COLS / 2) | 0) - ((player.matrix[0].length / 2) | 0);
       if (collide(arena, player)) {
-          // If running, show game over. Otherwise during start/setup just clear.
-          if (gameState === 'running') {
-              gameState = 'gameover';
-              showEndScreen(true);
-              document.getElementById('endScore').textContent = player.score;
-              return;
-          } else {
-              arena.forEach(row => row.fill(0));
-              player.score = 0;
-              player.lines = 0;
-              player.level = 0;
-              updateScore();
-          }
+          // Game over: show end screen (preserve final score)
+          showEndScreen();
+          return;
       }
   }
 
   function playerMove(dir) {
+      if (!gameStarted || paused) return;
       player.pos.x += dir;
       if (collide(arena, player)) player.pos.x -= dir;
   }
@@ -483,6 +503,7 @@
   }
 
   function playerDrop() {
+      if (!gameStarted || paused) return;
       player.pos.y++;
       if (collide(arena, player)) {
           player.pos.y--;
@@ -500,6 +521,7 @@
   }
 
   function hardDrop() {
+      if (!gameStarted || paused) return;
       do {
           player.pos.y++;
       } while (!collide(arena, player));
@@ -512,6 +534,7 @@
   }
 
   function playerRotate(dir) {
+      if (!gameStarted || paused) return;
       const pos = player.pos.x;
       let offset = 1;
       rotate(player.matrix, dir);
@@ -535,22 +558,20 @@
           const row = arena.splice(y, 1)[0].fill(0);
           arena.unshift(row);
           ++y;
-          player.score += rowCount * 100;
-          player.lines += 1;
-          if (player.lines % 10 === 0) player.level++;
+          player.score += Math.round(rowCount * 100 * gameMode.points);
           rowCount *= 2;
       }
       updateScore();
   }
 
-  // Helper: draw glossy cell with soft glow
+  // Reduce block glow drastically: subtle neutral shadow instead of strong colored glow
   function drawCell(px, py, color, opts = {}) {
       const { ghost = false } = opts;
       const x = px * CELL, y = py * CELL;
 
       if (!ghost) {
-          ctx.shadowBlur = Math.max(8, CELL/2);
-          ctx.shadowColor = color;
+          ctx.shadowBlur = 1;
+          ctx.shadowColor = 'rgba(0,0,0,0.12)';
       } else {
           ctx.shadowBlur = 0;
       }
@@ -568,7 +589,7 @@
       ctx.fillRect(x, y, CELL, CELL);
 
       // border
-      ctx.lineWidth = Math.max(1, CELL/24);
+      ctx.lineWidth = 1;
       ctx.strokeStyle = ghost ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.55)';
       ctx.strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
 
@@ -617,11 +638,11 @@
   // Animated background inside canvas
   function drawBackground(t) {
       const w = canvas.width, h = canvas.height;
-      const cx = w * 0.5 + Math.sin(t * 0.0004) * (CELL * 1.6);
-      const cy = h * 0.35 + Math.cos(t * 0.0005) * (CELL * 1.2);
+      const cx = w * 0.5 + Math.sin(t * 0.0004) * 40;
+      const cy = h * 0.35 + Math.cos(t * 0.0005) * 30;
 
-      const rg = ctx.createRadialGradient(cx, cy, CELL * 0.8, w*0.5, h*0.6, Math.max(w,h));
-      rg.addColorStop(0, 'rgba(255,64,85,0.12)');
+      const rg = ctx.createRadialGradient(cx, cy, 20, w*0.5, h*0.6, Math.max(w,h));
+      rg.addColorStop(0, 'rgba(255,64,85,0.03)');
       rg.addColorStop(0.45, 'rgba(30,36,66,0.85)');
       rg.addColorStop(1, 'rgba(5,7,14,1)');
 
@@ -634,7 +655,7 @@
       ctx.fillStyle = 'rgba(255,255,255,0.03)';
       const off = (t * 0.03) % CELL;
       for (let y = -CELL + off; y < h; y += CELL) {
-          ctx.fillRect(0, y, w, Math.max(2, Math.floor(CELL/12)));
+          ctx.fillRect(0, y, w, 2);
       }
       ctx.restore();
     }
@@ -654,8 +675,8 @@
       rows.forEach((ry) => {
           for (let i = 0; i < COLS * 2; i++) {
               const x = (Math.random() * COLS) * cellSize + cellSize * 0.5;
-              const y = ry * cellSize + cellSize/2 + (Math.random() - 0.5) * (cellSize * 0.33);
-              const vx = (Math.random() - 0.5) * 140 * (CELL / BASE_CELL);
+              const y = ry * cellSize + cellSize * 0.5 + (Math.random() - 0.5) * 8;
+              const vx = (Math.random() - 0.5) * 140;
               const vy = -80 - Math.random() * 60;
               particles.push({
                   x, y, vx, vy,
@@ -673,15 +694,15 @@
       p.matrix.forEach((row, y) => {
           row.forEach((v, x) => {
               if (!v) return;
-              const cx = (p.pos.x + x) * cellSize + cellSize/2;
-              const cy = (p.pos.y + y) * cellSize + cellSize/2;
+              const cx = (p.pos.x + x) * cellSize + cellSize / 2;
+              const cy = (p.pos.y + y) * cellSize + cellSize / 2;
               for (let i = 0; i < 3; i++) {
                   const ang = Math.random() * Math.PI * 2;
                   const sp = 80 + Math.random() * 120;
                   particles.push({
                       x: cx, y: cy,
-                      vx: Math.cos(ang) * sp * (CELL / BASE_CELL),
-                      vy: Math.sin(ang) * sp * (CELL / BASE_CELL),
+                      vx: Math.cos(ang) * sp,
+                      vy: Math.sin(ang) * sp,
                       life: 0.35 + Math.random() * 0.4,
                       a: 1,
                       size: 2 + Math.random() * 2,
@@ -711,10 +732,49 @@
           const alpha = Math.max(0, Math.min(1, p.life));
           ctx.fillStyle = p.color.replace(',1)', `,${alpha})`);
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * (CELL / BASE_CELL), 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
           ctx.fill();
       });
       ctx.restore();
+  }
+
+  // Next-piece preview support
+  let nextPiece = null;
+
+  function drawNext() {
+      // clear preview
+      nctx.clearRect(0,0,nextCanvas.width,nextCanvas.height);
+      // subtle bg
+      nctx.fillStyle = 'rgba(10,12,22,0.8)';
+      nctx.fillRect(0,0,nextCanvas.width,nextCanvas.height);
+
+      if (!nextPiece) return;
+      const matrix = nextPiece;
+      const cell = CELL;
+      const offsetX = Math.floor((nextCanvas.width - matrix[0].length * cell) / 2);
+      const offsetY = Math.floor((nextCanvas.height - matrix.length * cell) / 2);
+
+      matrix.forEach((row, y) => {
+          row.forEach((v, x) => {
+              if (v !== 0) {
+                  const color = colors[v] || '#ffffff';
+                  // draw simple cell in preview (lighter style)
+                  nctx.fillStyle = color;
+                  nctx.fillRect(offsetX + x*cell, offsetY + y*cell, cell, cell);
+                  // small glossy overlay
+                  const g = nctx.createLinearGradient(offsetX + x*cell, offsetY + y*cell, offsetX + x*cell, offsetY + y*cell + cell);
+                  g.addColorStop(0, 'rgba(255,255,255,0.22)');
+                  g.addColorStop(0.4, 'rgba(255,255,255,0.06)');
+                  g.addColorStop(1, 'rgba(0,0,0,0.18)');
+                  nctx.fillStyle = g;
+                  nctx.fillRect(offsetX + x*cell, offsetY + y*cell, cell, cell);
+                  // border
+                  nctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                  nctx.lineWidth = 1;
+                  nctx.strokeRect(offsetX + x*cell + 0.5, offsetY + y*cell + 0.5, cell-1, cell-1);
+              }
+          });
+      });
   }
 
   function draw() {
@@ -725,21 +785,23 @@
       // Arena
       drawMatrix(arena, { x: 0, y: 0 });
 
-      // Ghost + active piece (only when not flashing)
-      if (!flashingRows.length && gameState === 'running') {
+      // Ghost + active piece (only when not flashing and game started)
+      if (gameStarted && !flashingRows.length) {
           const gy = getGhostY();
           drawMatrix(player.matrix, { x: player.pos.x, y: gy }, { ghost: true });
           drawMatrix(player.matrix, player.pos);
       }
 
       // Pause overlay
-      if (paused && gameState === 'running') {
+      if (paused && !document.getElementById('startOverlay').classList.contains('hidden')) {
+          // start overlay manages its own UI; nothing here
+      } else if (paused && gameStarted) {
           ctx.fillStyle = 'rgba(0,0,0,0.5)';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.fillStyle = '#ffcad0';
           ctx.shadowColor = '#ff3040';
-          ctx.shadowBlur = 14 * (CELL / BASE_CELL);
-          ctx.font = `bold ${30 * (CELL / BASE_CELL)}px "Courier New", monospace`;
+          ctx.shadowBlur = 14;
+          ctx.font = 'bold 30px "Courier New", monospace';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
@@ -762,6 +824,9 @@
 
       // Particles last (over everything)
       drawParticles();
+
+      // update next preview each frame (lightweight)
+      drawNext();
   }
 
   function update(time = 0) {
@@ -772,7 +837,7 @@
       const dt = delta / 1000;
       updateParticles(dt);
 
-      if (gameState === 'running' && !paused) {
+      if (!paused) {
           if (flashingRows.length) {
               flashElapsed += delta;
               if (flashElapsed >= FLASH_DURATION) {
@@ -782,9 +847,9 @@
               }
           } else {
               dropCounter += delta;
-              const baseSpeed = Math.max(120, 1000 - player.level * 75);
-              const effectiveSpeed = baseSpeed / (speedMultiplier || 1);
-              if (dropCounter > effectiveSpeed) playerDrop();
+              const baseInterval = 1000;
+              const speedInterval = Math.max(120, baseInterval / gameMode.speed);
+              if (dropCounter > speedInterval) playerDrop();
           }
       }
 
@@ -794,8 +859,6 @@
 
   function updateScore() {
       document.getElementById('score').textContent = player.score;
-      document.getElementById('lines').textContent = player.lines;
-      document.getElementById('level').textContent = player.level;
   }
 
   document.addEventListener('keydown', (e) => {
@@ -807,11 +870,7 @@
           return;
       }
 
-      // When paused or not running, restrict inputs
-      if (gameState !== 'running' && k !== 'escape') {
-          e.preventDefault();
-          return;
-      }
+      // When paused, only allow pause toggle and escape
       if (paused && k !== 'p' && k !== 'escape') {
           e.preventDefault();
           return;
@@ -825,7 +884,7 @@
       else if (k === 'm') {
           e.preventDefault();
           arena.forEach(row => row.fill(0));
-          player.score = 0; player.lines = 0; player.level = 0;
+          player.score = 0;
           playerReset(); updateScore();
       }
       else if (k === 'p') { e.preventDefault(); paused = !paused; }
@@ -840,10 +899,10 @@
           rotate: () => playerRotate(1),
           soft: () => playerDrop(),
           hard: () => hardDrop(),
-          pause: () => { if (gameState==='running') paused = !paused; },
+          pause: () => { paused = !paused; },
           restart: () => {
               arena.forEach(row => row.fill(0));
-              player.score = 0; player.lines = 0; player.level = 0;
+              player.score = 0;
               playerReset(); updateScore();
           },
           back: () => { window.location.href = 'index.html'; }
@@ -855,64 +914,93 @@
               if (flashingRows.length && act !== 'back') return;
               // When paused, only allow pause toggle and back
               if (paused && act !== 'pause' && act !== 'back') return;
-              if (gameState !== 'running' && act !== 'back' && act !== 'pause') return;
               if (actions[act]) actions[act]();
           }, { passive: true });
       });
   })();
 
-  // --- UI overlays logic ---
-  const startScreen = document.getElementById('startScreen');
-  const endScreen = document.getElementById('endScreen');
+  // initial queue setup
+  (function initNext(){
+      const pieces = 'TJLOSZI';
+      nextPiece = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+  })();
 
-  function showStartScreen(show) {
-      startScreen.style.display = show ? 'flex' : 'none';
-      // when showing start screen, pause gameplay loop updates
-      if (show) {
-          gameState = 'start';
-      }
+  // UI helpers
+  const startOverlay = document.getElementById('startOverlay');
+  const endOverlay = document.getElementById('endOverlay');
+  const finalScoreEl = document.getElementById('finalScore');
+
+  function showStartScreen() {
+      paused = true;
+      gameStarted = false;
+      startOverlay.style.display = 'grid';
+      startOverlay.setAttribute('aria-hidden','false');
+      endOverlay.style.display = 'none';
+      endOverlay.setAttribute('aria-hidden','true');
   }
-  function showEndScreen(show) {
-      endScreen.style.display = show ? 'flex' : 'none';
+  function hideStartScreen() {
+      startOverlay.style.display = 'none';
+      startOverlay.setAttribute('aria-hidden','true');
+  }
+  function showEndScreen() {
+      paused = true;
+      gameStarted = false;
+      finalScoreEl.textContent = player.score;
+      endOverlay.style.display = 'grid';
+      endOverlay.setAttribute('aria-hidden','false');
+  }
+  function hideEndScreen() {
+      endOverlay.style.display = 'none';
+      endOverlay.setAttribute('aria-hidden','true');
   }
 
-  function startGame(selectedMode) {
-      mode = selectedMode || 'classic';
-      if (mode === 'hard') {
-          SCALE = 2;
-          speedMultiplier = 2;
-      } else {
-          SCALE = 1;
-          speedMultiplier = 1;
-      }
-      initCanvas();
-      // reset arena and player
+  // apply chosen mode: resize canvases and reset state
+  function applyMode(modeKey) {
+      gameMode = modes[modeKey] || modes.classic;
+      CELL = Math.round(24 * gameMode.scale);
+
+      // resize main canvas to logical pixels
+      canvas.width = COLS * CELL;
+      canvas.height = ROWS * CELL;
+      // preserve CSS visual size; context will draw at new resolution
+      ctx = canvas.getContext('2d');
+
+      // preview canvas: use 4x cells
+      nextCanvas.width = CELL * 4;
+      nextCanvas.height = CELL * 4;
+      nctx = nextCanvas.getContext('2d');
+
+      // clear world and reset score
       arena.forEach(row => row.fill(0));
-      player.score = 0; player.lines = 0; player.level = 0;
-      updateScore();
+      player.score = 0;
+      particles.length = 0;
+      nextPiece = null;
+      initNext();
       playerReset();
-      showStartScreen(false);
-      showEndScreen(false);
-      paused = false;
-      gameState = 'running';
+      updateScore();
   }
 
-  // start screen buttons
-  document.getElementById('btnClassic').addEventListener('click', () => startGame('classic'));
-  document.getElementById('btnHard').addEventListener('click', () => startGame('hard'));
-  document.getElementById('btnAbility').addEventListener('click', () => startGame('ability'));
-
-  // end screen play again shows start screen (as requested)
-  document.getElementById('btnPlayAgain').addEventListener('click', () => {
-      showEndScreen(false);
-      showStartScreen(true);
+  // wire start mode buttons
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+          const mode = btn.getAttribute('data-mode');
+          hideStartScreen();
+          applyMode(mode);
+          paused = false;
+          gameStarted = true;
+      });
   });
 
-  // initial state: show start screen
-  showStartScreen(true);
+  // Play Again -> go back to start screen
+  document.getElementById('playAgain').addEventListener('click', () => {
+      hideEndScreen();
+      showStartScreen();
+  });
 
+  // show start on load
+  showStartScreen();
+  update(); // start rendering loop (paused until mode chosen)
   updateScore();
-  update();
 </script>
 </body>
 </html>
