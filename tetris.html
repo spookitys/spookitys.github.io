@@ -219,6 +219,7 @@
             font-size: 18px;
             opacity: 0.65;
             margin-top: 10px;
+            margin-bottom: 30px;
             color: #ccc;
         }
         .overlay .stats {
@@ -272,6 +273,47 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+
+        /* Gamemode buttons */
+        .gamemode-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 30px;
+            max-width: 600px;
+        }
+        .gamemode-btn {
+            background: linear-gradient(180deg, rgba(18,18,27,0.95), rgba(18,18,27,0.85));
+            border: 2px solid rgba(255,47,109,0.35);
+            border-radius: 10px;
+            padding: 20px 16px;
+            cursor: pointer;
+            transition: all .15s ease;
+            font-family: "Courier New", monospace;
+            color: var(--fg);
+        }
+        .gamemode-btn:hover {
+            border-color: rgba(255,47,109,0.6);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px rgba(255,47,109,0.25);
+        }
+        .gamemode-btn .mode-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+        .gamemode-btn .mode-desc {
+            font-size: 13px;
+            opacity: 0.7;
+            line-height: 1.4;
+            margin-bottom: 6px;
+        }
+        .gamemode-btn .mode-stats {
+            font-size: 11px;
+            opacity: 0.5;
+            line-height: 1.3;
+        }
     </style>
 </head>
 <body>
@@ -284,7 +326,24 @@
             <div id="startScreen" class="overlay active">
                 <div class="overlay-content">
                     <h1>TETRIS</h1>
-                    <p class="subtitle">press any control to start</p>
+                    <p class="subtitle">Select a gamemode</p>
+                    <div class="gamemode-grid">
+                        <button class="gamemode-btn" onclick="selectGamemode('classic')">
+                            <div class="mode-title">Classic</div>
+                            <div class="mode-desc">The classic Tetris experience!</div>
+                            <div class="mode-stats">(1x speed, 1x scaling, 1x points)</div>
+                        </button>
+                        <button class="gamemode-btn" onclick="selectGamemode('hard')">
+                            <div class="mode-title">Hard</div>
+                            <div class="mode-desc">For more experienced players</div>
+                            <div class="mode-stats">(2x speed, 2x scaling, 1.5x points)</div>
+                        </button>
+                        <button class="gamemode-btn" onclick="selectGamemode('ability')">
+                            <div class="mode-title">Ability</div>
+                            <div class="mode-desc">For a chaotic and fun time!</div>
+                            <div class="mode-stats">(1.5x speed, 1.5x scaling, 0.5x points)</div>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -293,8 +352,6 @@
                 <div class="overlay-content">
                     <h1>GAME OVER</h1>
                     <p class="stats">Score: <span id="finalScore">0</span></p>
-                    <p class="stats">Lines: <span id="finalLines">0</span></p>
-                    <p class="stats">Level: <span id="finalLevel">0</span></p>
                     <button class="btn-large" onclick="restartGame()">PLAY AGAIN</button>
                 </div>
             </div>
@@ -308,43 +365,6 @@
             <div class="info">
                 <div class="title">Tetris</div>
                 <div>Score: <span id="score">0</span></div>
-                <div>Lines: <span id="lines">0</span></div>
-                <div>Level: <span id="level">0</span></div>
-            </div>
-            <div class="info">
-                <div class="title">Controls</div>
-                <div class="keybind-row">
-                    <span>Move left:</span>
-                    <button class="keybind-btn" data-action="left">A</button>
-                </div>
-                <div class="keybind-row">
-                    <span>Move right:</span>
-                    <button class="keybind-btn" data-action="right">D</button>
-                </div>
-                <div class="keybind-row">
-                    <span>Rotate:</span>
-                    <button class="keybind-btn" data-action="rotate">R</button>
-                </div>
-                <div class="keybind-row">
-                    <span>Soft drop:</span>
-                    <button class="keybind-btn" data-action="soft">S</button>
-                </div>
-                <div class="keybind-row">
-                    <span>Hard drop:</span>
-                    <button class="keybind-btn" data-action="hard">Space</button>
-                </div>
-                <div class="keybind-row">
-                    <span>Restart:</span>
-                    <button class="keybind-btn" data-action="restart">M</button>
-                </div>
-                <div class="keybind-row">
-                    <span>Pause:</span>
-                    <button class="keybind-btn" data-action="pause">P</button>
-                </div>
-                <div class="keybind-row muted">
-                    <span>Back:</span>
-                    <button class="keybind-btn" data-action="back">Escape</button>
-                </div>
             </div>
 
             <!-- Mobile controls -->
@@ -411,6 +431,14 @@
   // Game states
   let gameState = 'start'; // 'start' | 'playing' | 'paused' | 'gameover'
   let nextPiece = null;
+  let currentGamemode = 'classic'; // 'classic' | 'hard' | 'ability'
+  
+  // Gamemode modifiers
+  const gamemodeSettings = {
+      classic: { speedMult: 1.0, scaleMult: 1.0, pointMult: 1.0 },
+      hard: { speedMult: 2.0, scaleMult: 2.0, pointMult: 1.5 },
+      ability: { speedMult: 1.5, scaleMult: 1.5, pointMult: 0.5 }
+  };
 
   // Keybind system
   let keybinds = {
@@ -602,8 +630,6 @@
       pos: { x: 0, y: 0 },
       matrix: null,
       score: 0,
-      lines: 0,
-      level: 0,
   };
 
   let dropCounter = 0;
@@ -853,7 +879,9 @@
   }
 
   function arenaSweep() {
+      const settings = gamemodeSettings[currentGamemode];
       let rowCount = 1;
+      let linesCleared = 0;
       outer: for (let y = arena.length - 1; y >= 0; --y) {
           for (let x = 0; x < arena[y].length; ++x) {
               if (arena[y][x] === 0) continue outer;
@@ -861,9 +889,8 @@
           const row = arena.splice(y, 1)[0].fill(0);
           arena.unshift(row);
           ++y;
-          player.score += rowCount * 100;
-          player.lines += 1;
-          if (player.lines % 10 === 0) player.level++;
+          player.score += Math.floor(rowCount * 100 * settings.pointMult * settings.scaleMult);
+          linesCleared += 1;
           rowCount *= 2;
       }
       updateScore();
@@ -988,7 +1015,9 @@
               }
           } else {
               dropCounter += delta;
-              const speed = Math.max(120, 1000 - player.level * 75);
+              const settings = gamemodeSettings[currentGamemode];
+              const baseSpeed = 1000;
+              const speed = Math.max(100, baseSpeed / settings.speedMult);
               if (dropCounter > speed) playerDrop();
           }
           if (pieceSpawnT > 0) pieceSpawnT -= delta;
@@ -1001,8 +1030,11 @@
 
   function updateScore() {
       document.getElementById('score').textContent = player.score;
-      document.getElementById('lines').textContent = player.lines;
-      document.getElementById('level').textContent = player.level;
+  }
+
+  function selectGamemode(mode) {
+      currentGamemode = mode;
+      startGame();
   }
 
   function startGame() {
@@ -1010,8 +1042,6 @@
       document.getElementById('startScreen').classList.remove('active');
       arena.forEach(row => row.fill(0));
       player.score = 0;
-      player.lines = 0;
-      player.level = 0;
       nextPiece = getNextPiece();
       playerReset();
       updateScore();
@@ -1020,14 +1050,13 @@
   function gameOver() {
       gameState = 'gameover';
       document.getElementById('finalScore').textContent = player.score;
-      document.getElementById('finalLines').textContent = player.lines;
-      document.getElementById('finalLevel').textContent = player.level;
       document.getElementById('gameOverScreen').classList.add('active');
   }
 
   function restartGame() {
       document.getElementById('gameOverScreen').classList.remove('active');
-      startGame();
+      document.getElementById('startScreen').classList.add('active');
+      gameState = 'start';
   }
 
   document.addEventListener('keydown', (e) => {
@@ -1047,12 +1076,8 @@
           return;
       }
 
-      // Start screen - any control starts game
+      // Start screen - no auto-start anymore
       if (gameState === 'start') {
-          const validKeys = Object.values(keybinds);
-          if (validKeys.includes(k)) {
-              startGame();
-          }
           return;
       }
 
