@@ -94,7 +94,6 @@
         }
         a.btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
         .muted { opacity: 0.8; }
-        .small { font-size: 12px; opacity: 0.7; margin-top: 4px; }
 
         @media (max-width: 640px) {
             .game { grid-template-columns: 1fr; }
@@ -165,88 +164,173 @@
               0 0 10px rgba(255,64,85,0.04) inset;
         }
 
-        /* Start screen / mode buttons */
-        .start-modes {
-            display: flex;
-            gap: 8px;
-        }
-        .mode {
-            flex: 1;
-            text-align: center;
-        }
-        .mode-btn {
-            width: 100%;
-            background: linear-gradient(180deg, #fff 0%, #ffd0d5 100%);
-            border-radius: 8px;
-            padding: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            color: #0b0d16;
-            box-shadow: 0 6px 18px rgba(255,48,64,0.15);
-        }
-        .start-overlay, .end-overlay {
-            position: absolute;
+        /* Start screen styles */
+        .start-screen {
+            position: fixed;
             inset: 0;
-            display: grid;
-            place-items: center;
-            pointer-events: none;
+            background: rgba(9, 10, 16, 0.97);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
         }
-        .overlay-panel {
-            pointer-events: auto;
-            background: linear-gradient(180deg,#0c0f1aee,#0b0d16cc);
-            padding: 18px;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.06);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-            text-align: center;
-            min-width: 260px;
+        .start-screen.hidden { display: none; }
+        
+        .start-title {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: 0 0 20px rgba(255,48,64,0.5);
+            margin-bottom: 40px;
+            letter-spacing: 2px;
         }
+        
+        .game-modes {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 900px;
+        }
+        
+        .mode-card {
+            background: linear-gradient(180deg, #0f1222, #0d1020);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            width: 240px;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+        }
+        
+        .mode-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255,64,85,0.5);
+            box-shadow: 0 10px 25px rgba(255,48,64,0.25);
+        }
+        
+        .mode-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(255,48,64,0.35);
+            margin-bottom: 12px;
+        }
+        
+        .mode-desc {
+            font-size: 14px;
+            color: var(--fg);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .mode-stats {
+            font-size: 12px;
+            color: var(--fg);
+            opacity: 0.6;
+            line-height: 1.3;
+        }
+        
+        @media (max-width: 768px) {
+            .game-modes { flex-direction: column; align-items: center; }
+            .start-title { font-size: 36px; }
+        }
+
+        /* Game over screen styles */
+        .game-over {
+            position: fixed;
+            inset: 0;
+            background: rgba(9, 10, 16, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 20px;
+        }
+        .game-over.hidden { display: none; }
+        
+        .game-over-title {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--accent);
+            text-shadow: 0 0 20px rgba(255,48,64,0.5);
+            margin-bottom: 20px;
+        }
+        
+        .game-over-score {
+            font-size: 32px;
+            color: var(--fg);
+            margin-bottom: 40px;
+        }
+        
+        .game-over-btns {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .game-over-btn {
+            color: #0b0d16;
+            background: linear-gradient(180deg, #ff5a6a, #ff3040);
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 18px;
+            border: none;
+            cursor: pointer;
+            font-family: "Courier New", monospace;
+            box-shadow: 0 6px 16px rgba(255,48,64,0.35), 0 0 0 1px rgba(255,255,255,0.1) inset;
+            transition: transform .08s ease, filter .08s ease;
+        }
+        
+        .game-over-btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
     </style>
 </head>
 <body>
+
+<!-- Start Screen -->
+<div class="start-screen" id="startScreen">
+    <div class="start-title">TETRIS</div>
+    <div class="game-modes">
+        <div class="mode-card" data-mode="classic">
+            <div class="mode-title">Classic</div>
+            <div class="mode-desc">The classic Tetris experience!</div>
+            <div class="mode-stats">(1x speed, 1x scaling, 1x points)</div>
+        </div>
+        <div class="mode-card" data-mode="hard">
+            <div class="mode-title">Hard</div>
+            <div class="mode-desc">For more experienced players</div>
+            <div class="mode-stats">(2x speed, 2x scaling, 1.5x points)</div>
+        </div>
+        <div class="mode-card" data-mode="ability">
+            <div class="mode-title">Ability</div>
+            <div class="mode-desc">For a chaotic and fun time!</div>
+            <div class="mode-stats">(1.5x speed, 1.5x scaling, 0.5x points)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Game Over Screen -->
+<div class="game-over hidden" id="gameOverScreen">
+    <div class="game-over-title">GAME OVER</div>
+    <div class="game-over-score">Score: <span id="finalScore">0</span></div>
+    <div class="game-over-btns">
+        <button class="game-over-btn" id="playAgainBtn">Play Again</button>
+        <button class="game-over-btn" id="backBtn">Back</button>
+    </div>
+</div>
+
 <div class="wrap">
-    <div class="game" style="position:relative;">
+    <div class="game">
         <canvas id="tetris" width="240" height="480" aria-label="Tetris board"></canvas>
-
-        <!-- Start overlay (initial) -->
-        <div id="startOverlay" class="start-overlay" aria-hidden="true" style="display:none;">
-            <div class="overlay-panel">
-                <div class="title">Choose Mode</div>
-                <div class="start-modes" style="margin-bottom:10px;">
-                    <div class="mode">
-                        <button class="mode-btn" data-mode="classic">Classic</button>
-                        <div class="small muted">The classic Tetris experience!<br><span class="muted small">(1x speed, 1x scaling, 1x points)</span></div>
-                    </div>
-                    <div class="mode">
-                        <button class="mode-btn" data-mode="hard">Hard</button>
-                        <div class="small muted">For more experienced players<br><span class="muted small">(2x speed, 2x scaling, 1.5x points)</span></div>
-                    </div>
-                    <div class="mode">
-                        <button class="mode-btn" data-mode="ability">Ability</button>
-                        <div class="small muted">For a chaotic and fun time!<br><span class="muted small">(1.5x speed, 1.5x scaling, 0.5x points)</span></div>
-                    </div>
-                </div>
-                <div class="muted small">Select a mode to begin</div>
-            </div>
-        </div>
-
-        <!-- End overlay -->
-        <div id="endOverlay" class="end-overlay" aria-hidden="true" style="display:none;">
-            <div class="overlay-panel">
-                <div class="title">Game Over</div>
-                <div>Final Score: <span id="finalScore">0</span></div>
-                <div style="margin-top:10px;">
-                    <button id="playAgain" class="mode-btn" style="width:120px;">Play Again</button>
-                </div>
-            </div>
-        </div>
-
         <div class="side">
             <div class="info">
                 <div class="title">Tetris</div>
                 <div>Score: <span id="score">0</span></div>
-                <!-- Lines and Level removed per request -->
             </div>
             <div class="info">
                 <div class="title">Controls</div>
@@ -319,14 +403,21 @@
   })();
 
   const canvas = document.getElementById('tetris');
-  let ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d');
 
-  // New: preview canvas/context
   const nextCanvas = document.getElementById('next');
-  let nctx = nextCanvas.getContext('2d');
+  const nctx = nextCanvas.getContext('2d');
 
-  const COLS = 10, ROWS = 20;
-  let CELL = 24; // will be modified by chosen mode
+  const COLS = 10, ROWS = 20, SIZE = 24;
+  ctx.scale(SIZE/24, SIZE/24);
+
+  // Game mode configuration
+  let gameMode = {
+      name: 'classic',
+      speedMultiplier: 1,
+      scalingMultiplier: 1,
+      pointsMultiplier: 1
+  };
 
   // Visual/FX state
   const particles = [];
@@ -394,27 +485,13 @@
   const player = {
       pos: { x: 0, y: 0 },
       matrix: null,
-      score: 0
+      score: 0,
   };
 
   let dropCounter = 0;
   let lastTime = 0;
-  let paused = true;     // start paused until mode selected
+  let paused = false;
   let gameStarted = false;
-
-  // Flash animation state for line clear
-  let flashingRows = [];
-  let flashElapsed = 0;
-  const FLASH_DURATION = 200;   // total flash time in ms
-  const FLASH_INTERVAL = 80;    // toggle interval in ms
-
-  // current game mode multipliers
-  const modes = {
-      classic: { speed: 1.0, scale: 1.0, points: 1.0 },
-      hard:    { speed: 2.0, scale: 2.0, points: 1.5 },
-      ability: { speed: 1.5, scale: 1.5, points: 0.5 }
-  };
-  let gameMode = modes.classic;
 
   function collide(arena, player) {
       const m = player.matrix;
@@ -462,30 +539,24 @@
       else matrix.reverse();
   }
 
-  // Adjusted playerReset to use/produce a nextPiece (queue of 1)
   function playerReset() {
       const pieces = 'TJLOSZI';
-      // current becomes previously queued next if available, otherwise random
       if (nextPiece) {
           player.matrix = nextPiece;
       } else {
           player.matrix = createPiece(pieces[(pieces.length * Math.random()) | 0]);
       }
-      // queue the next piece
       nextPiece = createPiece(pieces[(pieces.length * Math.random()) | 0]);
       drawNext();
 
       player.pos.y = 0;
       player.pos.x = ((COLS / 2) | 0) - ((player.matrix[0].length / 2) | 0);
       if (collide(arena, player)) {
-          // Game over: show end screen (preserve final score)
-          showEndScreen();
-          return;
+          showGameOver();
       }
   }
 
   function playerMove(dir) {
-      if (!gameStarted || paused) return;
       player.pos.x += dir;
       if (collide(arena, player)) player.pos.x -= dir;
   }
@@ -503,7 +574,6 @@
   }
 
   function playerDrop() {
-      if (!gameStarted || paused) return;
       player.pos.y++;
       if (collide(arena, player)) {
           player.pos.y--;
@@ -521,20 +591,18 @@
   }
 
   function hardDrop() {
-      if (!gameStarted || paused) return;
       do {
           player.pos.y++;
       } while (!collide(arena, player));
       player.pos.y--;
       merge(arena, player);
-      spawnPieceBurst(player); // visual only
+      spawnPieceBurst(player);
       arenaSweep();
       playerReset();
       dropCounter = 0;
   }
 
   function playerRotate(dir) {
-      if (!gameStarted || paused) return;
       const pos = player.pos.x;
       let offset = 1;
       rotate(player.matrix, dir);
@@ -558,7 +626,7 @@
           const row = arena.splice(y, 1)[0].fill(0);
           arena.unshift(row);
           ++y;
-          player.score += Math.round(rowCount * 100 * gameMode.points);
+          player.score += Math.floor(rowCount * 100 * gameMode.pointsMultiplier * gameMode.scalingMultiplier);
           rowCount *= 2;
       }
       updateScore();
@@ -567,9 +635,10 @@
   // Reduce block glow drastically: subtle neutral shadow instead of strong colored glow
   function drawCell(px, py, color, opts = {}) {
       const { ghost = false } = opts;
-      const x = px * CELL, y = py * CELL;
+      const x = px * 24, y = py * 24;
 
       if (!ghost) {
+          // much smaller blur + neutral low-alpha shadow to reduce intensity ~90%
           ctx.shadowBlur = 1;
           ctx.shadowColor = 'rgba(0,0,0,0.12)';
       } else {
@@ -578,20 +647,20 @@
 
       // base
       ctx.fillStyle = color;
-      ctx.fillRect(x, y, CELL, CELL);
+      ctx.fillRect(x, y, 24, 24);
 
       // glossy overlay
-      const g = ctx.createLinearGradient(x, y, x, y + CELL);
+      const g = ctx.createLinearGradient(x, y, x, y + 24);
       g.addColorStop(0, 'rgba(255,255,255,0.28)');
       g.addColorStop(0.4, 'rgba(255,255,255,0.08)');
       g.addColorStop(1, 'rgba(0,0,0,0.3)');
       ctx.fillStyle = g;
-      ctx.fillRect(x, y, CELL, CELL);
+      ctx.fillRect(x, y, 24, 24);
 
       // border
       ctx.lineWidth = 1;
       ctx.strokeStyle = ghost ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.55)';
-      ctx.strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
+      ctx.strokeRect(x + 0.5, y + 0.5, 23, 23);
 
       // reset shadow
       ctx.shadowBlur = 0;
@@ -622,14 +691,14 @@
       ctx.lineWidth = 1;
       for (let x = 0; x <= COLS; x++) {
           ctx.beginPath();
-          ctx.moveTo(x * CELL + 0.5, 0);
-          ctx.lineTo(x * CELL + 0.5, ROWS * CELL);
+          ctx.moveTo(x * 24 + 0.5, 0);
+          ctx.lineTo(x * 24 + 0.5, ROWS * 24);
           ctx.stroke();
       }
       for (let y = 0; y <= ROWS; y++) {
           ctx.beginPath();
-          ctx.moveTo(0, y * CELL + 0.5);
-          ctx.lineTo(COLS * CELL, y * CELL + 0.5);
+          ctx.moveTo(0, y * 24 + 0.5);
+          ctx.lineTo(COLS * 24, y * 24 + 0.5);
           ctx.stroke();
       }
       ctx.restore();
@@ -642,6 +711,7 @@
       const cy = h * 0.35 + Math.cos(t * 0.0005) * 30;
 
       const rg = ctx.createRadialGradient(cx, cy, 20, w*0.5, h*0.6, Math.max(w,h));
+      // reduce the red center glow significantly
       rg.addColorStop(0, 'rgba(255,64,85,0.03)');
       rg.addColorStop(0.45, 'rgba(30,36,66,0.85)');
       rg.addColorStop(1, 'rgba(5,7,14,1)');
@@ -653,8 +723,8 @@
       ctx.save();
       ctx.globalCompositeOperation = 'soft-light';
       ctx.fillStyle = 'rgba(255,255,255,0.03)';
-      const off = (t * 0.03) % CELL;
-      for (let y = -CELL + off; y < h; y += CELL) {
+      const off = (t * 0.03) % 24;
+      for (let y = -24 + off; y < h; y += 24) {
           ctx.fillRect(0, y, w, 2);
       }
       ctx.restore();
@@ -671,11 +741,11 @@
 
   // Particles
   function spawnLineParticles(rows) {
-      const cellSize = CELL;
+      const cellSize = 24;
       rows.forEach((ry) => {
           for (let i = 0; i < COLS * 2; i++) {
               const x = (Math.random() * COLS) * cellSize + cellSize * 0.5;
-              const y = ry * cellSize + cellSize * 0.5 + (Math.random() - 0.5) * 8;
+              const y = ry * cellSize + 12 + (Math.random() - 0.5) * 8;
               const vx = (Math.random() - 0.5) * 140;
               const vy = -80 - Math.random() * 60;
               particles.push({
@@ -690,12 +760,12 @@
   }
 
   function spawnPieceBurst(p) {
-      const cellSize = CELL;
+      const cellSize = 24;
       p.matrix.forEach((row, y) => {
           row.forEach((v, x) => {
               if (!v) return;
-              const cx = (p.pos.x + x) * cellSize + cellSize / 2;
-              const cy = (p.pos.y + y) * cellSize + cellSize / 2;
+              const cx = (p.pos.x + x) * cellSize + 12;
+              const cy = (p.pos.y + y) * cellSize + 12;
               for (let i = 0; i < 3; i++) {
                   const ang = Math.random() * Math.PI * 2;
                   const sp = 80 + Math.random() * 120;
@@ -738,6 +808,9 @@
       ctx.restore();
   }
 
+  // Flash animation state remains
+  // ...existing code (flashingRows, flashElapsed, FLASH_DURATION, FLASH_INTERVAL)...
+
   // Next-piece preview support
   let nextPiece = null;
 
@@ -750,7 +823,9 @@
 
       if (!nextPiece) return;
       const matrix = nextPiece;
-      const cell = CELL;
+      const cell = 24;
+      const cols = nextCanvas.width / cell; // should be 4 for 96px
+      const rows = nextCanvas.height / cell;
       const offsetX = Math.floor((nextCanvas.width - matrix[0].length * cell) / 2);
       const offsetY = Math.floor((nextCanvas.height - matrix.length * cell) / 2);
 
@@ -778,24 +853,18 @@
   }
 
   function draw() {
-      // Background + grid
       drawBackground(nowMs);
       drawGrid();
 
-      // Arena
       drawMatrix(arena, { x: 0, y: 0 });
 
-      // Ghost + active piece (only when not flashing and game started)
-      if (gameStarted && !flashingRows.length) {
+      if (!flashingRows.length) {
           const gy = getGhostY();
           drawMatrix(player.matrix, { x: player.pos.x, y: gy }, { ghost: true });
           drawMatrix(player.matrix, player.pos);
       }
 
-      // Pause overlay
-      if (paused && !document.getElementById('startOverlay').classList.contains('hidden')) {
-          // start overlay manages its own UI; nothing here
-      } else if (paused && gameStarted) {
+      if (paused) {
           ctx.fillStyle = 'rgba(0,0,0,0.5)';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.fillStyle = '#ffcad0';
@@ -808,7 +877,6 @@
           ctx.shadowBlur = 0;
       }
 
-      // Flash rows that will be cleared
       if (flashingRows.length) {
           const on = Math.floor(flashElapsed / FLASH_INTERVAL) % 2 === 0;
           if (on) {
@@ -816,20 +884,22 @@
               ctx.globalAlpha = 0.85;
               ctx.fillStyle = '#ffffff';
               for (const y of flashingRows) {
-                  ctx.fillRect(0, y * CELL, canvas.width, CELL);
+                  ctx.fillRect(0, y * 24, canvas.width, 24);
               }
               ctx.restore();
           }
       }
 
-      // Particles last (over everything)
       drawParticles();
-
-      // update next preview each frame (lightweight)
       drawNext();
   }
 
   function update(time = 0) {
+      if (!gameStarted) {
+          requestAnimationFrame(update);
+          return;
+      }
+
       const delta = time - lastTime;
       lastTime = time;
       nowMs = time;
@@ -847,9 +917,9 @@
               }
           } else {
               dropCounter += delta;
-              const baseInterval = 1000;
-              const speedInterval = Math.max(120, baseInterval / gameMode.speed);
-              if (dropCounter > speedInterval) playerDrop();
+              const baseSpeed = 1000;
+              const speed = Math.max(120, baseSpeed / gameMode.speedMultiplier / gameMode.scalingMultiplier);
+              if (dropCounter > speed) playerDrop();
           }
       }
 
@@ -861,16 +931,79 @@
       document.getElementById('score').textContent = player.score;
   }
 
+  function showGameOver() {
+      gameStarted = false;
+      paused = true;
+      document.getElementById('finalScore').textContent = player.score;
+      document.getElementById('gameOverScreen').classList.remove('hidden');
+  }
+
+  function startGame(mode) {
+      // Set game mode
+      if (mode === 'classic') {
+          gameMode = { name: 'classic', speedMultiplier: 1, scalingMultiplier: 1, pointsMultiplier: 1 };
+      } else if (mode === 'hard') {
+          gameMode = { name: 'hard', speedMultiplier: 2, scalingMultiplier: 2, pointsMultiplier: 1.5 };
+      } else if (mode === 'ability') {
+          gameMode = { name: 'ability', speedMultiplier: 1.5, scalingMultiplier: 1.5, pointsMultiplier: 0.5 };
+      }
+
+      // Reset game state
+      arena.forEach(row => row.fill(0));
+      player.score = 0;
+      flashingRows = [];
+      particles.length = 0;
+      paused = false;
+      gameStarted = true;
+
+      // Hide start screen
+      document.getElementById('startScreen').classList.add('hidden');
+      document.getElementById('gameOverScreen').classList.add('hidden');
+
+      // Initialize game
+      const pieces = 'TJLOSZI';
+      nextPiece = createPiece(pieces[(pieces.length * Math.random()) | 0]);
+      playerReset();
+      updateScore();
+  }
+
+  function returnToStart() {
+      gameStarted = false;
+      paused = false;
+      document.getElementById('startScreen').classList.remove('hidden');
+      document.getElementById('gameOverScreen').classList.add('hidden');
+  }
+
+  // Start screen mode selection
+  document.querySelectorAll('.mode-card').forEach(card => {
+      card.addEventListener('click', () => {
+          const mode = card.getAttribute('data-mode');
+          startGame(mode);
+      });
+  });
+
+  // Game over screen buttons
+  document.getElementById('playAgainBtn').addEventListener('click', () => {
+      returnToStart();
+  });
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+      window.location.href = 'index.html';
+  });
+
   document.addEventListener('keydown', (e) => {
       const k = e.key.toLowerCase();
 
-      // Ignore inputs during line-flash except Esc
+      if (!gameStarted) {
+          e.preventDefault();
+          return;
+      }
+
       if (flashingRows.length && k !== 'escape') {
           e.preventDefault();
           return;
       }
 
-      // When paused, only allow pause toggle and escape
       if (paused && k !== 'p' && k !== 'escape') {
           e.preventDefault();
           return;
@@ -883,12 +1016,10 @@
       else if (k === ' ') { e.preventDefault(); hardDrop(); }
       else if (k === 'm') {
           e.preventDefault();
-          arena.forEach(row => row.fill(0));
-          player.score = 0;
-          playerReset(); updateScore();
+          returnToStart();
       }
       else if (k === 'p') { e.preventDefault(); paused = !paused; }
-      else if (k === 'escape') { window.location.href = 'index.html'; }
+      else if (k === 'escape') { returnToStart(); }
   });
 
   // Mobile buttons hook
@@ -900,107 +1031,22 @@
           soft: () => playerDrop(),
           hard: () => hardDrop(),
           pause: () => { paused = !paused; },
-          restart: () => {
-              arena.forEach(row => row.fill(0));
-              player.score = 0;
-              playerReset(); updateScore();
-          },
+          restart: () => { returnToStart(); },
           back: () => { window.location.href = 'index.html'; }
       };
       document.querySelectorAll('.touch-controls button').forEach(btn => {
           btn.addEventListener('click', () => {
+              if (!gameStarted) return;
               const act = btn.getAttribute('data-action');
-              // Ignore touch actions during flash except Back
               if (flashingRows.length && act !== 'back') return;
-              // When paused, only allow pause toggle and back
               if (paused && act !== 'pause' && act !== 'back') return;
               if (actions[act]) actions[act]();
           }, { passive: true });
       });
   })();
 
-  // initial queue setup
-  (function initNext(){
-      const pieces = 'TJLOSZI';
-      nextPiece = createPiece(pieces[(pieces.length * Math.random()) | 0]);
-  })();
-
-  // UI helpers
-  const startOverlay = document.getElementById('startOverlay');
-  const endOverlay = document.getElementById('endOverlay');
-  const finalScoreEl = document.getElementById('finalScore');
-
-  function showStartScreen() {
-      paused = true;
-      gameStarted = false;
-      startOverlay.style.display = 'grid';
-      startOverlay.setAttribute('aria-hidden','false');
-      endOverlay.style.display = 'none';
-      endOverlay.setAttribute('aria-hidden','true');
-  }
-  function hideStartScreen() {
-      startOverlay.style.display = 'none';
-      startOverlay.setAttribute('aria-hidden','true');
-  }
-  function showEndScreen() {
-      paused = true;
-      gameStarted = false;
-      finalScoreEl.textContent = player.score;
-      endOverlay.style.display = 'grid';
-      endOverlay.setAttribute('aria-hidden','false');
-  }
-  function hideEndScreen() {
-      endOverlay.style.display = 'none';
-      endOverlay.setAttribute('aria-hidden','true');
-  }
-
-  // apply chosen mode: resize canvases and reset state
-  function applyMode(modeKey) {
-      gameMode = modes[modeKey] || modes.classic;
-      CELL = Math.round(24 * gameMode.scale);
-
-      // resize main canvas to logical pixels
-      canvas.width = COLS * CELL;
-      canvas.height = ROWS * CELL;
-      // preserve CSS visual size; context will draw at new resolution
-      ctx = canvas.getContext('2d');
-
-      // preview canvas: use 4x cells
-      nextCanvas.width = CELL * 4;
-      nextCanvas.height = CELL * 4;
-      nctx = nextCanvas.getContext('2d');
-
-      // clear world and reset score
-      arena.forEach(row => row.fill(0));
-      player.score = 0;
-      particles.length = 0;
-      nextPiece = null;
-      initNext();
-      playerReset();
-      updateScore();
-  }
-
-  // wire start mode buttons
-  document.querySelectorAll('.mode-btn[data-mode]').forEach(btn => {
-      btn.addEventListener('click', () => {
-          const mode = btn.getAttribute('data-mode');
-          hideStartScreen();
-          applyMode(mode);
-          paused = false;
-          gameStarted = true;
-      });
-  });
-
-  // Play Again -> go back to start screen
-  document.getElementById('playAgain').addEventListener('click', () => {
-      hideEndScreen();
-      showStartScreen();
-  });
-
-  // show start on load
-  showStartScreen();
-  update(); // start rendering loop (paused until mode chosen)
   updateScore();
+  update();
 </script>
 </body>
 </html>
