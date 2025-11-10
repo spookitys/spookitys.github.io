@@ -1,729 +1,617 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Site</title>
-    <style>
-        :root {
-            --bg: #0a0a12;
-            --panel: #12121b;
-            --fg: #eef1ff;
-            --accent: #ff2f6d;
-        }
-        
-        body {
-            background: radial-gradient(1200px 800px at 20% 10%, #121226 0%, #0b0b14 55%, #05050a 100%);
-            margin: 0;
-            font-family: 'Courier New', monospace;
-            overflow-x: hidden;
-            color: var(--fg);
-        }
-        
-        #numberCanvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-        }
-        
-        .content {
-            position: relative;
-            z-index: 1;
-            padding: 50px;
-        }
-        
-        .header-container {
-            margin-bottom: 20px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 47, 109, 0.25);
-            box-shadow: 0 1px 0 rgba(255, 47, 109, 0.1);
-        }
-        
-        h1 {
-            color: var(--accent);
-            font-weight: bold;
-            margin: 0;
-            font-size: 1.5em;
-            height: 1.5em;
-            line-height: 1.5em;
-            overflow: hidden;
-            position: relative;
-            transition: width 0.5s ease-in-out;
-            text-shadow: 0 0 12px rgba(255, 47, 109, 0.4);
-            letter-spacing: 0.5px;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>My Site</title>
+<style>
+/* --- Neon Tetris-like Theme --- */
+:root {
+    --bg-grad-start:#121226;
+    --bg-grad-mid:#0b0b14;
+    --bg-grad-end:#05050a;
+    --panel:#12121b;
+    --panel-alt:#0f0f18;
+    --fg:#eef1ff;
+    --accent:#ff2f6d;
+    --accent-soft:rgba(255,47,109,0.35);
+    --radius:10px;
+    --font:"Courier New", monospace;
+}
+* { box-sizing:border-box; }
+body {
+    margin:0;
+    font-family:var(--font);
+    color:var(--fg);
+    background:
+        radial-gradient(1200px 800px at 20% 10%, var(--bg-grad-start) 0%, var(--bg-grad-mid) 55%, var(--bg-grad-end) 100%);
+    overflow:hidden;
+    min-height:100vh;
+}
+/* animated subtle global glow pulse */
+body:before {
+    content:"";
+    position:fixed; inset:0;
+    background:
+        radial-gradient(circle at 30% 15%, rgba(255,47,109,0.08), transparent 60%),
+        radial-gradient(circle at 75% 80%, rgba(255,47,109,0.06), transparent 65%);
+    pointer-events:none;
+    animation:glowShift 12s linear infinite;
+}
+@keyframes glowShift {
+    0%,100% { filter:brightness(1); }
+    50% { filter:brightness(1.15); }
+}
+#numberCanvas {
+    position:fixed; inset:0;
+    width:100%; height:100%;
+    z-index:0;
+    filter:drop-shadow(0 0 6px rgba(255,47,109,0.5));
+}
+.content {
+    position:relative;
+    z-index:2;
+    padding:54px clamp(24px,6vw,70px);
+    max-width:1100px;
+    margin:0 auto;
+}
+.header-container {
+    margin-bottom:26px;
+    padding-bottom:20px;
+    border-bottom:1px solid rgba(255,47,109,0.25);
+}
+h1 {
+    position:relative;
+    font-size:1.65em;
+    margin:0;
+    font-weight:700;
+    letter-spacing:1px;
+    color:var(--fg);
+    text-shadow:0 0 14px rgba(255,47,109,0.55);
+    height:1.6em; line-height:1.6em;
+    overflow:hidden;
+    width:fit-content;
+    transition:width .5s ease-in-out;
+}
+h1 span { position:absolute; white-space:nowrap; }
+h1:after {
+    content:"";
+    position:absolute; left:0; bottom:0;
+    height:2px; width:100%;
+    background:linear-gradient(90deg,var(--accent), transparent 70%);
+    opacity:.65;
+    animation:underlineFlow 3.5s linear infinite;
+}
+@keyframes underlineFlow {
+    0% { transform:translateX(-30%); }
+    100% { transform:translateX(100%); }
+}
+.expandable-box {
+    margin-bottom:20px;
+    position:relative;
+    width:fit-content;
+    background:linear-gradient(180deg, var(--panel) 0%, var(--panel-alt) 100%);
+    border:1px solid var(--accent-soft);
+    border-radius:var(--radius);
+    box-shadow:
+        0 10px 24px rgba(0,0,0,0.45),
+        0 0 0 2px rgba(255,47,109,0.08) inset,
+        0 0 26px rgba(255,47,109,0.18);
+    transition:box-shadow .25s ease, transform .25s ease, border-color .25s ease;
+}
+.expandable-box:hover {
+    border-color:rgba(255,47,109,0.55);
+    transform:translateY(-3px);
+    box-shadow:
+        0 16px 36px rgba(0,0,0,0.55),
+        0 0 0 2px rgba(255,47,109,0.16) inset,
+        0 0 42px rgba(255,47,109,0.35);
+}
+.box-header {
+    cursor:pointer;
+    font-weight:700;
+    padding:12px 18px;
+    position:relative;
+    color:var(--accent);
+    letter-spacing:.5px;
+    text-shadow:0 0 8px rgba(255,47,109,0.6);
+    user-select:none;
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+.box-header:before {
+    content:"▶";
+    font-size:12px;
+    opacity:.6;
+    transition:transform .3s ease;
+}
+.box-content.expanded ~ .box-header:before,
+.expandable-box.expanded .box-header:before { transform:rotate(90deg); }
+.box-content {
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .45s cubic-bezier(.62,.04,.36,1), padding .3s ease;
+}
+.box-content.expanded { max-height:520px; }
+.box-content-inner {
+    padding:0 18px 16px 18px;
+    font-size:14px;
+    line-height:1.5;
+    color:var(--fg);
+}
+.box-content a, .box-content li a {
+    color:var(--fg);
+    text-decoration:none;
+    position:relative;
+}
+.box-content a:hover {
+    text-shadow:0 0 10px rgba(255,47,109,0.7);
+    color:var(--accent);
+}
+.box-content ul { list-style:none; margin:8px 0; padding:0; }
+.box-content li { margin:3px 0; }
+.category { color:var(--accent); font-weight:700; text-shadow:0 0 6px rgba(255,47,109,0.55); }
 
-        h1 span {
-            position: absolute;
-            white-space: nowrap;
-        }
-        
-        .expandable-box {
-            margin-bottom: 15px;
-            background-color: transparent;
-            position: relative;
-            z-index: 1;
-            width: fit-content;
-            padding: 0;
-        }
-        
-        .box-header {
-            color: var(--fg);
-            font-weight: bold;
-            cursor: pointer;
-            user-select: none;
-            padding: 12px 16px;
-            border: 2px solid rgba(255, 47, 109, 0.35);
-            width: fit-content;
-            background: linear-gradient(180deg, rgba(18,18,27,0.95), rgba(18,18,27,0.85));
-            border-radius: 8px;
-            box-shadow:
-                0 10px 22px rgba(0,0,0,0.3),
-                0 0 0 1px rgba(255,255,255,0.03) inset;
-            transition: all 0.15s ease;
-        }
-        
-        .box-header:hover {
-            border-color: rgba(255, 47, 109, 0.6);
-            transform: translateY(-2px);
-            box-shadow:
-                0 12px 28px rgba(255, 47, 109, 0.25),
-                0 0 0 1px rgba(255,255,255,0.05) inset;
-        }
-        
-        .box-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s ease-out;
-            color: var(--fg);
-            font-weight: normal;
-            font-size: 14px;
-        }
-        
-        .box-content.expanded {
-            max-height: 500px;
-            transition: max-height 0.4s ease-out;
-            width: fit-content;
-        }
-        
-        .box-content-inner {
-            padding: 12px 16px;
-            border: 2px solid rgba(255, 47, 109, 0.35);
-            background: linear-gradient(180deg, rgba(15,15,24,0.95), rgba(14,14,22,0.9));
-            width: fit-content;
-            min-width: 300px;
-            border-radius: 8px;
-            margin-top: 8px;
-            box-shadow:
-                0 10px 22px rgba(0,0,0,0.3),
-                0 0 0 1px rgba(255,255,255,0.03) inset;
-            line-height: 1.5;
-        }
-        
-        .box-content a {
-            color: var(--accent);
-            cursor: pointer;
-            text-decoration: none;
-            display: block;
-            margin: 5px 0;
-            transition: all 0.15s ease;
-            text-shadow: 0 0 8px rgba(255, 47, 109, 0.2);
-        }
-        
-        .box-content a:hover {
-            opacity: 0.8;
-            text-shadow: 0 0 12px rgba(255, 47, 109, 0.5);
-            transform: translateX(2px);
-        }
-        
-        .box-content ul {
-            list-style: none;
-            padding: 0;
-            margin: 5px 0;
-        }
-        
-        .box-content li {
-            margin: 2px 0;
-        }
-        
-        .category {
-            font-weight: bold;
-            color: var(--accent);
-            margin-top: 8px;
-            text-shadow: 0 0 6px rgba(255, 47, 109, 0.3);
-        }
-        
-        @media (min-width: 769px) and (orientation: landscape) {
-            .box-content ul li:not(.category) {
-                padding-left: 20px;
-            }
-        }
-        
-        .game-link {
-            color: var(--fg);
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        
-        .game-link:hover {
-            color: var(--accent);
-            text-shadow: 0 0 8px rgba(255, 47, 109, 0.4);
-            transform: translateX(2px);
-        }
-        
-        .message {
-            color: var(--fg);
-            margin-top: 10px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2;
-            background: linear-gradient(180deg, rgba(18,18,27,0.98), rgba(18,18,27,0.95));
-            padding: 16px 28px;
-            border-radius: 8px;
-            border: 2px solid rgba(255, 47, 109, 0.4);
-            box-shadow:
-                0 12px 32px rgba(0,0,0,0.5),
-                0 0 0 1px rgba(255,255,255,0.05) inset,
-                0 0 24px rgba(255, 47, 109, 0.2);
-            font-weight: bold;
-        }
-        
-        .message.show {
-            opacity: 1;
-        }
-        
-        @media (max-width: 768px), (orientation: portrait) {
-            .content {
-                padding: 50px 20px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-            }
-            
-            h1 {
-                justify-content: center;
-            }
-            
-            .expandable-box {
-                width: 100%;
-                max-width: 300px;
-            }
-        }
+.message {
+    color:var(--fg);
+    background:rgba(18,18,27,0.9);
+    border:1px solid var(--accent-soft);
+    padding:10px 20px;
+    border-radius:8px;
+    font-size:14px;
+    backdrop-filter:blur(4px);
+    box-shadow:0 10px 28px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,47,109,0.10) inset;
+    opacity:0;
+    transition:opacity .35s ease;
+}
+.message.show { opacity:1; }
 
-        .terminal-button {
-            position: fixed;
-            left: 12px;
-            bottom: 12px;
-            z-index: 4;
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(180deg, rgba(18,18,27,0.95), rgba(18,18,27,0.9));
-            color: var(--accent);
-            border: 2px solid rgba(255, 47, 109, 0.4);
-            border-radius: 6px;
-            font-weight: bold;
-            font-family: 'Courier New', monospace;
-            cursor: pointer;
-            user-select: none;
-            box-shadow:
-                0 8px 18px rgba(255, 47, 109, 0.25),
-                0 0 0 1px rgba(255,255,255,0.05) inset;
-            transition: all 0.15s ease;
-        }
-        
-        .terminal-button:hover {
-            transform: translateY(-2px);
-            box-shadow:
-                0 12px 24px rgba(255, 47, 109, 0.35),
-                0 0 0 1px rgba(255,255,255,0.08) inset;
-            border-color: rgba(255, 47, 109, 0.6);
-        }
+.terminal-button {
+    position:fixed; left:14px; bottom:14px; z-index:5;
+    width:46px; height:46px;
+    background:linear-gradient(180deg, var(--panel) 0%, var(--panel-alt) 100%);
+    border:1px solid var(--accent-soft);
+    border-radius:8px;
+    color:var(--accent);
+    font-weight:700;
+    font-family:var(--font);
+    cursor:pointer;
+    box-shadow:0 8px 18px rgba(0,0,0,0.55), 0 0 18px rgba(255,47,109,0.25);
+    transition:transform .25s ease, border-color .25s ease;
+}
+.terminal-button:hover { transform:translateY(-3px); border-color:rgba(255,47,109,0.55); }
 
-        .terminal {
-            position: fixed;
-            left: 12px;
-            bottom: 60px;
-            z-index: 3;
-            width: 60vw;
-            max-width: 800px;
-            min-width: 300px;
-            height: 40vh;
-            background: linear-gradient(180deg, rgba(18,18,27,0.98), rgba(15,15,24,0.95));
-            border: 2px solid rgba(255, 47, 109, 0.4);
-            border-radius: 8px;
-            color: var(--accent);
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            font-family: 'Courier New', monospace;
-            box-shadow:
-                0 20px 40px rgba(0,0,0,0.5),
-                0 0 0 1px rgba(255,255,255,0.03) inset,
-                0 0 32px rgba(255, 47, 109, 0.15);
-        }
-        .terminal.hidden { display: none; }
+.terminal {
+    position:fixed; left:14px; bottom:70px; z-index:4;
+    width:60vw; max-width:840px; min-width:320px; height:42vh;
+    background:linear-gradient(180deg, var(--panel) 0%, var(--panel-alt) 100%);
+    border:1px solid var(--accent-soft);
+    border-radius:10px;
+    color:var(--accent);
+    padding:14px;
+    display:flex; flex-direction:column;
+    font-family:var(--font);
+    box-shadow:
+        0 10px 30px rgba(0,0,0,0.55),
+        0 0 0 2px rgba(255,47,109,0.10) inset,
+        0 0 42px rgba(255,47,109,0.30);
+}
+.terminal.hidden { display:none; }
+.terminal-output {
+    flex:1; overflow-y:auto; white-space:pre-wrap;
+    font-size:13px;
+    scrollbar-width:thin;
+}
+.terminal-output::-webkit-scrollbar { width:8px; }
+.terminal-output::-webkit-scrollbar-track { background:#09090f; }
+.terminal-output::-webkit-scrollbar-thumb { background:var(--accent); border-radius:4px; }
+.terminal-prompt { display:flex; align-items:center; gap:8px; border-top:1px solid rgba(255,47,109,0.35); padding-top:8px; margin-top:8px; }
+.terminal-input {
+    flex:1; background:transparent; border:none; outline:none;
+    color:var(--accent); caret-color:var(--accent);
+    font-family:inherit; font-size:14px;
+}
+.terminal-prompt-label { color:var(--accent); }
 
-        .terminal-output {
-            flex: 1;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            color: var(--accent);
-            line-height: 1.4;
-        }
+.gif-overlay img {
+    border:1px solid var(--accent-soft);
+    border-radius:10px;
+    box-shadow:0 0 0 2px rgba(255,47,109,0.10), 0 12px 28px rgba(0,0,0,0.6), 0 0 34px rgba(255,47,109,0.35);
+    background:#000;
+}
 
-        .terminal-prompt {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-top: 1px solid rgba(255, 47, 109, 0.3);
-            padding-top: 8px;
-            margin-top: 8px;
-        }
+@media (max-width:768px),(orientation:portrait) {
+    .content { padding:54px 24px; text-align:center; }
+    h1 { margin:0 auto; }
+    .expandable-box { width:100%; max-width:420px; }
+    .terminal { width:92vw; left:4vw; bottom:74px; height:48vh; }
+}
 
-        .terminal-prompt-label {
-            color: var(--accent);
-            text-shadow: 0 0 6px rgba(255, 47, 109, 0.3);
-        }
-
-        .terminal-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            outline: none;
-            color: var(--fg);
-            caret-color: var(--accent);
-            font-family: inherit;
-            font-size: 14px;
-        }
-
-        @media (max-width: 768px), (orientation: portrait) {
-            .terminal {
-                width: 92vw;
-                left: 4vw;
-                bottom: 64px;
-                height: 45vh;
-            }
-        }
-
-        .gif-overlay {
-            position: fixed;
-            inset: 0;
-            display: grid;
-            place-items: center;
-            z-index: 10; 
-            pointer-events: none; 
-        }
-        .gif-overlay img {
-            max-width: min(70vw, 420px);
-            max-height: min(70vh, 420px);
-            border: 2px solid var(--accent);
-            border-radius: 8px;
-            box-shadow: 
-                0 20px 50px rgba(0,0,0,0.6),
-                0 0 40px rgba(255, 47, 109, 0.5);
-        }
-        
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(18,18,27,0.5);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 47, 109, 0.4);
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 47, 109, 0.6);
-        }
-    </style>
+/* expansion visual state */
+.expandable-box.expanded,
+.box-content.expanded {
+    animation:panelGlow .6s ease forwards;
+}
+@keyframes panelGlow {
+    0% { box-shadow:0 10px 24px rgba(0,0,0,0.45),0 0 0 2px rgba(255,47,109,0.08) inset,0 0 26px rgba(255,47,109,0.18); }
+    100% { box-shadow:0 16px 36px rgba(0,0,0,0.6),0 0 0 2px rgba(255,47,109,0.16) inset,0 0 50px rgba(255,47,109,0.42); }
+}
+</style>
 </head>
 <body>
-    <canvas id="numberCanvas"></canvas>
+<canvas id="numberCanvas"></canvas>
+<div class="content">
+    <div class="header-container">
+        <h1 id="mainHeader">Welcome to my Website!</h1>
+    </div>
     
-    <div class="content">
-        <div class="header-container">
-            <h1 id="mainHeader">Welcome to my Website!</h1>
-        </div>
-        
-        <div class="expandable-box">
-            <div class="box-header" onclick="toggleBox('intro')">Introduction</div>
-            <div id="intro" class="box-content">
-                <div class="box-content-inner">
-                    Hello! My name is Andrew, otherwise known as Spookitys online, and welcome to my slice of the internet!
-                    <li>I'm a developer in LUA and hobbyist with a passion for creating fun experiences and games on the internet.
-                    <li>I'm 16 years old currently and in high school as a junior, I plan on going to college for computer science!
-                    <li>My work is currently in LuaU for Roblox, but I dabble in other languages such as JavaScript.
-                    <li>I mostly do freelancing work so I don't have many projects to show off, but expect some soon! (I am not currently accepting commissions.)
-                    <ul>
-                </div>
-            </div>
-        </div>
-        
-        <div class="expandable-box">
-            <div class="box-header" onclick="toggleBox('games')">Games</div>
-            <div id="games" class="box-content">
-                <div class="box-content-inner">
-                    Here are some games I enjoy:
-                    <ul>
-                        <li class="category">Roblox</li>
-                        <li>        <a href="https://www.roblox.com/games/71895508397153/" target="_blank" class="game-link">Die of Death</a></li>
-                        <li>        <a href="https://www.roblox.com/games/7138009149/" target="_blank" class="game-link">Phighting</a></li>
-                        <li>        <a href="https://www.roblox.com/games/18687417158/" target="_blank" class="game-link">Forsaken</a></li>
-                        <li>        <a href="https://www.roblox.com/games/3260590327/" target="_blank" class="game-link">Tower Defense Simulator</a></li>
-                        <li>        <a href="https://www.roblox.com/games/9503261072/" target="_blank" class="game-link">Tower Defense X</a></li>
-                        <li>        <a href="https://www.roblox.com/games/6403373529/" target="_blank" class="game-link">Slap Battles</a></li>
-                        <li>        <a href="https://www.roblox.com/games/78515341506665/" target="_blank" class="game-link">Alter Ego</a></li>
-                        <li>        <a href="https://www.roblox.com/games/16483433878/" target="_blank" class="game-link">Block Tales</a></li>
-                        <li class="category">Steam</li>
-                        <li>        <a href="https://store.steampowered.com/app/960090/Bloons_TD_6/" target="_blank" class="game-link">Bloons Tower Defense 6</a></li>
-                        <li>        <a href="https://store.steampowered.com/app/553850/HELLDIVERS_2/" target="_blank" class="game-link">Helldivers 2</a></li>
-                        <li>        <a href="https://store.steampowered.com/app/105600/Terraria" target="_blank" class="game-link">Terraria</a></li>
-                        <li>        <a href="https://store.steampowered.com/app/945360/Among_Us" target="_blank" class="game-link">Among Us</a></li>
-                        <li class="category">Looking Forward To</li>
-                        <li>        <a href="https://store.steampowered.com/app/1030300/Hollow_Knight_Silksong" target="_blank" class="game-link">Hollow Knight / Silksong</a></li>
-                        <li>        <a href="https://www.youtube.com/watch?v=HTs0s6urogA" target="_blank" class="game-link">Give Me Your Best! [UNRELEASED]</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="expandable-box">
-            <div class="box-header" onclick="toggleBox('media')">Media</div>
-            <div id="media" class="box-content">
-                <div class="box-content-inner">
-                    Here is some media I enjoy:
-                    <ul>
-                        <li class="category">Shows</li>
-                        <li>        <a href="https://www.paramountplus.com/shows/dexter/" target="_blank" class="game-link">Dexter</a></li>
-                        <li>        <a href="https://www.paramountplus.com/shows/dexter-new-blood/" target="_blank" class="game-link">Dexter: New Blood</a></li>
-                        <li>        <a href="https://www.paramountplus.com/shows/dexter-original-sin/" target="_blank" class="game-link">Dexter: Original Sin</a></li>
-                        <li>        <a href="https://www.paramountplus.com/shows/dexter-resurrection/" target="_blank" class="game-link">Dexter: Ressurrection</a></li>
-                        <li>        <a href="https://www.youtube.com/watch?v=nBnW5TIg31Q" target="_blank" class="game-link">Rick and Morty</a></li>
-                        <li>        <a href="https://www.disneyplus.com/browse/entity-8f8c5cbb-e5ba-4285-9e2c-86abcac9fd50" target="_blank" class="game-link">LOKI</a></li>
-                        <li>        <a href="https://www.amazon.com/INVINCIBLE-SEASON-1/dp/B08WJN83XZ" target="_blank" class="game-link">Invincible</a></li>
-                        <li class="category">Movies</li>
-                        <li>        <a href="https://www.netflix.com/title/70305903" target="_blank" class="game-link">Interstellar</a></li>
-                        <li>        <a href="https://www.netflix.com/title/11819086" target="_blank" class="game-link">The Truman Show</a></li>
-                        <li>        <a href="https://www.disneyplus.com/browse/entity-9a136e06-852a-41bf-b71d-fa061cb43225" target="_blank" class="game-link">Avengers: Infinity War</a></li>
-                        <li class="category">Looking Forward To</li>
-                        <li>        <a href="https://www.netflix.com/title/70241956" target="_blank" class="game-link">Hannibal</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-        
-        <div class="expandable-box">
-            <div class="box-header" onclick="toggleBox('socials')">Socials</div>
-            <div id="socials" class="box-content">
-                <div class="box-content-inner">
-                    <a href="https://www.roblox.com/users/453133356/profile" target="_blank">Roblox</a>
-                    <a href="https://steamcommunity.com/id/Karbonites/" target="_blank">Steam</a>
-                    <a onclick="copyUsername()">Discord</a>
-                </div>
+    <div class="expandable-box">
+        <div class="box-header" onclick="toggleBox('intro')">Introduction</div>
+        <div id="intro" class="box-content">
+            <div class="box-content-inner">
+                <ul>Hello! My name is Andrew, otherwise known as Spookitys online, and welcome to my slice of the internet!
+                <li>I'm a developer in LUA and hobbyist with a passion for creating fun experiences and games on the internet.
+                <li>I'm 16 years old currently and in high school as a junior, I plan on going to college for computer science!
+                <li>My work is currently in LuaU for Roblox, but I dabble in other languages such as JavaScript.
+                <li>I mostly do freelancing work so I don't have many projects to show off, but expect some soon! (I am not currently accepting commissions.)
+                <ul>
             </div>
         </div>
     </div>
     
-    <div id="copyMessage" class="message">username copied to clipboard</div>
+    <div class="expandable-box">
+        <div class="box-header" onclick="toggleBox('games')">Games</div>
+        <div id="games" class="box-content">
+            <div class="box-content-inner">
+                Here are some games I enjoy:
+                <ul>
+                    <li class="category">Roblox</li>
+                    <li>        <a href="https://www.roblox.com/games/71895508397153/" target="_blank" class="game-link">Die of Death</a></li>
+                    <li>        <a href="https://www.roblox.com/games/7138009149/" target="_blank" class="game-link">Phighting</a></li>
+                    <li>        <a href="https://www.roblox.com/games/18687417158/" target="_blank" class="game-link">Forsaken</a></li>
+                    <li>        <a href="https://www.roblox.com/games/3260590327/" target="_blank" class="game-link">Tower Defense Simulator</a></li>
+                    <li>        <a href="https://www.roblox.com/games/9503261072/" target="_blank" class="game-link">Tower Defense X</a></li>
+                    <li>        <a href="https://www.roblox.com/games/6403373529/" target="_blank" class="game-link">Slap Battles</a></li>
+                    <li>        <a href="https://www.roblox.com/games/78515341506665/" target="_blank" class="game-link">Alter Ego</a></li>
+                    <li>        <a href="https://www.roblox.com/games/16483433878/" target="_blank" class="game-link">Block Tales</a></li>
+                    <li class="category">Steam</li>
+                    <li>        <a href="https://store.steampowered.com/app/960090/Bloons_TD_6/" target="_blank" class="game-link">Bloons Tower Defense 6</a></li>
+                    <li>        <a href="https://store.steampowered.com/app/553850/HELLDIVERS_2/" target="_blank" class="game-link">Helldivers 2</a></li>
+                    <li>        <a href="https://store.steampowered.com/app/105600/Terraria" target="_blank" class="game-link">Terraria</a></li>
+                    <li>        <a href="https://store.steampowered.com/app/945360/Among_Us" target="_blank" class="game-link">Among Us</a></li>
+                    <li class="category">Looking Forward To</li>
+                    <li>        <a href="https://store.steampowered.com/app/1030300/Hollow_Knight_Silksong" target="_blank" class="game-link">Hollow Knight / Silksong</a></li>
+                    <li>        <a href="https://www.youtube.com/watch?v=HTs0s6urogA" target="_blank" class="game-link">Give Me Your Best! [UNRELEASED]</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
 
-    <!-- Terminal button and panel -->
-    <button id="terminalButton" class="terminal-button">\</button>
-    <div id="terminalPanel" class="terminal hidden" aria-label="Terminal">
-        <div id="terminalOutput" class="terminal-output">
+    <div class="expandable-box">
+        <div class="box-header" onclick="toggleBox('media')">Media</div>
+        <div id="media" class="box-content">
+            <div class="box-content-inner">
+                Here is some media I enjoy:
+                <ul>
+                    <li class="category">Shows</li>
+                    <li>        <a href="https://www.paramountplus.com/shows/dexter/" target="_blank" class="game-link">Dexter</a></li>
+                    <li>        <a href="https://www.paramountplus.com/shows/dexter-new-blood/" target="_blank" class="game-link">Dexter: New Blood</a></li>
+                    <li>        <a href="https://www.paramountplus.com/shows/dexter-original-sin/" target="_blank" class="game-link">Dexter: Original Sin</a></li>
+                    <li>        <a href="https://www.paramountplus.com/shows/dexter-resurrection/" target="_blank" class="game-link">Dexter: Ressurrection</a></li>
+                    <li>        <a href="https://www.youtube.com/watch?v=nBnW5TIg31Q" target="_blank" class="game-link">Rick and Morty</a></li>
+                    <li>        <a href="https://www.disneyplus.com/browse/entity-8f8c5cbb-e5ba-4285-9e2c-86abcac9fd50" target="_blank" class="game-link">LOKI</a></li>
+                    <li>        <a href="https://www.amazon.com/INVINCIBLE-SEASON-1/dp/B08WJN83XZ" target="_blank" class="game-link">Invincible</a></li>
+                    <li class="category">Movies</li>
+                    <li>        <a href="https://www.netflix.com/title/70305903" target="_blank" class="game-link">Interstellar</a></li>
+                    <li>        <a href="https://www.netflix.com/title/11819086" target="_blank" class="game-link">The Truman Show</a></li>
+                    <li>        <a href="https://www.disneyplus.com/browse/entity-9a136e06-852a-41bf-b71d-fa061cb43225" target="_blank" class="game-link">Avengers: Infinity War</a></li>
+                    <li class="category">Looking Forward To</li>
+                    <li>        <a href="https://www.netflix.com/title/70241956" target="_blank" class="game-link">Hannibal</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="expandable-box">
+        <div class="box-header" onclick="toggleBox('socials')">Socials</div>
+        <div id="socials" class="box-content">
+            <div class="box-content-inner">
+                <a href="https://www.roblox.com/users/453133356/profile" target="_blank">Roblox</a>
+                <a href="https://steamcommunity.com/id/Karbonites/" target="_blank">Steam</a>
+                <a onclick="copyUsername()">Discord</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="copyMessage" class="message">username copied to clipboard</div>
+<button id="terminalButton" class="terminal-button">\</button>
+<div id="terminalPanel" class="terminal hidden" aria-label="Terminal">
+    <div id="terminalOutput" class="terminal-output">
 Terminal Protcol Initiated [Website Version: 0.2]
 © Copyright Legal Registration. All rights reserved.
 
-        </div>
-        <div class="terminal-prompt">
-            <span class="terminal-prompt-label">C:/cmd&gt;</span>
-            <input id="terminalInput" class="terminal-input" type="text" autocomplete="off" spellcheck="false" />
-        </div>
     </div>
+    <div class="terminal-prompt">
+        <span class="terminal-prompt-label">C:/cmd&gt;</span>
+        <input id="terminalInput" class="terminal-input" type="text" autocomplete="off" spellcheck="false" />
+    </div>
+</div>
 
-    <script>
-        const phrases = [
-            "Welcome to my Website!",
-            "Greetings and Salutations!",
-            "Say hello to my slice of the internet!",
-            "Welcome in!",
-            "Hello, fellow internet traveler!"
-        ];
-        let phraseIndex = 0;
-        const header = document.getElementById('mainHeader');
-        const animationInterval = 3000;
-        let animationTimer;
+<script>
+    const phrases = [
+        "Welcome to my Website!",
+        "Greetings and Salutations!",
+        "Say hello to my slice of the internet!",
+        "Welcome in!",
+        "Hello, fellow internet traveler!"
+    ];
+    let phraseIndex = 0;
+    const header = document.getElementById('mainHeader');
+    const animationInterval = 3000;
+    let animationTimer;
 
-        function slideText() {
-            const oldSpans = header.querySelectorAll('span');
-            
-            oldSpans.forEach(span => {
-                if (span.style.transform === 'translateY(0px)') { 
-                    span.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
-                    span.style.transform = 'translateY(-100%)';
-                    span.style.opacity = '0';
-                    span.addEventListener('transitionend', () => span.remove(), { once: true });
-                } else {
-                    span.remove();
-                }
-            });
+    function slideText() {
+        const oldSpans = header.querySelectorAll('span');
+        
+        oldSpans.forEach(span => {
+            if (span.style.transform === 'translateY(0px)') { 
+                span.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
+                span.style.transform = 'translateY(-100%)';
+                span.style.opacity = '0';
+                span.addEventListener('transitionend', () => span.remove(), { once: true });
+            } else {
+                span.remove();
+            }
+        });
 
-            phraseIndex = (phraseIndex + 1) % phrases.length;
-            const newSpan = document.createElement('span');
-            newSpan.textContent = phrases[phraseIndex];
-            newSpan.style.transform = 'translateY(100%)';
-            newSpan.style.opacity = '0';
-            header.appendChild(newSpan);
+        phraseIndex = (phraseIndex + 1) % phrases.length;
+        const newSpan = document.createElement('span');
+        newSpan.textContent = phrases[phraseIndex];
+        newSpan.style.transform = 'translateY(100%)';
+        newSpan.style.opacity = '0';
+        header.appendChild(newSpan);
 
-            header.style.width = newSpan.offsetWidth + 'px';
-            
-            newSpan.getBoundingClientRect(); 
+        header.style.width = newSpan.offsetWidth + 'px';
+        
+        newSpan.getBoundingClientRect(); 
 
-            newSpan.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
-            newSpan.style.transform = 'translateY(0)';
-            newSpan.style.opacity = '1';
-
-            animationTimer = setTimeout(slideText, animationInterval);
-        }
-
-        const initialSpan = document.createElement('span');
-        initialSpan.textContent = phrases[0];
-        header.innerHTML = '';
-        header.appendChild(initialSpan);
-        initialSpan.style.transform = 'translateY(0)'; 
-        header.style.width = initialSpan.offsetWidth + 'px';
-        phraseIndex = 0;
+        newSpan.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
+        newSpan.style.transform = 'translateY(0)';
+        newSpan.style.opacity = '1';
 
         animationTimer = setTimeout(slideText, animationInterval);
-        
-        function toggleBox(boxId) {
-            const box = document.getElementById(boxId);
-            box.classList.toggle('expanded');
-        }
-        
+    }
+
+    const initialSpan = document.createElement('span');
+    initialSpan.textContent = phrases[0];
+    header.innerHTML = '';
+    header.appendChild(initialSpan);
+    initialSpan.style.transform = 'translateY(0)'; 
+    header.style.width = initialSpan.offsetWidth + 'px';
+    phraseIndex = 0;
+
+    animationTimer = setTimeout(slideText, animationInterval);
+    
+    function toggleBox(boxId) {
+        const box = document.getElementById(boxId);
+        box.classList.toggle('expanded');
+    }
+    
+    /* REPLACED background effect (old number matrix) with neon grid flicker + mouse ripple. */
+    (function(){
         const canvas = document.getElementById('numberCanvas');
         const ctx = canvas.getContext('2d');
-        
-        let mouseX = -1000;
-        let mouseY = -1000;
-        const GLOW_RADIUS = 16;
-        const NUMBER_SIZE = 20;
-        
-        let numbers = [];
-        
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            initNumbers();
-        }
-        
-        function initNumbers() {
-            numbers = [];
-            const cols = Math.ceil(canvas.width / NUMBER_SIZE);
-            const rows = Math.ceil(canvas.height / NUMBER_SIZE);
-            
-            for (let y = 0; y < rows; y++) {
-                for (let x = 0; x < cols; x++) {
-                    numbers.push({
-                        x: x * NUMBER_SIZE,
-                        y: y * NUMBER_SIZE,
-                        value: Math.floor(Math.random() * 10)
+        let w=0,h=0, cols=0, rows=0;
+        const CELL = 28;
+        let grid=[];
+        let mouse={x:-999,y:-999};
+        function resize(){
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+            cols = Math.ceil(w / CELL);
+            rows = Math.ceil(h / CELL);
+            grid = [];
+            for(let y=0;y<rows;y++){
+                const row=[];
+                for(let x=0;x<cols;x++){
+                    row.push({
+                        b: Math.random()*0.25, // brightness
+                        t: 0 // ripple timer
                     });
                 }
+                grid.push(row);
             }
         }
-        
-        function updateNumbers() {
-            numbers.forEach(num => {
-                if (Math.random() < 0.05) {
-                    num.value = Math.floor(Math.random() * 10);
+        function draw(){
+            ctx.clearRect(0,0,w,h);
+            // subtle dark backdrop
+            ctx.fillStyle='#07070c';
+            ctx.fillRect(0,0,w,h);
+            for(let y=0;y<rows;y++){
+                for(let x=0;x<cols;x++){
+                    const cell = grid[y][x];
+                    // decay brightness
+                    cell.b *= 0.96;
+                    if (cell.b < 0.08 && Math.random() < 0.003) cell.b = 0.9;
+                    if (cell.t > 0) cell.t -= 1;
+                    // compute position
+                    const px = x*CELL + CELL/2;
+                    const py = y*CELL + CELL/2;
+                    // ripple from mouse
+                    const dx = px - mouse.x;
+                    const dy = py - mouse.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const ripple = Math.max(0, 1 - dist/220);
+                    const b = Math.min(1, cell.b + ripple*0.9);
+                    // color shift by row for mild variation
+                    const hue = 328 + (y/rows)*12;
+                    const sat = 84;
+                    const light = 12 + b*62;
+                    ctx.fillStyle=`hsl(${hue} ${sat}% ${light}%)`;
+                    // draw square
+                    const size = (CELL * 0.42) + b*4;
+                    ctx.beginPath();
+                    ctx.roundRect(px-size/2, py-size/2, size, size, 4);
+                    ctx.fill();
+                    // optional inner core
+                    if (b>0.7){
+                        ctx.fillStyle=`hsla(${hue} ${sat}% ${Math.min(88,light+20)}% / ${0.35 + b*0.3})`;
+                        ctx.fillRect(px-size*0.25, py-size*0.25, size*0.5, size*0.5);
+                    }
                 }
-            });
+            }
+            // faint grid lines
+            ctx.strokeStyle='rgba(255,47,109,0.08)';
+            ctx.lineWidth=1;
+            ctx.beginPath();
+            for(let x=0;x<=cols;x++){
+                ctx.moveTo(x*CELL+0.5,0); ctx.lineTo(x*CELL+0.5,h);
+            }
+            for(let y=0;y<=rows;y++){
+                ctx.moveTo(0,y*CELL+0.5); ctx.lineTo(w,y*CELL+0.5);
+            }
+            ctx.stroke();
+            requestAnimationFrame(draw);
         }
-        
-        function draw() {
-            ctx.fillStyle = '#0c0c0c';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.font = '14px "Courier New", monospace';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            numbers.forEach(num => {
-                const dx = num.x - mouseX;
-                const dy = num.y - mouseY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const numberDistance = distance / NUMBER_SIZE;
-                
-                let brightness = 0;
-                if (numberDistance < GLOW_RADIUS) {
-                    brightness = Math.max(0, 1 - (numberDistance / GLOW_RADIUS));
-                }
-                
-                const colorValue = Math.floor(brightness * 255);
-                ctx.fillStyle = `rgb(${colorValue}, ${colorValue}, ${colorValue})`;
-                ctx.fillText(num.value, num.x, num.y);
-            });
-        }
-        
-        function animate() {
-            updateNumbers();
-            draw();
-            requestAnimationFrame(animate);
-        }
-        
-        window.addEventListener('resize', resizeCanvas);
-        window.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
+        window.addEventListener('resize',resize);
+        window.addEventListener('mousemove',e=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
+        window.addEventListener('mouseleave',()=>{ mouse.x=-999; mouse.y=-999; });
+        resize(); draw();
+    })();
+    
+    function copyUsername() {
+        navigator.clipboard.writeText('spookitys').then(() => {
+            const message = document.getElementById('copyMessage');
+            message.classList.add('show');
+            setTimeout(() => {
+                message.classList.remove('show');
+            }, 1000);
         });
-        
-        resizeCanvas();
-        animate();
-        
-        function copyUsername() {
-            navigator.clipboard.writeText('spookitys').then(() => {
-                const message = document.getElementById('copyMessage');
-                message.classList.add('show');
-                setTimeout(() => {
-                    message.classList.remove('show');
-                }, 1000);
-            });
+    }
+
+    let currentGifEl = null;
+    let currentGifTimer = null;
+
+    function hideGif() {
+        if (currentGifTimer) {
+            clearTimeout(currentGifTimer);
+            currentGifTimer = null;
+        }
+        if (currentGifEl) {
+            currentGifEl.remove();
+            currentGifEl = null;
+        }
+    }
+
+    function showGifOnce(url, estDurationMs = 3000) {
+        hideGif();
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'gif-overlay';
+
+        const img = document.createElement('img');
+        img.alt = 'animated overlay';
+        img.decoding = 'async';
+        img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+
+        wrapper.appendChild(img);
+        currentGifEl = wrapper;
+
+        img.addEventListener('load', () => {
+            document.body.appendChild(wrapper);
+            currentGifTimer = setTimeout(hideGif, estDurationMs);
+        });
+    }
+
+    const terminalBtn = document.getElementById('terminalButton');
+    const terminalPanel = document.getElementById('terminalPanel');
+    const terminalOutput = document.getElementById('terminalOutput');
+    const terminalInput = document.getElementById('terminalInput');
+
+    function toggleTerminal(forceShow) {
+        const show = forceShow !== undefined ? forceShow : terminalPanel.classList.contains('hidden');
+        terminalPanel.classList.toggle('hidden', !show);
+        if (show) setTimeout(() => terminalInput.focus(), 0);
+    }
+
+    const ADMIN_KEY = 'alpha_admin_v1';
+
+    function printLine(text = '', color = 'red') {
+        const line = document.createElement('div');
+        line.textContent = text;
+        line.style.color = color;
+        terminalOutput.appendChild(line);
+        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+    }
+
+    function handleCommand(cmd) {
+        if (!cmd) return;
+        const raw = cmd.trim();
+        const normalized = raw.toLowerCase();
+
+        if (raw === 'bH4zR0TnC7mYx2pV5jLq9wS3fA1uE6gK8oNrdZtFvMhQ') {
+            try { localStorage.setItem(ADMIN_KEY, '1'); } catch (e) {}
+            printLine('admin granted', '#00ff66'); // green
+            return;
         }
 
-        let currentGifEl = null;
-        let currentGifTimer = null;
-
-        function hideGif() {
-            if (currentGifTimer) {
-                clearTimeout(currentGifTimer);
-                currentGifTimer = null;
-            }
-            if (currentGifEl) {
-                currentGifEl.remove();
-                currentGifEl = null;
-            }
-        }
-
-        function showGifOnce(url, estDurationMs = 3000) {
-            hideGif();
-
-            const wrapper = document.createElement('div');
-            wrapper.className = 'gif-overlay';
-
-            const img = document.createElement('img');
-            img.alt = 'animated overlay';
-            img.decoding = 'async';
-            img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
-
-            wrapper.appendChild(img);
-            currentGifEl = wrapper;
-
-            img.addEventListener('load', () => {
-                document.body.appendChild(wrapper);
-                currentGifTimer = setTimeout(hideGif, estDurationMs);
-            });
-        }
-
-        const terminalBtn = document.getElementById('terminalButton');
-        const terminalPanel = document.getElementById('terminalPanel');
-        const terminalOutput = document.getElementById('terminalOutput');
-        const terminalInput = document.getElementById('terminalInput');
-
-        function toggleTerminal(forceShow) {
-            const show = forceShow !== undefined ? forceShow : terminalPanel.classList.contains('hidden');
-            terminalPanel.classList.toggle('hidden', !show);
-            if (show) setTimeout(() => terminalInput.focus(), 0);
-        }
-
-        const ADMIN_KEY = 'alpha_admin_v1';
-
-        function printLine(text = '', color = 'red') {
-            const line = document.createElement('div');
-            line.textContent = text;
-            line.style.color = color;
-            terminalOutput.appendChild(line);
-            terminalOutput.scrollTop = terminalOutput.scrollHeight;
-        }
-
-        function handleCommand(cmd) {
-            if (!cmd) return;
-            const raw = cmd.trim();
-            const normalized = raw.toLowerCase();
-
-            if (raw === 'bH4zR0TnC7mYx2pV5jLq9wS3fA1uE6gK8oNrdZtFvMhQ') {
-                try { localStorage.setItem(ADMIN_KEY, '1'); } catch (e) {}
-                printLine('admin granted', '#00ff66'); // green
-                return;
-            }
-
-            if (normalized === '57alphaclicker') {
-                if (localStorage.getItem(ADMIN_KEY) === '1') {
-                    printLine('Launching Clicker Game...');
-                    window.location.href = 'clicker.html';
-                } else {
-                    printLine('access denied: admin required', 'orange');
-                }
-                return;
-            }
-
-            if (normalized === '16zetatetris') {
-                if (localStorage.getItem(ADMIN_KEY) === '1') {
-                    printLine('Launching Tetris...');
-                    window.location.href = 'tetris.html';
-                } else {
-                    printLine('access denied: admin required', 'orange');
-                }
-                return;
-            }
-
-            if (normalized === 'cat') {
-                printLine('playing: cat.gif');
-                showGifOnce('https://media.tenor.com/_WZy7E7hoTcAAAAM/cat-smile.gif', 3000);
-                return;
-            }
-
-            if (normalized === 'dog') {
-                printLine('playing: dog.gif');
-                showGifOnce('https://media.tenor.com/7_KRHOBcSnEAAAAM/happy-birthday-ashleigh.gif', 3500);
-                return;
-            }
-
-
-            if (normalized === 'info' || normalized === 'help' || normalized === '?' || normalized === 'commands' || normalized === 'command list' || normalized === 'command' || normalized === 'cmds') {
-                printLine('welcome to the terminal. available commands:');
-                printLine('help/cmds/?/commands/command list/command - shows this message');
-                printLine('dog - plays a dog gif');
-                printLine('cat - plays a cat gif');
+        if (normalized === '57alphaclicker') {
+            if (localStorage.getItem(ADMIN_KEY) === '1') {
+                printLine('Launching Clicker Game...');
+                window.location.href = 'clicker.html';
             } else {
-                printLine(`'${cmd}' is not recognized as an internal or external command.`);
+                printLine('access denied: admin required', 'orange');
             }
+            return;
         }
 
-        terminalBtn.addEventListener('click', () => toggleTerminal());
-
-        terminalInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const cmd = terminalInput.value;
-                printLine(`C:/cmd> ${cmd}`);
-                handleCommand(cmd);
-                terminalInput.value = '';
-            } else if (e.key === 'Escape') {
-                toggleTerminal(false);
+        if (normalized === '16zetatetris') {
+            if (localStorage.getItem(ADMIN_KEY) === '1') {
+                printLine('Launching Tetris...');
+                window.location.href = 'tetris.html';
+            } else {
+                printLine('access denied: admin required', 'orange');
             }
-        });
-    </script>
+            return;
+        }
+
+        if (normalized === 'cat') {
+            printLine('playing: cat.gif');
+            showGifOnce('https://media.tenor.com/_WZy7E7hoTcAAAAM/cat-smile.gif', 3000);
+            return;
+        }
+
+        if (normalized === 'dog') {
+            printLine('playing: dog.gif');
+            showGifOnce('https://media.tenor.com/7_KRHOBcSnEAAAAM/happy-birthday-ashleigh.gif', 3500);
+            return;
+        }
+
+
+        if (normalized === 'info' || normalized === 'help' || normalized === '?' || normalized === 'commands' || normalized === 'command list' || normalized === 'command' || normalized === 'cmds') {
+            printLine('welcome to the terminal. available commands:');
+            printLine('help/cmds/?/commands/command list/command - shows this message');
+            printLine('dog - plays a dog gif');
+            printLine('cat - plays a cat gif');
+        } else {
+            printLine(`'${cmd}' is not recognized as an internal or external command.`);
+        }
+    }
+
+    terminalBtn.addEventListener('click', () => toggleTerminal());
+
+    terminalInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const cmd = terminalInput.value;
+            printLine(`C:/cmd> ${cmd}`);
+            handleCommand(cmd);
+            terminalInput.value = '';
+        } else if (e.key === 'Escape') {
+            toggleTerminal(false);
+        }
+    });
+</script>
 </body>
 </html>
