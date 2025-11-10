@@ -5,11 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Site</title>
     <style>
+        :root {
+            --bg: #0a0a12;
+            --panel: #12121b;
+            --fg: #eef1ff;
+            --accent: #ff2f6d;
+        }
+
         body {
-            background-color: #0c0c0c;
             margin: 0;
             font-family: 'Courier New', monospace;
-            overflow: hidden;
+            overflow-x: hidden;
+            /* Match Tetris background: radial gradient with subtle vignette */
+            background: radial-gradient(1200px 800px at 20% 10%, #121226 0%, #0b0b14 55%, #05050a 100%);
+            min-height: 100vh;
         }
         
         #numberCanvas {
@@ -30,11 +39,11 @@
         .header-container {
             margin-bottom: 20px;
             padding-bottom: 20px;
-            border-bottom: 1px solid rgb(43, 43, 43);
+            border-bottom: 1px solid rgba(255,47,109,0.25);
         }
         
         h1 {
-            color: white;
+            color: var(--accent);
             font-weight: bold;
             margin: 0;
             font-size: 1.5em;
@@ -43,6 +52,8 @@
             overflow: hidden;
             position: relative;
             transition: width 0.5s ease-in-out;
+            text-shadow: 0 0 12px rgba(255,47,109,0.4);
+            letter-spacing: 1px;
         }
 
         h1 span {
@@ -60,26 +71,36 @@
         }
         
         .box-header {
-            color: white;
+            color: var(--fg);
             font-weight: bold;
             cursor: pointer;
             user-select: none;
-            padding: 5px 0;
-            border: 2px solid white;
-            padding: 10px;
+            padding: 12px 16px;
+            border: 1px solid rgba(255,47,109,0.35);
             width: fit-content;
-            background-color: #1b1b1b;
+            background: linear-gradient(180deg, rgba(18,18,27,0.95), rgba(18,18,27,0.85));
+            border-radius: 10px;
+            box-shadow:
+                0 10px 30px rgba(0,0,0,0.45),
+                0 0 0 2px rgba(255,47,109,0.08) inset,
+                0 0 24px rgba(255,47,109,0.12);
+            transition: all .15s ease;
         }
         
         .box-header:hover {
-            text-decoration: underline;
+            border-color: rgba(255,47,109,0.6);
+            transform: translateY(-2px);
+            box-shadow:
+                0 12px 35px rgba(0,0,0,0.5),
+                0 0 0 2px rgba(255,47,109,0.12) inset,
+                0 0 28px rgba(255,47,109,0.18);
         }
         
         .box-content {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.4s ease-out;
-            color: white;
+            color: var(--fg);
             font-weight: normal;
             font-size: 14px;
         }
@@ -91,23 +112,30 @@
         }
         
         .box-content-inner {
-            padding: 10px;
-            border: 2px solid white;
-            background-color: #1b1b1b;
+            padding: 12px 16px;
+            border: 1px solid rgba(255,47,109,0.35);
+            background: linear-gradient(180deg, #0f0f18 0%, #0e0e16 100%);
             width: fit-content;
             min-width: 300px;
+            border-radius: 8px;
+            margin-top: 8px;
+            box-shadow:
+                0 10px 22px rgba(0,0,0,0.3),
+                0 0 0 1px rgba(255,255,255,0.03) inset;
         }
         
         .box-content a {
-            color: white;
+            color: var(--accent);
             cursor: pointer;
-            text-decoration: underline;
+            text-decoration: none;
             display: block;
             margin: 5px 0;
+            transition: all .1s ease;
         }
         
         .box-content a:hover {
-            opacity: 0.7;
+            text-decoration: underline;
+            text-shadow: 0 0 8px rgba(255,47,109,0.5);
         }
         
         .box-content ul {
@@ -122,6 +150,8 @@
         
         .category {
             font-weight: bold;
+            color: var(--accent);
+            margin-top: 8px;
         }
         
         @media (min-width: 769px) and (orientation: landscape) {
@@ -131,17 +161,19 @@
         }
         
         .game-link {
-            color: white;
-            text-decoration: underline;
+            color: var(--accent);
+            text-decoration: none;
             cursor: pointer;
+            transition: all .1s ease;
         }
         
         .game-link:hover {
-            opacity: 0.7;
+            text-decoration: underline;
+            text-shadow: 0 0 8px rgba(255,47,109,0.5);
         }
         
         .message {
-            color: white;
+            color: var(--fg);
             margin-top: 10px;
             opacity: 0;
             transition: opacity 0.3s;
@@ -150,9 +182,11 @@
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 2;
-            background-color: rgba(0, 0, 0, 0.8);
-            padding: 10px 20px;
-            border-radius: 5px;
+            background: linear-gradient(180deg, rgba(18,18,27,0.98), rgba(18,18,27,0.95));
+            padding: 16px 28px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,47,109,0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 24px rgba(255,47,109,0.2);
         }
         
         .message.show {
@@ -169,7 +203,6 @@
             }
             
             h1 {
-
                 justify-content: center;
             }
             
@@ -186,14 +219,23 @@
             z-index: 4;
             width: 40px;
             height: 40px;
-            background: #0c0c0c;        
-            color: red;                
-            border: 2px solid red;     
+            background: linear-gradient(180deg, #ff6a9a, #ff2f6d);
+            color: #0a0a12;
+            border: none;
             border-radius: 6px;
             font-weight: bold;
             font-family: 'Courier New', monospace;
             cursor: pointer;
             user-select: none;
+            box-shadow:
+                0 8px 18px rgba(255,47,109,0.35),
+                0 0 0 1px rgba(255,255,255,0.08) inset;
+            transition: all .08s ease;
+        }
+
+        .terminal-button:hover {
+            filter: brightness(1.05);
+            transform: translateY(-1px);
         }
 
         .terminal {
@@ -205,14 +247,18 @@
             max-width: 800px;
             min-width: 300px;
             height: 40vh;
-            background: rgba(8, 8, 8, 0.95);
-            border: 2px solid red;
-            border-radius: 6px;
-            color: red;
-            padding: 10px;
+            background: linear-gradient(180deg, rgba(18,18,27,0.98), rgba(18,18,27,0.95));
+            border: 1px solid rgba(255,47,109,0.35);
+            border-radius: 10px;
+            color: var(--accent);
+            padding: 14px;
             display: flex;
             flex-direction: column;
             font-family: 'Courier New', monospace;
+            box-shadow:
+                0 10px 30px rgba(0,0,0,0.45),
+                0 0 0 2px rgba(255,47,109,0.08) inset,
+                0 0 24px rgba(255,47,109,0.12);
         }
         .terminal.hidden { display: none; }
 
@@ -220,20 +266,21 @@
             flex: 1;
             overflow-y: auto;
             white-space: pre-wrap;
-            color: red;
+            color: var(--accent);
+            line-height: 1.45;
         }
 
         .terminal-prompt {
             display: flex;
             align-items: center;
             gap: 8px;
-            border-top: 1px solid red;
-            padding-top: 6px;
-            margin-top: 6px;
+            border-top: 1px solid rgba(255,47,109,0.25);
+            padding-top: 8px;
+            margin-top: 8px;
         }
 
         .terminal-prompt-label {
-            color: red;
+            color: var(--accent);
         }
 
         .terminal-input {
@@ -241,8 +288,8 @@
             background: transparent;
             border: none;
             outline: none;
-            color: red;
-            caret-color: red;
+            color: var(--accent);
+            caret-color: var(--accent);
             font-family: inherit;
             font-size: 14px;
         }
@@ -267,9 +314,9 @@
         .gif-overlay img {
             max-width: min(70vw, 420px);
             max-height: min(70vh, 420px);
-            border: 2px solid red;
-            border-radius: 6px;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            box-shadow: 0 0 40px rgba(255,47,109,0.6);
         }
     </style>
 </head>
@@ -571,6 +618,8 @@ Terminal Protcol Initiated [Website Version: 0.2]
             if (show) setTimeout(() => terminalInput.focus(), 0);
         }
 
+        const ADMIN_KEY = 'alpha_admin_v1';
+
         function printLine(text = '', color = 'red') {
             const line = document.createElement('div');
             line.textContent = text;
@@ -579,32 +628,34 @@ Terminal Protcol Initiated [Website Version: 0.2]
             terminalOutput.scrollTop = terminalOutput.scrollHeight;
         }
 
-        // create a short-lived launch token and navigate to the requested game
-        function createLaunchAndNavigate(path, friendlyName) {
-            const token = Math.random().toString(36).slice(2, 12);
-            const expiry = Date.now() + 30_000; // token valid for 30 seconds
-            try {
-                sessionStorage.setItem('alpha_launch_token', token);
-                sessionStorage.setItem('alpha_launch_expiry', String(expiry));
-            } catch (e) {}
-            printLine(`Launching ${friendlyName}...`);
-            window.location.href = `${path}?lt=${encodeURIComponent(token)}`;
-        }
-
         function handleCommand(cmd) {
             if (!cmd) return;
             const raw = cmd.trim();
             const normalized = raw.toLowerCase();
 
-            // Launch clicker via terminal (no admin required)
-            if (normalized === '57alphaclicker') {
-                createLaunchAndNavigate('clicker.html', 'Clicker Game');
+            if (raw === 'bH4zR0TnC7mYx2pV5jLq9wS3fA1uE6gK8oNrdZtFvMhQ') {
+                try { localStorage.setItem(ADMIN_KEY, '1'); } catch (e) {}
+                printLine('admin granted', '#00ff66'); // green
                 return;
             }
 
-            // Launch tetris via terminal (no admin required)
+            if (normalized === '57alphaclicker') {
+                if (localStorage.getItem(ADMIN_KEY) === '1') {
+                    printLine('Launching Clicker Game...');
+                    window.location.href = 'clicker.html';
+                } else {
+                    printLine('access denied: admin required', 'orange');
+                }
+                return;
+            }
+
             if (normalized === '16zetatetris') {
-                createLaunchAndNavigate('tetris.html', 'Tetris');
+                if (localStorage.getItem(ADMIN_KEY) === '1') {
+                    printLine('Launching Tetris...');
+                    window.location.href = 'tetris.html';
+                } else {
+                    printLine('access denied: admin required', 'orange');
+                }
                 return;
             }
 
