@@ -318,6 +318,37 @@
             opacity: 0.5;
             line-height: 1.3;
         }
+
+        /* Ability cooldown display */
+        .ability-display {
+            border: 1px solid rgba(255,47,109,0.35);
+            padding: 10px;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #0f0f18 0%, #0e0e16 100%);
+            box-shadow:
+                0 10px 22px rgba(0,0,0,0.3),
+                0 0 0 1px rgba(255,255,255,0.03) inset;
+        }
+        .cooldown-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+        .cooldown-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6a9a, #ff2f6d);
+            transition: width 0.1s linear;
+            box-shadow: 0 0 8px rgba(255,47,109,0.5);
+        }
+        .cooldown-text {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+
     </style>
 </head>
 <body>
@@ -346,6 +377,31 @@
                             <div class="mode-title">Ability</div>
                             <div class="mode-desc">For a chaotic and fun time!</div>
                             <div class="mode-stats">(1.5x speed, 1.5x scaling, 0.5x points)</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ability Selection Screen -->
+            <div id="abilityScreen" class="overlay">
+                <div class="overlay-content">
+                    <h1>SELECT ABILITY</h1>
+                    <p class="subtitle">Choose your power</p>
+                    <div class="gamemode-grid">
+                        <button class="gamemode-btn" onclick="selectAbility('timestop')">
+                            <div class="mode-title">Time Stop</div>
+                            <div class="mode-desc">Freeze time for 10 seconds. Control blocks in a monochrome world.</div>
+                            <div class="mode-stats">Cooldown: 45s</div>
+                        </button>
+                        <button class="gamemode-btn" onclick="selectAbility('phase')">
+                            <div class="mode-title">Phase</div>
+                            <div class="mode-desc">Next block phases through others. Overlapping parts disappear on placement.</div>
+                            <div class="mode-stats">Cooldown: 30s</div>
+                        </button>
+                        <button class="gamemode-btn" onclick="selectAbility('cycle')">
+                            <div class="mode-title">Cycle</div>
+                            <div class="mode-desc">Swap current block with the next in queue instantly.</div>
+                            <div class="mode-stats">Cooldown: 20s</div>
                         </button>
                     </div>
                 </div>
@@ -406,6 +462,19 @@
                     <span>Back:</span>
                     <button class="keybind-btn" data-action="back">Escape</button>
                 </div>
+                <div class="keybind-row" id="abilityKeybind" style="display: none;">
+                    <span>Ability:</span>
+                    <button class="keybind-btn" data-action="ability">F</button>
+                </div>
+            </div>
+
+            <!-- Ability Display (only shown in ability mode) -->
+            <div id="abilityDisplay" class="ability-display" style="display: none;">
+                <div class="title">Ability: <span id="abilityName">None</span></div>
+                <div class="cooldown-bar">
+                    <div class="cooldown-fill" id="cooldownFill" style="width: 100%;"></div>
+                </div>
+                <div class="cooldown-text" id="cooldownText">Ready</div>
             </div>
 
             <!-- Mobile controls -->
@@ -481,6 +550,20 @@
       ability: { speedMult: 1.5, scaleMult: 1.5, pointMult: 0.5 }
   };
 
+  // Ability system
+  let currentAbility = null;
+  let abilityCooldown = 0;
+  let abilityMaxCooldown = 0;
+  let abilityActive = false;
+  let abilityDuration = 0;
+  let phasedBlock = false; // for phase ability
+
+  const abilities = {
+      timestop: { name: 'Time Stop', cooldown: 45000, duration: 10000 },
+      phase: { name: 'Phase', cooldown: 30000, duration: 0 },
+      cycle: { name: 'Cycle', cooldown: 20000, duration: 0 }
+  };
+
   // Keybind system
   let keybinds = {
       left: 'a',
@@ -490,7 +573,8 @@
       hard: ' ',
       restart: 'm',
       pause: 'p',
-      back: 'escape'
+      back: 'escape',
+      ability: 'f'
   };
   let listeningFor = null;
 
@@ -761,6 +845,8 @@
   }
 
   function collide(arena, player) {
+      if (phasedBlock) return false; // Phase through everything
+      
       const m = player.matrix;
       const o = player.pos;
       for (let y = 0; y < m.length; ++y) {
@@ -788,11 +874,27 @@
   }
 
   function merge(arena, player) {
-      player.matrix.forEach((row, y) => {
-          row.forEach((v, x) => {
-              if (v !== 0) arena[y + player.pos.y][x + player.pos.x] = v;
+      if (phasedBlock) {
+          // Phase merge: only merge non-overlapping blocks
+          player.matrix.forEach((row, y) => {
+              row.forEach((v, x) => {
+                  if (v !== 0) {
+                      const ay = y + player.pos.y;
+                      const ax = x + player.pos.x;
+                      if (arena[ay] && arena[ay][ax] === 0) {
+                          arena[ay][ax] = v;
+                      }
+                  }
+              });
           });
-      });
+          phasedBlock = false;
+      } else {
+          player.matrix.forEach((row, y) => {
+              row.forEach((v, x) => {
+                  if (v !== 0) arena[y + player.pos.y][x + player.pos.x] = v;
+              });
+          });
+      }
   }
 
   function rotate(matrix, dir) {
@@ -956,6 +1058,13 @@
                   ctx.lineWidth = 1;
                   ctx.strokeRect(px + 0.5, py + 0.5, 23, 23);
                   ctx.restore();
+              } else if (style === 'phase-ghost') {
+                  ctx.save();
+                  ctx.strokeStyle = 'rgba(0,240,240,0.7)';
+                  ctx.setLineDash([4, 4]);
+                  ctx.lineWidth = 1;
+                  ctx.strokeRect(px + 0.5, py + 0.5, 23, 23);
+                  ctx.restore();
               }
           });
       });
@@ -974,13 +1083,20 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawBackground();
 
+      // Monochrome effect for timestop
+      if (abilityActive && currentAbility === 'timestop') {
+          ctx.save();
+          ctx.filter = 'grayscale(100%) contrast(1.2)';
+      }
+
       // Arena
       drawMatrix(arena, { x: 0, y: 0 }, 'solid');
 
       // Draw ghost only when piece is active (not flashing)
       if (!flashingRows.length && gameState === 'playing') {
           const gy = getGhostY();
-          drawMatrix(player.matrix, { x: player.pos.x, y: gy }, 'ghost');
+          const ghostStyle = phasedBlock ? 'phase-ghost' : 'ghost';
+          drawMatrix(player.matrix, { x: player.pos.x, y: gy }, ghostStyle);
 
           drawMatrix(player.matrix, player.pos, 'shadow');
           ctx.save();
@@ -991,7 +1107,21 @@
           ctx.translate(cx, cy);
           ctx.scale(s, s);
           ctx.translate(-cx, -cy);
-          drawMatrix(player.matrix, player.pos, 'solid');
+          
+          // Phase glow effect
+          if (phasedBlock) {
+              ctx.save();
+              ctx.shadowColor = 'rgba(0,240,240,0.8)';
+              ctx.shadowBlur = 20;
+              drawMatrix(player.matrix, player.pos, 'solid');
+              ctx.restore();
+          } else {
+              drawMatrix(player.matrix, player.pos, 'solid');
+          }
+          ctx.restore();
+      }
+
+      if (abilityActive && currentAbility === 'timestop') {
           ctx.restore();
       }
 
@@ -1036,6 +1166,20 @@
       lastTime = time;
 
       if (gameState === 'playing') {
+          // Update ability cooldowns
+          if (currentGamemode === 'ability') {
+              if (abilityCooldown > 0) {
+                  abilityCooldown = Math.max(0, abilityCooldown - delta);
+              }
+              if (abilityActive) {
+                  abilityDuration = Math.max(0, abilityDuration - delta);
+                  if (abilityDuration <= 0) {
+                      abilityActive = false;
+                  }
+              }
+              updateAbilityDisplay();
+          }
+
           if (flashingRows.length) {
               flashElapsed += delta;
               if (flashElapsed >= FLASH_DURATION) {
@@ -1046,11 +1190,15 @@
                   playerReset();
               }
           } else {
-              dropCounter += delta;
-              const settings = gamemodeSettings[currentGamemode];
-              const baseSpeed = 1000;
-              const speed = Math.max(100, baseSpeed / settings.speedMult);
-              if (dropCounter > speed) playerDrop();
+              // Time stop prevents drop
+              const shouldDrop = !(abilityActive && currentAbility === 'timestop');
+              if (shouldDrop) {
+                  dropCounter += delta;
+                  const settings = gamemodeSettings[currentGamemode];
+                  const baseSpeed = 1000;
+                  const speed = Math.max(100, baseSpeed / settings.speedMult);
+                  if (dropCounter > speed) playerDrop();
+              }
           }
           if (pieceSpawnT > 0) pieceSpawnT -= delta;
           updateParticles(delta);
@@ -1066,7 +1214,92 @@
 
   function selectGamemode(mode) {
       currentGamemode = mode;
+      if (mode === 'ability') {
+          document.getElementById('startScreen').classList.remove('active');
+          document.getElementById('abilityScreen').classList.add('active');
+      } else {
+          startGame();
+      }
+  }
+
+  function selectAbility(ability) {
+      currentAbility = ability;
+      document.getElementById('abilityScreen').classList.remove('active');
+      document.getElementById('abilityDisplay').style.display = 'block';
+      document.getElementById('abilityKeybind').style.display = 'flex';
+      document.getElementById('abilityName').textContent = abilities[ability].name;
+      abilityMaxCooldown = abilities[ability].cooldown;
+      abilityCooldown = 0;
       startGame();
+  }
+
+  function useAbility() {
+      if (gameState !== 'playing' || abilityCooldown > 0 || abilityActive || flashingRows.length) return;
+      
+      const ability = abilities[currentAbility];
+      abilityCooldown = ability.cooldown;
+      
+      switch(currentAbility) {
+          case 'timestop':
+              abilityActive = true;
+              abilityDuration = ability.duration;
+              break;
+          case 'phase':
+              phasedBlock = true;
+              abilityCooldown = ability.cooldown;
+              break;
+          case 'cycle':
+              // Swap current piece with next
+              const temp = player.matrix;
+              const tempType = getCurrentPieceType();
+              player.matrix = createPiece(nextPiece);
+              nextPiece = tempType;
+              player.pos.x = ((COLS / 2) | 0) - ((player.matrix[0].length / 2) | 0);
+              if (collide(arena, player)) {
+                  // If collision, revert
+                  player.matrix = temp;
+                  nextPiece = getNextPiece();
+              }
+              drawNextPiece();
+              break;
+      }
+      updateAbilityDisplay();
+  }
+
+  function getCurrentPieceType() {
+      const m = player.matrix;
+      if (!m || !m.length) return getNextPiece();
+      // Find first non-zero value to determine type
+      for (let y = 0; y < m.length; y++) {
+          for (let x = 0; x < m[y].length; x++) {
+              if (m[y][x] !== 0) {
+                  const types = ['T', 'O', 'L', 'J', 'I', 'S', 'Z'];
+                  return types[m[y][x] - 1] || 'T';
+              }
+          }
+      }
+      return getNextPiece();
+  }
+
+  function updateAbilityDisplay() {
+      if (currentGamemode !== 'ability') return;
+      
+      const cooldownPct = abilityCooldown > 0 
+          ? ((abilityMaxCooldown - abilityCooldown) / abilityMaxCooldown) * 100 
+          : 100;
+      document.getElementById('cooldownFill').style.width = cooldownPct + '%';
+      
+      if (abilityActive) {
+          const remaining = Math.ceil(abilityDuration / 1000);
+          document.getElementById('cooldownText').textContent = `Active: ${remaining}s`;
+      } else if (abilityCooldown > 0) {
+          const remaining = Math.ceil(abilityCooldown / 1000);
+          document.getElementById('cooldownText').textContent = `Cooldown: ${remaining}s`;
+      } else if (phasedBlock) {
+          document.getElementById('cooldownText').textContent = 'Phase Ready';
+      } else {
+          document.getElementById('cooldownText').textContent = 'Ready';
+      }
   }
 
   function startGame() {
@@ -1075,6 +1308,19 @@
       arena.forEach(row => row.fill(0));
       player.score = 0;
       nextPiece = getNextPiece();
+      
+      // Reset ability state
+      if (currentGamemode === 'ability') {
+          abilityCooldown = 0;
+          abilityActive = false;
+          abilityDuration = 0;
+          phasedBlock = false;
+          updateAbilityDisplay();
+      } else {
+          document.getElementById('abilityDisplay').style.display = 'none';
+          document.getElementById('abilityKeybind').style.display = 'none';
+      }
+      
       playerReset();
       updateScore();
   }
@@ -1089,6 +1335,9 @@
       document.getElementById('gameOverScreen').classList.remove('active');
       document.getElementById('startScreen').classList.add('active');
       gameState = 'start';
+      currentAbility = null;
+      document.getElementById('abilityDisplay').style.display = 'none';
+      document.getElementById('abilityKeybind').style.display = 'none';
   }
 
   document.addEventListener('keydown', (e) => {
@@ -1133,6 +1382,10 @@
       else if (k === keybinds.soft) { e.preventDefault(); playerDrop(); }
       else if (k === keybinds.rotate) { e.preventDefault(); playerRotate(1); }
       else if (k === keybinds.hard) { e.preventDefault(); hardDrop(); }
+      else if (k === keybinds.ability && currentGamemode === 'ability') { 
+          e.preventDefault(); 
+          useAbility(); 
+      }
       else if (k === keybinds.restart) {
           e.preventDefault();
           restartGame();
@@ -1152,6 +1405,7 @@
           rotate: () => playerRotate(1),
           soft: () => playerDrop(),
           hard: () => hardDrop(),
+          ability: () => useAbility(),
           pause: () => { 
               gameState = gameState === 'paused' ? 'playing' : 'paused';
           },
