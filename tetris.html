@@ -862,11 +862,30 @@
 
   // Collision check for arbitrary position (used by ghost)
   function collideAt(matrix, pos) {
+      if (phasedBlock) return false; // Phase through in ghost calculation too
+      
       for (let y = 0; y < matrix.length; ++y) {
           for (let x = 0; x < matrix[y].length; ++x) {
               if (matrix[y][x] !== 0 &&
                   (arena[y + pos.y] && arena[y + pos.y][x + pos.x]) !== 0) {
                   return true;
+              }
+          }
+      }
+      return false;
+  }
+
+  // Check if piece is at bottom of arena (for phased blocks)
+  function isAtBottom(player) {
+      const m = player.matrix;
+      const o = player.pos;
+      for (let y = 0; y < m.length; ++y) {
+          for (let x = 0; x < m[y].length; ++x) {
+              if (m[y][x] !== 0) {
+                  // Check if this block is at the bottom or next row is out of bounds
+                  if (y + o.y + 1 >= ROWS) {
+                      return true;
+                  }
               }
           }
       }
@@ -976,6 +995,25 @@
 
   function playerDrop() {
       player.pos.y++;
+      
+      // For phased blocks, check if we hit the bottom
+      if (phasedBlock && isAtBottom(player)) {
+          player.pos.y--;
+          emitLandingParticles(player);
+          merge(arena, player);
+          const rows = getFullRows();
+          if (rows.length) {
+              clearColors = rows.map(y => arena[y].map(v => colors[v] || '#ffffff'));
+              flashingRows = rows;
+              flashElapsed = 0;
+          } else {
+              playerReset();
+          }
+          dropCounter = 0;
+          return;
+      }
+      
+      // Normal collision check for non-phased blocks
       if (collide(arena, player)) {
           player.pos.y--;
           emitLandingParticles(player);
@@ -995,10 +1033,19 @@
   }
 
   function hardDrop() {
-      do {
-          player.pos.y++;
-      } while (!collide(arena, player));
-      player.pos.y--;
+      // For phased blocks, just drop to the bottom
+      if (phasedBlock) {
+          while (!isAtBottom(player)) {
+              player.pos.y++;
+          }
+      } else {
+          // Normal hard drop
+          do {
+              player.pos.y++;
+          } while (!collide(arena, player));
+          player.pos.y--;
+      }
+      
       emitLandingParticles(player);
       merge(arena, player);
       arenaSweep();
@@ -1072,6 +1119,27 @@
 
   // Compute ghost landing Y for current piece
   function getGhostY() {
+      // For phased blocks, ghost shows at bottom
+      if (phasedBlock) {
+          let y = player.pos.y;
+          while (y + 1 < ROWS) {
+              let canGoLower = false;
+              for (let my = 0; my < player.matrix.length; my++) {
+                  for (let mx = 0; mx < player.matrix[my].length; mx++) {
+                      if (player.matrix[my][mx] !== 0 && my + y + 1 < ROWS) {
+                          canGoLower = true;
+                          break;
+                      }
+                  }
+                  if (canGoLower) break;
+              }
+              if (!canGoLower) break;
+              y++;
+          }
+          return y;
+      }
+      
+      // Normal ghost calculation
       let y = player.pos.y;
       while (!collideAt(player.matrix, { x: player.pos.x, y: y + 1 })) {
           y++;
@@ -1246,7 +1314,7 @@
               break;
           case 'phase':
               phasedBlock = true;
-              abilityCooldown = ability.cooldown;
+              // Note: cooldown is managed after placement in merge()
               break;
           case 'cycle':
               // Swap current piece with next
