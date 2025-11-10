@@ -349,6 +349,29 @@
             margin-top: 4px;
         }
 
+        /* Phase indicator */
+        .phase-indicator {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,240,240,0.9);
+            color: #0a0a12;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 0 20px rgba(0,240,240,0.6);
+            animation: phaseGlow 1s ease-in-out infinite;
+            display: none;
+        }
+        .phase-indicator.active {
+            display: block;
+        }
+        @keyframes phaseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(0,240,240,0.6); }
+            50% { box-shadow: 0 0 30px rgba(0,240,240,0.9); }
+        }
     </style>
 </head>
 <body>
@@ -357,6 +380,11 @@
         <div class="canvas-container">
             <canvas id="tetris" width="240" height="480" aria-label="Tetris board"></canvas>
             
+            <!-- Phase Indicator -->
+            <div id="phaseIndicator" class="phase-indicator">
+                Hard drop places block at current position
+            </div>
+
             <!-- Start Screen -->
             <div id="startScreen" class="overlay active">
                 <div class="overlay-content">
@@ -418,7 +446,7 @@
         </div>
         
         <div class="side">
-            <div class="next-preview">
+            <div class="next-preview" id="nextPreview">
                 <div class="title">Next</div>
                 <canvas id="nextCanvas" width="96" height="96"></canvas>
             </div>
@@ -1033,18 +1061,21 @@
   }
 
   function hardDrop() {
-      // For phased blocks, just drop to the bottom
       if (phasedBlock) {
-          while (!isAtBottom(player)) {
-              player.pos.y++;
-          }
-      } else {
-          // Normal hard drop
-          do {
-              player.pos.y++;
-          } while (!collide(arena, player));
-          player.pos.y--;
+          // Phase ability: drop at current position without moving down
+          emitLandingParticles(player);
+          merge(arena, player);
+          arenaSweep();
+          playerReset();
+          dropCounter = 0;
+          return;
       }
+      
+      // Normal hard drop
+      do {
+          player.pos.y++;
+      } while (!collide(arena, player));
+      player.pos.y--;
       
       emitLandingParticles(player);
       merge(arena, player);
@@ -1160,12 +1191,13 @@
       // Arena
       drawMatrix(arena, { x: 0, y: 0 }, 'solid');
 
-      // Draw ghost only when piece is active (not flashing)
-      if (!flashingRows.length && gameState === 'playing') {
+      // Draw ghost only when piece is active (not flashing) and not phased
+      if (!flashingRows.length && gameState === 'playing' && !phasedBlock) {
           const gy = getGhostY();
-          const ghostStyle = phasedBlock ? 'phase-ghost' : 'ghost';
-          drawMatrix(player.matrix, { x: player.pos.x, y: gy }, ghostStyle);
+          drawMatrix(player.matrix, { x: player.pos.x, y: gy }, 'ghost');
+      }
 
+      if (!flashingRows.length && gameState === 'playing') {
           drawMatrix(player.matrix, player.pos, 'shadow');
           ctx.save();
           const t = Math.max(0, Math.min(1, 1 - (pieceSpawnT / PIECE_SPAWN_MS)));
@@ -1357,6 +1389,14 @@
           : 100;
       document.getElementById('cooldownFill').style.width = cooldownPct + '%';
       
+      // Update phase indicator visibility
+      const phaseIndicator = document.getElementById('phaseIndicator');
+      if (phasedBlock) {
+          phaseIndicator.classList.add('active');
+      } else {
+          phaseIndicator.classList.remove('active');
+      }
+      
       if (abilityActive) {
           const remaining = Math.ceil(abilityDuration / 1000);
           document.getElementById('cooldownText').textContent = `Active: ${remaining}s`;
@@ -1377,6 +1417,14 @@
       player.score = 0;
       nextPiece = getNextPiece();
       
+      // Hide next preview in hard mode
+      const nextPreview = document.getElementById('nextPreview');
+      if (currentGamemode === 'hard') {
+          nextPreview.style.display = 'none';
+      } else {
+          nextPreview.style.display = 'block';
+      }
+      
       // Reset ability state
       if (currentGamemode === 'ability') {
           abilityCooldown = 0;
@@ -1387,6 +1435,7 @@
       } else {
           document.getElementById('abilityDisplay').style.display = 'none';
           document.getElementById('abilityKeybind').style.display = 'none';
+          document.getElementById('phaseIndicator').classList.remove('active');
       }
       
       playerReset();
@@ -1406,6 +1455,8 @@
       currentAbility = null;
       document.getElementById('abilityDisplay').style.display = 'none';
       document.getElementById('abilityKeybind').style.display = 'none';
+      document.getElementById('phaseIndicator').classList.remove('active');
+      document.getElementById('nextPreview').style.display = 'block';
   }
 
   document.addEventListener('keydown', (e) => {
