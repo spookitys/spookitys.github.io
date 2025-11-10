@@ -90,7 +90,9 @@ h1:after {
     margin-bottom:20px;
     position:relative;
     width:fit-content;
-    background:linear-gradient(180deg, var(--panel) 0%, var(--panel-alt) 100%);
+    background: linear-gradient(180deg, rgba(18,18,27,0.35) 0%, rgba(18,18,27,0.22) 100%);
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
     border:1px solid var(--accent-soft);
     border-radius:var(--radius);
     box-shadow:
@@ -185,8 +187,10 @@ h1:after {
 .terminal {
     position:fixed; left:14px; bottom:70px; z-index:4;
     width:60vw; max-width:840px; min-width:320px; height:42vh;
-    background:linear-gradient(180deg, var(--panel) 0%, var(--panel-alt) 100%);
-    border:1px solid var(--accent-soft);
+    background: rgba(18,18,27,0.32);
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+    border: 1px solid rgba(255,255,255,0.10);
     border-radius:10px;
     color:var(--accent);
     padding:14px;
@@ -236,6 +240,37 @@ h1:after {
 @keyframes panelGlow {
     0% { box-shadow:0 10px 24px rgba(0,0,0,0.45),0 0 0 2px rgba(255,47,109,0.08) inset,0 0 26px rgba(255,47,109,0.18); }
     100% { box-shadow:0 16px 36px rgba(0,0,0,0.6),0 0 0 2px rgba(255,47,109,0.16) inset,0 0 50px rgba(255,47,109,0.42); }
+}
+
+/* rotate chevron when expanded via parent class */
+.expandable-box.expanded .box-header:before { transform: rotate(90deg); }
+
+/* Animated terminal output lines */
+.term-line {
+    opacity: 0;
+    transform: translateY(6px);
+    animation: lineIn .24s ease forwards;
+}
+@keyframes lineIn {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Per-key pop animation */
+.key-pop {
+    position: absolute;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--accent);
+    text-shadow: 0 0 10px rgba(255,47,109,0.7);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(0) scale(0.9);
+    animation: keyPop .5s ease-out forwards;
+}
+@keyframes keyPop {
+    0% { opacity: 0; transform: translateY(0) scale(0.9); }
+    20% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-16px) scale(1.2); }
 }
 </style>
 </head>
@@ -396,6 +431,8 @@ Terminal Protcol Initiated [Website Version: 0.2]
     function toggleBox(boxId) {
         const box = document.getElementById(boxId);
         box.classList.toggle('expanded');
+        const parent = box.closest('.expandable-box');
+        if (parent) parent.classList.toggle('expanded');
     }
     
     /* REPLACED background effect (old number matrix) with neon grid flicker + mouse ripple. */
@@ -535,14 +572,39 @@ Terminal Protcol Initiated [Website Version: 0.2]
         if (show) setTimeout(() => terminalInput.focus(), 0);
     }
 
-    const ADMIN_KEY = 'alpha_admin_v1';
-
-    function printLine(text = '', color = 'red') {
+    // animated output with optional typewriter
+    function printLine(text = '', color = 'var(--accent)', typed) {
+        if (typed === undefined) typed = !String(text).startsWith('C:/cmd>');
         const line = document.createElement('div');
-        line.textContent = text;
+        line.className = 'term-line';
         line.style.color = color;
         terminalOutput.appendChild(line);
         terminalOutput.scrollTop = terminalOutput.scrollHeight;
+
+        if (!typed || !text) {
+            line.textContent = text;
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            return;
+        }
+        let i = 0;
+        const chars = String(text);
+        const speed = 12; // ms per char
+        const typer = setInterval(() => {
+            line.textContent += chars[i++];
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            if (i >= chars.length) clearInterval(typer);
+        }, speed);
+    }
+
+    // launch-token helper for Tetris
+    function launchWithToken(path) {
+        const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        try {
+            sessionStorage.setItem('alpha_launch_token', token);
+            sessionStorage.setItem('alpha_launch_expiry', String(Date.now() + 60 * 1000));
+        } catch (e) {}
+        const url = path + '?lt=' + encodeURIComponent(token);
+        window.location.href = url;
     }
 
     function handleCommand(cmd) {
@@ -550,29 +612,14 @@ Terminal Protcol Initiated [Website Version: 0.2]
         const raw = cmd.trim();
         const normalized = raw.toLowerCase();
 
-        if (raw === 'bH4zR0TnC7mYx2pV5jLq9wS3fA1uE6gK8oNrdZtFvMhQ') {
-            try { localStorage.setItem(ADMIN_KEY, '1'); } catch (e) {}
-            printLine('admin granted', '#00ff66'); // green
+        if (normalized === '57alphaclicker' || normalized === 'clicker') {
+            printLine('clicker is currently unavailable', 'orange');
             return;
         }
 
-        if (normalized === '57alphaclicker') {
-            if (localStorage.getItem(ADMIN_KEY) === '1') {
-                printLine('Launching Clicker Game...');
-                window.location.href = 'clicker.html';
-            } else {
-                printLine('access denied: admin required', 'orange');
-            }
-            return;
-        }
-
-        if (normalized === '16zetatetris') {
-            if (localStorage.getItem(ADMIN_KEY) === '1') {
-                printLine('Launching Tetris...');
-                window.location.href = 'tetris.html';
-            } else {
-                printLine('access denied: admin required', 'orange');
-            }
+        if (normalized === '16zetatetris' || normalized === 'tetris') {
+            printLine('Launching Tetris...');
+            launchWithToken('Tetris.html');
             return;
         }
 
@@ -588,10 +635,10 @@ Terminal Protcol Initiated [Website Version: 0.2]
             return;
         }
 
-
         if (normalized === 'info' || normalized === 'help' || normalized === '?' || normalized === 'commands' || normalized === 'command list' || normalized === 'command' || normalized === 'cmds') {
             printLine('welcome to the terminal. available commands:');
             printLine('help/cmds/?/commands/command list/command - shows this message');
+            printLine('tetris - launches tetris');
             printLine('dog - plays a dog gif');
             printLine('cat - plays a cat gif');
         } else {
@@ -605,12 +652,43 @@ Terminal Protcol Initiated [Website Version: 0.2]
         if (e.key === 'Enter') {
             e.preventDefault();
             const cmd = terminalInput.value;
-            printLine(`C:/cmd> ${cmd}`);
+            printLine(`C:/cmd> ${cmd}`, 'var(--fg)', false);
             handleCommand(cmd);
             terminalInput.value = '';
         } else if (e.key === 'Escape') {
             toggleTerminal(false);
         }
+    });
+
+    // Per-letter typed animation (key pop near caret)
+    terminalInput.addEventListener('input', (e) => {
+        if (!e.data || e.data.length !== 1) return;
+        const ch = e.data;
+        const panelRect = terminalPanel.getBoundingClientRect();
+        const inputRect = terminalInput.getBoundingClientRect();
+
+        // measure current input text width using a hidden measurer
+        const measurer = document.createElement('span');
+        const cs = getComputedStyle(terminalInput);
+        measurer.style.position = 'absolute';
+        measurer.style.visibility = 'hidden';
+        measurer.style.whiteSpace = 'pre';
+        measurer.style.fontFamily = cs.fontFamily;
+        measurer.style.fontSize = cs.fontSize;
+        measurer.style.fontWeight = cs.fontWeight;
+        measurer.textContent = terminalInput.value;
+        document.body.appendChild(measurer);
+        const textW = measurer.offsetWidth;
+        document.body.removeChild(measurer);
+
+        const span = document.createElement('span');
+        span.className = 'key-pop';
+        span.textContent = ch;
+        // place near the caret inside the terminal panel
+        span.style.left = (inputRect.left - panelRect.left + Math.min(textW + 6, inputRect.width - 10)) + 'px';
+        span.style.top  = (inputRect.top - panelRect.top + inputRect.height/2 - 4) + 'px';
+        terminalPanel.appendChild(span);
+        span.addEventListener('animationend', () => span.remove());
     });
 </script>
 </body>
