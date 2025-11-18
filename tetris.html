@@ -407,6 +407,11 @@
                             <div class="mode-desc">For more experienced players</div>
                             <div class="mode-stats">(2x speed, 2x scaling, 1.5x points)</div>
                         </button>
+                        <button class="gamemode-btn" onclick="selectGamemode('ultra')">
+                            <div class="mode-title">Ultra</div>
+                            <div class="mode-desc">For people who think hard mode is easy!</div>
+                            <div class="mode-stats">(3x speed, 3x scaling, 2x points, 8x16 grid)</div>
+                        </button>
                         <button class="gamemode-btn" onclick="selectGamemode('ability')">
                             <div class="mode-title">Ability</div>
                             <div class="mode-desc">For a chaotic and fun time!</div>
@@ -414,7 +419,7 @@
                         </button>
                         <button class="gamemode-btn" onclick="selectGamemode('rngless')">
                             <div class="mode-title">RNG-less</div>
-                            <div class="mode-desc">For people that hate randomness</div>
+                            <div class="mode-desc">For people who hate randomness</div>
                             <div class="mode-stats">(1x speed, 1x scaling, no scoring)</div>
                         </button>
                     </div>
@@ -578,19 +583,21 @@
   const nextCanvas = document.getElementById('nextCanvas');
   const nextCtx = nextCanvas.getContext('2d');
 
-  const COLS = 10, ROWS = 20, SIZE = 24;
+  let COLS = 10, ROWS = 20;
+  const SIZE = 24;
   ctx.scale(SIZE/24, SIZE/24);
   nextCtx.scale(1, 1); // 96x96 canvas for preview
 
   // Game states
   let gameState = 'start'; // 'start' | 'playing' | 'paused' | 'gameover'
   let nextPiece = null;
-  let currentGamemode = 'classic'; // 'classic' | 'hard' | 'ability' | 'rngless'
+  let currentGamemode = 'classic'; // 'classic' | 'hard' | 'ultra' | 'ability' | 'rngless'
   
   // Gamemode modifiers
   const gamemodeSettings = {
       classic: { speedMult: 1.0, scaleMult: 1.0, pointMult: 1.0 },
       hard: { speedMult: 2.0, scaleMult: 2.0, pointMult: 1.5 },
+      ultra: { speedMult: 3.0, scaleMult: 3.0, pointMult: 2.0 },
       ability: { speedMult: 1.0, scaleMult: 1.0, pointMult: 0.5 },
       rngless: { speedMult: 1.0, scaleMult: 1.0, pointMult: 0.0 }
   };
@@ -785,6 +792,17 @@
               [0,7,7],
               [0,0,0],
           ];
+          // Ultra mode exclusive pieces
+          case 'U': return [ // L-shape but 3 blocks in 2 directions
+              [8,0,0],
+              [8,0,0],
+              [8,8,8],
+          ];
+          case 'V': return [ // 3-block straight piece
+              [0,9,0],
+              [0,9,0],
+              [0,9,0],
+          ];
       }
   }
 
@@ -797,9 +815,11 @@
       '#00f0f0', // I
       '#00f000', // S
       '#f00000', // Z
+      '#ff6a9a', // U (pink)
+      '#a0f0a0', // V (light green)
   ];
 
-  const arena = createMatrix(COLS, ROWS);
+  let arena = createMatrix(COLS, ROWS);
 
   const player = {
       pos: { x: 0, y: 0 },
@@ -932,8 +952,8 @@
       for (let y = 0; y < m.length; ++y) {
           for (let x = 0; x < m[y].length; ++x) {
               if (m[y][x] !== 0) {
-                  // Check if this block is at the bottom or next row is out of bounds
-                  if (y + o.y + 1 >= ROWS) {
+                  // Check if this block cell would be at or past the bottom
+                  if (y + o.y >= ROWS - 1) {
                       return true;
                   }
               }
@@ -982,6 +1002,10 @@
           const piece = pieceSequence[pieceSequenceIndex];
           pieceSequenceIndex = (pieceSequenceIndex + 1) % pieceSequence.length;
           return piece;
+      }
+      if (currentGamemode === 'ultra') {
+          const pieces = 'OLSJZUV'; // No T or I pieces, add U and V
+          return pieces[(pieces.length * Math.random()) | 0];
       }
       const pieces = 'TJLOSZI';
       return pieces[(pieces.length * Math.random()) | 0];
@@ -1347,6 +1371,27 @@
 
   function selectGamemode(mode) {
       currentGamemode = mode;
+      
+      // Set grid dimensions based on mode
+      if (mode === 'ultra') {
+          COLS = 8;
+          ROWS = 16;
+          canvas.width = COLS * SIZE;
+          canvas.height = ROWS * SIZE;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.scale(SIZE/24, SIZE/24);
+      } else {
+          COLS = 10;
+          ROWS = 20;
+          canvas.width = 240;
+          canvas.height = 480;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          ctx.scale(SIZE/24, SIZE/24);
+      }
+      
+      // Recreate arena with new dimensions
+      arena = createMatrix(COLS, ROWS);
+      
       if (mode === 'ability') {
           document.getElementById('startScreen').classList.remove('active');
           document.getElementById('abilityScreen').classList.add('active');
@@ -1501,6 +1546,16 @@
       document.getElementById('startScreen').classList.add('active');
       gameState = 'start';
       currentAbility = null;
+      
+      // Reset to default grid
+      COLS = 10;
+      ROWS = 20;
+      canvas.width = 240;
+      canvas.height = 480;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(SIZE/24, SIZE/24);
+      arena = createMatrix(COLS, ROWS);
+      
       document.getElementById('abilityDisplay').style.display = 'none';
       document.getElementById('abilityKeybind').style.display = 'none';
       document.getElementById('phaseIndicator').classList.remove('active');
