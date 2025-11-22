@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Rush - Platformer</title>
+<style>
+:root {
+    --bg-grad-start:#121226;
+    --bg-grad-mid:#0b0b14;
+    --bg-grad-end:#05050a;
+    --fg:#eef1ff;
+    --accent:#ff2f6d;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+    font-family:"Courier New", monospace;
+    color:var(--fg);
+    background:radial-gradient(1200px 800px at 20% 10%, var(--bg-grad-start) 0%, var(--bg-grad-mid) 55%, var(--bg-grad-end) 100%);
+    overflow:hidden;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+}
+#gameCanvas {
+    border:2px solid var(--accent);
+    box-shadow:0 0 30px rgba(255,47,109,0.4);
+    background:#1a1a2e;
+    image-rendering:pixelated;
+    image-rendering:crisp-edges;
+}
+#info {
+    margin-top:20px;
+    text-align:center;
+    color:var(--fg);
+    text-shadow:0 0 10px rgba(255,47,109,0.6);
+}
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="info">
+    <p>Arrow Keys / WASD to move | Space to Jump</p>
+    <p>Press ESC to return to main site</p>
+</div>
+
+<script>
+// Token validation
+(function(){
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('lt');
+    if (!token) {
+        window.location.href = 'index.html';
+        return;
+    }
+    try {
+        const stored = sessionStorage.getItem('alpha_launch_token');
+        const expiry = parseInt(sessionStorage.getItem('alpha_launch_expiry') || '0');
+        if (stored !== token || Date.now() > expiry) {
+            window.location.href = 'index.html';
+            return;
+        }
+        sessionStorage.removeItem('alpha_launch_token');
+        sessionStorage.removeItem('alpha_launch_expiry');
+    } catch(e) {
+        window.location.href = 'index.html';
+    }
+})();
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = 800;
+canvas.height = 600;
+
+// Game constants
+const GRAVITY = 0.6;
+const JUMP_FORCE = -12;
+const MOVE_SPEED = 5;
+const GROUND_Y = 500;
+
+// Player
+const player = {
+    x: 100,
+    y: GROUND_Y,
+    width: 48,
+    height: 64,
+    vx: 0,
+    vy: 0,
+    onGround: false,
+    facingRight: true,
+    state: 'idle', // idle, walk, jump
+    animFrame: 0,
+    animTimer: 0
+};
+
+// Load player animations
+const animations = {
+    idle: new Image(),
+    walk: new Image(),
+    jump: new Image()
+};
+animations.idle.src = 'playeridle.gif';
+animations.walk.src = 'playerwalk.gif';
+animations.jump.src = 'playerjump.gif';
+
+// Platforms
+const platforms = [
+    { x: 0, y: GROUND_Y + 64, width: canvas.width, height: 100 }, // ground
+    { x: 250, y: 400, width: 150, height: 20 },
+    { x: 500, y: 300, width: 150, height: 20 },
+    { x: 150, y: 250, width: 120, height: 20 },
+    { x: 600, y: 200, width: 180, height: 20 }
+];
+
+// Input
+const keys = {};
+window.addEventListener('keydown', e => {
+    keys[e.key] = true;
+    if (e.key === 'Escape') window.location.href = 'index.html';
+});
+window.addEventListener('keyup', e => keys[e.key] = false);
+
+function update() {
+    // Horizontal movement
+    player.vx = 0;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+        player.vx = -MOVE_SPEED;
+        player.facingRight = false;
+        if (player.onGround) player.state = 'walk';
+    }
+    if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+        player.vx = MOVE_SPEED;
+        player.facingRight = true;
+        if (player.onGround) player.state = 'walk';
+    }
+    
+    // Jump
+    if ((keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W']) && player.onGround) {
+        player.vy = JUMP_FORCE;
+        player.onGround = false;
+    }
+    
+    // Apply gravity
+    player.vy += GRAVITY;
+    
+    // Update position
+    player.x += player.vx;
+    player.y += player.vy;
+    
+    // Keep player in bounds
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+    
+    // Platform collision
+    player.onGround = false;
+    for (const platform of platforms) {
+        if (player.x + player.width > platform.x &&
+            player.x < platform.x + platform.width &&
+            player.y + player.height > platform.y &&
+            player.y + player.height < platform.y + platform.height &&
+            player.vy >= 0) {
+            player.y = platform.y - player.height;
+            player.vy = 0;
+            player.onGround = true;
+        }
+    }
+    
+    // Update animation state
+    if (!player.onGround) {
+        player.state = 'jump';
+    } else if (player.vx === 0) {
+        player.state = 'idle';
+    }
+}
+
+function draw() {
+    // Clear canvas
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw platforms
+    ctx.fillStyle = '#ff2f6d';
+    ctx.shadowColor = 'rgba(255,47,109,0.5)';
+    ctx.shadowBlur = 10;
+    for (const platform of platforms) {
+        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+    }
+    ctx.shadowBlur = 0;
+    
+    // Draw player
+    ctx.save();
+    if (!player.facingRight) {
+        ctx.translate(player.x + player.width, player.y);
+        ctx.scale(-1, 1);
+        ctx.drawImage(animations[player.state], 0, 0, player.width, player.height);
+    } else {
+        ctx.drawImage(animations[player.state], player.x, player.y, player.width, player.height);
+    }
+    ctx.restore();
+    
+    // Draw debug info
+    ctx.fillStyle = '#eef1ff';
+    ctx.font = '14px "Courier New"';
+    ctx.fillText(`Position: (${Math.floor(player.x)}, ${Math.floor(player.y)})`, 10, 20);
+    ctx.fillText(`State: ${player.state}`, 10, 40);
+    ctx.fillText(`On Ground: ${player.onGround}`, 10, 60);
+}
+
+function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// Start game once images load
+let loadedCount = 0;
+const totalImages = 3;
+Object.values(animations).forEach(img => {
+    img.onload = () => {
+        loadedCount++;
+        if (loadedCount === totalImages) gameLoop();
+    };
+    img.onerror = () => {
+        loadedCount++;
+        if (loadedCount === totalImages) gameLoop();
+    };
+});
+</script>
+</body>
+</html>
