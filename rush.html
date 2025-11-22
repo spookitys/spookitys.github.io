@@ -23,24 +23,63 @@ body {
     flex-direction:column;
     align-items:center;
     justify-content:center;
+    padding:20px;
+}
+#gameContainer {
+    position:relative;
+    width:90vw;
+    height:90vh;
+    max-width:1800px;
+    max-height:1200px;
 }
 #gameCanvas {
+    width:100%;
+    height:100%;
     border:2px solid var(--accent);
     box-shadow:0 0 30px rgba(255,47,109,0.4);
     background:#1a1a2e;
-    image-rendering:pixelated;
-    image-rendering:crisp-edges;
+    display:block;
+}
+#debugInfo {
+    position:absolute;
+    top:10px;
+    left:-220px;
+    background:rgba(18,18,27,0.9);
+    border:1px solid var(--accent);
+    padding:12px;
+    border-radius:8px;
+    font-size:13px;
+    line-height:1.6;
+    min-width:200px;
+    box-shadow:0 0 20px rgba(255,47,109,0.3);
 }
 #info {
-    margin-top:20px;
+    margin-top:15px;
     text-align:center;
     color:var(--fg);
     text-shadow:0 0 10px rgba(255,47,109,0.6);
+    font-size:14px;
+}
+@media (max-width:1400px) {
+    #debugInfo {
+        position:static;
+        margin-bottom:10px;
+    }
+    body {
+        flex-direction:column-reverse;
+    }
 }
 </style>
 </head>
 <body>
-<canvas id="gameCanvas"></canvas>
+<div id="gameContainer">
+    <div id="debugInfo">
+        <div>Position: <span id="posDisplay">(0, 0)</span></div>
+        <div>State: <span id="stateDisplay">idle</span></div>
+        <div>On Ground: <span id="groundDisplay">false</span></div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+</div>
 <div id="info">
     <p>Arrow Keys / WASD to move | Space to Jump</p>
     <p>Press ESC to return to main site</p>
@@ -71,48 +110,64 @@ body {
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-canvas.width = 800;
-canvas.height = 600;
+
+function resizeCanvas() {
+    const container = document.getElementById('gameContainer');
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
 
 // Game constants
-const GRAVITY = 0.6;
-const JUMP_FORCE = -12;
-const MOVE_SPEED = 5;
-const GROUND_Y = 500;
+const GRAVITY = 0.3;
+const JUMP_FORCE = -6;
+const MOVE_SPEED = 2.5;
+const GROUND_Y_RATIO = 0.75; // 75% down the canvas
 
 // Player
 const player = {
     x: 100,
-    y: GROUND_Y,
-    width: 48,
-    height: 64,
+    y: 0,
+    size: 64, // square size (scaled from 1200x1200)
     vx: 0,
     vy: 0,
     onGround: false,
     facingRight: true,
     state: 'idle', // idle, walk, jump
-    animFrame: 0,
-    animTimer: 0
 };
 
-// Load player animations
+// Scale ground position to canvas
+function getGroundY() {
+    return canvas.height * GROUND_Y_RATIO;
+}
+
+// Initialize player position
+player.y = getGroundY();
+
+// Load player animations as GIFs (they'll animate automatically)
 const animations = {
     idle: new Image(),
     walk: new Image(),
     jump: new Image()
 };
-animations.idle.src = 'playeridle.gif';
-animations.walk.src = 'playerwalk.gif';
-animations.jump.src = 'playerjump.gif';
+animations.idle.src = 'playeridle.gif?' + Date.now();
+animations.walk.src = 'playerwalk.gif?' + Date.now();
+animations.jump.src = 'playerjump.gif?' + Date.now();
 
-// Platforms
-const platforms = [
-    { x: 0, y: GROUND_Y + 64, width: canvas.width, height: 100 }, // ground
-    { x: 250, y: 400, width: 150, height: 20 },
-    { x: 500, y: 300, width: 150, height: 20 },
-    { x: 150, y: 250, width: 120, height: 20 },
-    { x: 600, y: 200, width: 180, height: 20 }
-];
+// Platforms (scaled relative to canvas)
+function getPlatforms() {
+    const w = canvas.width;
+    const h = canvas.height;
+    const groundY = getGroundY();
+    return [
+        { x: 0, y: groundY + player.size, width: w, height: h - groundY - player.size }, // ground
+        { x: w * 0.3, y: groundY - h * 0.08, width: w * 0.15, height: 20 },
+        { x: w * 0.6, y: groundY - h * 0.2, width: w * 0.15, height: 20 },
+        { x: w * 0.15, y: groundY - h * 0.3, width: w * 0.12, height: 20 },
+        { x: w * 0.7, y: groundY - h * 0.4, width: w * 0.18, height: 20 }
+    ];
+}
 
 // Input
 const keys = {};
@@ -122,7 +177,15 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => keys[e.key] = false);
 
+// Debug display elements
+const posDisplay = document.getElementById('posDisplay');
+const stateDisplay = document.getElementById('stateDisplay');
+const groundDisplay = document.getElementById('groundDisplay');
+
 function update() {
+    const platforms = getPlatforms();
+    const groundY = getGroundY();
+    
     // Horizontal movement
     player.vx = 0;
     if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
@@ -151,17 +214,17 @@ function update() {
     
     // Keep player in bounds
     if (player.x < 0) player.x = 0;
-    if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+    if (player.x + player.size > canvas.width) player.x = canvas.width - player.size;
     
     // Platform collision
     player.onGround = false;
     for (const platform of platforms) {
-        if (player.x + player.width > platform.x &&
+        if (player.x + player.size > platform.x &&
             player.x < platform.x + platform.width &&
-            player.y + player.height > platform.y &&
-            player.y + player.height < platform.y + platform.height &&
+            player.y + player.size > platform.y &&
+            player.y + player.size < platform.y + platform.height &&
             player.vy >= 0) {
-            player.y = platform.y - player.height;
+            player.y = platform.y - player.size;
             player.vy = 0;
             player.onGround = true;
         }
@@ -173,9 +236,16 @@ function update() {
     } else if (player.vx === 0) {
         player.state = 'idle';
     }
+    
+    // Update debug display
+    posDisplay.textContent = `(${Math.floor(player.x)}, ${Math.floor(player.y)})`;
+    stateDisplay.textContent = player.state;
+    groundDisplay.textContent = player.onGround;
 }
 
 function draw() {
+    const platforms = getPlatforms();
+    
     // Clear canvas
     ctx.fillStyle = '#1a1a2e';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -189,23 +259,19 @@ function draw() {
     }
     ctx.shadowBlur = 0;
     
-    // Draw player
+    // Draw player (GIF will animate automatically)
     ctx.save();
-    if (!player.facingRight) {
-        ctx.translate(player.x + player.width, player.y);
-        ctx.scale(-1, 1);
-        ctx.drawImage(animations[player.state], 0, 0, player.width, player.height);
-    } else {
-        ctx.drawImage(animations[player.state], player.x, player.y, player.width, player.height);
+    const currentAnim = animations[player.state];
+    if (currentAnim.complete) {
+        if (!player.facingRight) {
+            ctx.translate(player.x + player.size, player.y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(currentAnim, 0, 0, player.size, player.size);
+        } else {
+            ctx.drawImage(currentAnim, player.x, player.y, player.size, player.size);
+        }
     }
     ctx.restore();
-    
-    // Draw debug info
-    ctx.fillStyle = '#eef1ff';
-    ctx.font = '14px "Courier New"';
-    ctx.fillText(`Position: (${Math.floor(player.x)}, ${Math.floor(player.y)})`, 10, 20);
-    ctx.fillText(`State: ${player.state}`, 10, 40);
-    ctx.fillText(`On Ground: ${player.onGround}`, 10, 60);
 }
 
 function gameLoop() {
