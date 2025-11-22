@@ -388,7 +388,7 @@
             
             <!-- Phase Indicator -->
             <div id="phaseIndicator" class="phase-indicator">
-                Press ability key again to place block
+                Hard drop places block at current position
             </div>
 
             <!-- Start Screen -->
@@ -609,6 +609,7 @@
   let abilityActive = false;
   let abilityDuration = 0;
   let phasedBlock = false; // for phase ability
+  let phaseReady = false; // track if phase ability is ready to use (not on cooldown)
 
   const abilities = {
       timestop: { name: 'Time Stop', cooldown: 45000, duration: 10000 },
@@ -1112,7 +1113,39 @@
   }
 
   function hardDrop() {
-      // Phase ability no longer affects hard drop - it works normally
+      if (phasedBlock) {
+          // Phase ability: drop to bottom, removing overlapping parts
+          // Find the lowest non-colliding position
+          let lowestY = player.pos.y;
+          while (lowestY + 1 < ROWS) {
+              let canGoLower = false;
+              for (let my = 0; my < player.matrix.length; my++) {
+                  for (let mx = 0; mx < player.matrix[my].length; mx++) {
+                      if (player.matrix[my][mx] !== 0 && my + lowestY + 1 < ROWS) {
+                          canGoLower = true;
+                          break;
+                      }
+                  }
+                  if (canGoLower) break;
+              }
+              if (!canGoLower) break;
+              lowestY++;
+          }
+          player.pos.y = lowestY;
+          
+          emitLandingParticles(player);
+          merge(arena, player);
+          
+          // Start cooldown only after placement
+          abilityCooldown = abilityMaxCooldown;
+          phaseReady = false;
+          
+          arenaSweep();
+          playerReset();
+          dropCounter = 0;
+          return;
+      }
+      
       // Normal hard drop
       do {
           player.pos.y++;
@@ -1124,13 +1157,6 @@
       arenaSweep();
       playerReset();
       dropCounter = 0;
-      
-      // If we were phased, end it and start cooldown
-      if (phasedBlock) {
-          phasedBlock = false;
-          abilityCooldown = abilityMaxCooldown;
-          updateAbilityDisplay();
-      }
   }
 
   function playerRotate(dir) {
@@ -1321,6 +1347,9 @@
           if (currentGamemode === 'ability') {
               if (abilityCooldown > 0) {
                   abilityCooldown = Math.max(0, abilityCooldown - delta);
+                  if (abilityCooldown === 0 && currentAbility === 'phase') {
+                      phaseReady = true;
+                  }
               }
               if (abilityActive) {
                   abilityDuration = Math.max(0, abilityDuration - delta);
@@ -1412,40 +1441,37 @@
   function useAbility() {
       if (gameState !== 'playing' || flashingRows.length) return;
       
-      // If phase is active, place the block
-      if (phasedBlock) {
-          emitLandingParticles(player);
-          merge(arena, player);
-          const rows = getFullRows();
-          if (rows.length) {
-              clearColors = rows.map(y => arena[y].map(v => colors[v] || '#ffffff'));
-              flashingRows = rows;
-              flashElapsed = 0;
-          } else {
-              playerReset();
-          }
-          phasedBlock = false;
-          abilityCooldown = abilityMaxCooldown; // Start cooldown after placement
-          updateAbilityDisplay();
-          return;
-      }
-      
-      // Normal ability activation
-      if (abilityCooldown > 0 || abilityActive) return;
-      
       const ability = abilities[currentAbility];
       
       switch(currentAbility) {
           case 'timestop':
+              if (abilityCooldown > 0 || abilityActive) return;
+              abilityCooldown = ability.cooldown;
               abilityActive = true;
               abilityDuration = ability.duration;
-              abilityCooldown = ability.cooldown;
               break;
           case 'phase':
-              phasedBlock = true;
-              // Don't start cooldown yet - wait for placement
+              if (phasedBlock) {
+                  // Second press: drop the block at current position
+                  emitLandingParticles(player);
+                  merge(arena, player);
+                  
+                  // Start cooldown only after placement
+                  abilityCooldown = ability.cooldown;
+                  phaseReady = false;
+                  
+                  arenaSweep();
+                  playerReset();
+                  dropCounter = 0;
+              } else {
+                  // First press: activate phase if ready
+                  if (!phaseReady) return;
+                  phasedBlock = true;
+              }
               break;
           case 'cycle':
+              if (abilityCooldown > 0) return;
+              abilityCooldown = ability.cooldown;
               // Swap current piece with next
               const temp = player.matrix;
               const tempType = getCurrentPieceType();
@@ -1458,9 +1484,10 @@
                   nextPiece = getNextPiece();
               }
               drawNextPiece();
-              abilityCooldown = ability.cooldown;
               break;
           case 'inversion':
+              if (abilityCooldown > 0) return;
+              abilityCooldown = ability.cooldown;
               // Horizontally flip the current piece
               player.matrix.forEach(row => row.reverse());
               // Check if flipped piece collides, if so revert
@@ -1468,8 +1495,6 @@
                   player.matrix.forEach(row => row.reverse());
                   // Refund cooldown if we couldn't use it
                   abilityCooldown = 0;
-              } else {
-                  abilityCooldown = ability.cooldown;
               }
               break;
       }
@@ -1510,11 +1535,11 @@
       if (abilityActive) {
           const remaining = Math.ceil(abilityDuration / 1000);
           document.getElementById('cooldownText').textContent = `Active: ${remaining}s`;
-      } else if (phasedBlock) {
-          document.getElementById('cooldownText').textContent = 'Phase Active';
       } else if (abilityCooldown > 0) {
           const remaining = Math.ceil(abilityCooldown / 1000);
           document.getElementById('cooldownText').textContent = `Cooldown: ${remaining}s`;
+      } else if (phasedBlock) {
+          document.getElementById('cooldownText').textContent = 'Press ability to drop';
       } else {
           document.getElementById('cooldownText').textContent = 'Ready';
       }
@@ -1547,6 +1572,7 @@
           abilityActive = false;
           abilityDuration = 0;
           phasedBlock = false;
+          phaseReady = true; // Phase starts ready
           updateAbilityDisplay();
       } else {
           document.getElementById('abilityDisplay').style.display = 'none';
@@ -1569,6 +1595,7 @@
       document.getElementById('startScreen').classList.add('active');
       gameState = 'start';
       currentAbility = null;
+      phaseReady = false;
       
       // Reset to default grid
       COLS = 10;
