@@ -377,7 +377,7 @@ Terminal Protcol Initiated [Website Version: 0.2]
     const phrases = [
         "Welcome to my Website!",
         "Greetings and Salutations!",
-        "Say hello to my slice of the internet!",
+        "Welcome to my slice of the internet!",
         "Welcome in!",
         "Hello, fellow internet traveler!"
     ];
@@ -623,6 +623,12 @@ Terminal Protcol Initiated [Website Version: 0.2]
             return;
         }
 
+        if (normalized === '77deltarush' || normalized === 'rush') {
+            printLine('Launching Rush...');
+            launchWithToken('rush.html');
+            return;
+        }
+
         if (normalized === 'cat') {
             printLine('playing: cat.gif');
             showGifOnce('https://media.tenor.com/_WZy7E7hoTcAAAAM/cat-smile.gif', 3000);
@@ -639,6 +645,7 @@ Terminal Protcol Initiated [Website Version: 0.2]
             printLine('welcome to the terminal. available commands:');
             printLine('help/cmds/?/commands/command list/command - shows this message');
             printLine('tetris - launches tetris');
+            printLine('rush - launches rush platformer');
             printLine('dog - plays a dog gif');
             printLine('cat - plays a cat gif');
         } else {
