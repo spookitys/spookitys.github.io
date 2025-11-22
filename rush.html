@@ -26,16 +26,11 @@ body {
     position:relative;
 }
 #gameCanvas {
-    border-image-source: url('border.png');
-    border-image-slice: 20 fill;
-    border-image-width: 20px;
-    border-image-repeat: stretch;
-    border-style: solid;
-    border-width: 20px;
     box-shadow:0 0 30px rgba(255,47,109,0.4);
     background:#1a1a2e;
     image-rendering:pixelated;
     image-rendering:crisp-edges;
+    position:relative;
 }
 #info {
     position:absolute;
@@ -45,35 +40,31 @@ body {
     text-align:center;
     color:var(--fg);
     text-shadow:0 0 10px rgba(255,47,109,0.6);
-    font-size:14px;
+    z-index:10;
 }
 #debugInfo {
     position:absolute;
     top:20px;
-    right:20px;
-    background:rgba(18,18,27,0.85);
-    border:2px solid var(--accent);
-    border-image-source: url('borderedge.png');
-    border-image-slice: 20 fill;
-    border-image-width: 20px;
-    border-image-repeat: stretch;
-    padding:15px 20px;
+    left:20px;
+    background:rgba(18,18,27,0.9);
+    border:1px solid var(--accent);
     border-radius:8px;
+    padding:12px 18px;
+    color:var(--fg);
+    font-size:14px;
+    text-shadow:0 0 8px rgba(255,47,109,0.6);
     box-shadow:0 0 20px rgba(255,47,109,0.3);
-    font-size:13px;
-    min-width:200px;
-}
-#debugInfo div {
-    margin:4px 0;
+    z-index:10;
+    line-height:1.6;
 }
 </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
 <div id="debugInfo">
-    <div id="debugPos">Position: (0, 0)</div>
-    <div id="debugState">State: idle</div>
-    <div id="debugGround">On Ground: false</div>
+    <div>Position: <span id="posText">(0, 0)</span></div>
+    <div>State: <span id="stateText">idle</span></div>
+    <div>On Ground: <span id="groundText">false</span></div>
 </div>
 <div id="info">
     <p>Arrow Keys / WASD to move | Space to Jump</p>
@@ -106,35 +97,33 @@ body {
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Make canvas 90% of viewport
-const scale = 0.9;
-canvas.width = window.innerWidth * scale;
-canvas.height = window.innerHeight * scale;
+// Set canvas to 90% of viewport
+canvas.width = window.innerWidth * 0.9;
+canvas.height = window.innerHeight * 0.9;
 
-// Game constants (adjusted)
-const GRAVITY = 0.3; // half of 0.6
-const JUMP_FORCE = -18; // 50% higher than -12
-const MOVE_SPEED = 2.5; // half of 5
-const GROUND_Y = canvas.height - 100;
+// Game constants - adjusted
+const GRAVITY = 0.3; // halved from 0.6
+const JUMP_FORCE = -12;
+const MOVE_SPEED = 2.5; // halved from 5
+const GROUND_Y = canvas.height - 200;
 
-// Player (1200x1200 square scaled down)
-const PLAYER_SIZE = 80; // scaled representation of 1200x1200
+// Player - now square 120x120
 const player = {
     x: 100,
-    y: GROUND_Y - PLAYER_SIZE,
-    width: PLAYER_SIZE,
-    height: PLAYER_SIZE,
+    y: GROUND_Y,
+    width: 120,
+    height: 120,
     vx: 0,
     vy: 0,
     onGround: false,
     facingRight: true,
-    state: 'idle',
+    state: 'idle', // idle, walk, jump
     animFrame: 0,
     animTimer: 0,
-    frameDelay: 8 // frames between sprite updates
+    frameDelay: 8 // frames to wait before advancing sprite
 };
 
-// Load spritesheets
+// Load player sprite sheets (5 frames horizontal)
 const spritesheets = {
     idle: new Image(),
     walk: new Image(),
@@ -144,16 +133,19 @@ spritesheets.idle.src = 'idlesheet.png';
 spritesheets.walk.src = 'walksheet.png';
 spritesheets.jump.src = 'jumpsheet.png';
 
-const SPRITE_COLS = 5;
-const SPRITE_SIZE = 1200; // source sprite size
+// Load border images
+const borderImg = new Image();
+borderImg.src = 'border.png';
+const borderEdgeImg = new Image();
+borderEdgeImg.src = 'borderedge.png';
 
-// Platforms (adjusted for new canvas size)
+// Platforms - adjusted for new canvas size
 const platforms = [
-    { x: 0, y: GROUND_Y, width: canvas.width, height: 100 },
-    { x: canvas.width * 0.25, y: GROUND_Y - 100, width: 150, height: 20 },
-    { x: canvas.width * 0.55, y: GROUND_Y - 200, width: 150, height: 20 },
-    { x: canvas.width * 0.15, y: GROUND_Y - 250, width: 120, height: 20 },
-    { x: canvas.width * 0.7, y: GROUND_Y - 300, width: 180, height: 20 }
+    { x: 0, y: GROUND_Y + 120, width: canvas.width, height: 100 }, // ground
+    { x: canvas.width * 0.3, y: canvas.height * 0.6, width: 200, height: 20 },
+    { x: canvas.width * 0.6, y: canvas.height * 0.45, width: 200, height: 20 },
+    { x: canvas.width * 0.15, y: canvas.height * 0.35, width: 180, height: 20 },
+    { x: canvas.width * 0.75, y: canvas.height * 0.25, width: 220, height: 20 }
 ];
 
 // Input
@@ -215,18 +207,90 @@ function update() {
     } else if (player.vx === 0) {
         player.state = 'idle';
     }
-
+    
     // Update animation frame
     player.animTimer++;
     if (player.animTimer >= player.frameDelay) {
         player.animTimer = 0;
-        player.animFrame = (player.animFrame + 1) % SPRITE_COLS;
+        player.animFrame = (player.animFrame + 1) % 5; // 5 frames in sprite sheet
     }
+}
 
-    // Update debug display
-    document.getElementById('debugPos').textContent = `Position: (${Math.floor(player.x)}, ${Math.floor(player.y)})`;
-    document.getElementById('debugState').textContent = `State: ${player.state}`;
-    document.getElementById('debugGround').textContent = `On Ground: ${player.onGround}`;
+function drawBorders() {
+    const borderWidth = 32; // adjust based on your border.png width
+    const edgeSize = 32; // adjust based on your borderedge.png size
+    
+    // Draw left border (vertical)
+    if (borderImg.complete) {
+        for (let y = edgeSize; y < canvas.height; y += borderImg.height) {
+            ctx.drawImage(borderImg, 0, y);
+        }
+    }
+    
+    // Draw bottom-left corner
+    if (borderEdgeImg.complete) {
+        ctx.drawImage(borderEdgeImg, 0, canvas.height - edgeSize);
+    }
+    
+    // Draw right border (vertical, flipped)
+    if (borderImg.complete) {
+        ctx.save();
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        for (let y = edgeSize; y < canvas.height; y += borderImg.height) {
+            ctx.drawImage(borderImg, 0, y);
+        }
+        ctx.restore();
+    }
+    
+    // Draw bottom-right corner (flipped horizontally)
+    if (borderEdgeImg.complete) {
+        ctx.save();
+        ctx.translate(canvas.width, canvas.height);
+        ctx.scale(-1, -1);
+        ctx.drawImage(borderEdgeImg, 0, 0);
+        ctx.restore();
+    }
+    
+    // Draw top border (horizontal)
+    if (borderImg.complete) {
+        ctx.save();
+        ctx.translate(0, 0);
+        ctx.rotate(-Math.PI / 2);
+        for (let x = -borderWidth; x < canvas.width; x += borderImg.height) {
+            ctx.drawImage(borderImg, x, 0);
+        }
+        ctx.restore();
+    }
+    
+    // Draw top-left corner
+    if (borderEdgeImg.complete) {
+        ctx.save();
+        ctx.translate(0, 0);
+        ctx.rotate(-Math.PI / 2);
+        ctx.drawImage(borderEdgeImg, -edgeSize, 0);
+        ctx.restore();
+    }
+    
+    // Draw top-right corner
+    if (borderEdgeImg.complete) {
+        ctx.save();
+        ctx.translate(canvas.width, 0);
+        ctx.rotate(Math.PI / 2);
+        ctx.drawImage(borderEdgeImg, 0, 0);
+        ctx.restore();
+    }
+    
+    // Draw bottom border (horizontal)
+    if (borderImg.complete) {
+        ctx.save();
+        ctx.translate(canvas.width, canvas.height);
+        ctx.rotate(Math.PI / 2);
+        for (let x = borderWidth; x < canvas.width; x += borderImg.height) {
+            ctx.drawImage(borderImg, x, 0);
+        }
+        ctx.restore();
+    }
 }
 
 function draw() {
@@ -243,23 +307,31 @@ function draw() {
     }
     ctx.shadowBlur = 0;
     
-    // Draw player from spritesheet
+    // Draw player from sprite sheet
     const sheet = spritesheets[player.state];
     if (sheet.complete) {
+        const frameWidth = 1200; // each frame is 1200x1200
+        const frameHeight = 1200;
+        const sx = player.animFrame * frameWidth; // source x
+        
         ctx.save();
-        
-        const sx = (player.animFrame % SPRITE_COLS) * SPRITE_SIZE;
-        const sy = 0;
-        
         if (!player.facingRight) {
             ctx.translate(player.x + player.width, player.y);
             ctx.scale(-1, 1);
-            ctx.drawImage(sheet, sx, sy, SPRITE_SIZE, SPRITE_SIZE, 0, 0, player.width, player.height);
+            ctx.drawImage(sheet, sx, 0, frameWidth, frameHeight, 0, 0, player.width, player.height);
         } else {
-            ctx.drawImage(sheet, sx, sy, SPRITE_SIZE, SPRITE_SIZE, player.x, player.y, player.width, player.height);
+            ctx.drawImage(sheet, sx, 0, frameWidth, frameHeight, player.x, player.y, player.width, player.height);
         }
         ctx.restore();
     }
+    
+    // Draw borders
+    drawBorders();
+    
+    // Update external debug info
+    document.getElementById('posText').textContent = `(${Math.floor(player.x)}, ${Math.floor(player.y)})`;
+    document.getElementById('stateText').textContent = player.state;
+    document.getElementById('groundText').textContent = player.onGround;
 }
 
 function gameLoop() {
@@ -270,8 +342,8 @@ function gameLoop() {
 
 // Start game once images load
 let loadedCount = 0;
-const totalImages = 3;
-Object.values(spritesheets).forEach(img => {
+const totalImages = 5; // 3 spritesheets + 2 borders
+[...Object.values(spritesheets), borderImg, borderEdgeImg].forEach(img => {
     img.onload = () => {
         loadedCount++;
         if (loadedCount === totalImages) gameLoop();
@@ -284,8 +356,8 @@ Object.values(spritesheets).forEach(img => {
 
 // Handle window resize
 window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth * scale;
-    canvas.height = window.innerHeight * scale;
+    canvas.width = window.innerWidth * 0.9;
+    canvas.height = window.innerHeight * 0.9;
 });
 </script>
 </body>
