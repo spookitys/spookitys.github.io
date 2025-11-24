@@ -6,11 +6,11 @@
 <title>Rush - Platformer</title>
 <style>
 :root {
-    --bg-grad-start:#121226;
-    --bg-grad-mid:#0b0b14;
-    --bg-grad-end:#05050a;
-    --fg:#eef1ff;
-    --accent:#ff2f6d;
+    --bg-grad-start:#000000;
+    --bg-grad-mid:#000000;
+    --bg-grad-end:#000000;
+    --fg:#ffffff;
+    --accent:#ffffff;
 }
 * { box-sizing:border-box; margin:0; padding:0; }
 body {
@@ -26,11 +26,11 @@ body {
     position:relative;
 }
 #gameCanvas {
-    box-shadow:0 0 30px rgba(255,47,109,0.4);
-    background:#1a1a2e;
+    background:#000000;
     image-rendering:pixelated;
     image-rendering:crisp-edges;
     position:relative;
+    border:4px solid #ffffff; /* standard white border */
 }
 #info {
     position:absolute;
@@ -39,21 +39,18 @@ body {
     transform:translateX(-50%);
     text-align:center;
     color:var(--fg);
-    text-shadow:0 0 10px rgba(255,47,109,0.6);
     z-index:10;
 }
 #debugInfo {
     position:absolute;
     top:20px;
     left:20px;
-    background:rgba(18,18,27,0.9);
+    background:#000000;
     border:1px solid var(--accent);
     border-radius:8px;
     padding:12px 18px;
     color:var(--fg);
     font-size:14px;
-    text-shadow:0 0 8px rgba(255,47,109,0.6);
-    box-shadow:0 0 20px rgba(255,47,109,0.3);
     z-index:10;
     line-height:1.6;
 }
@@ -118,10 +115,11 @@ const player = {
     onGround: false,
     facingRight: true,
     state: 'idle', // idle, walk, jump
-    prevState: 'idle', // added: track previous state to reset animation on change
+    prevState: 'idle',
     animFrame: 0,
-    animTimer: 0,
-    frameDelay: 8 // frames to wait before advancing sprite
+    animTimer: 0, // ms accumulator
+    // frameDelay removed in favor of per-state timing
+    accelTimer: 0
 };
 
 // Load player sprite sheets
@@ -134,18 +132,15 @@ spritesheets.idle.src = 'idlesheet.png';
 spritesheets.walk.src = 'walksheet.png';
 spritesheets.jump.src = 'jumpsheet.png';
 
-// Sprite metadata per state: frame width/height, total frames, columns and rows
+// Sprite metadata per state: natural frame size is inferred from image
+// include fps for time-based animation
 const spriteMeta = {
-    idle: { frameW: 50, frameH: 100, frames: 2, cols: 1, rows: 2 },   // 50x100, 2 frames, 1 col x 2 rows
-    walk: { frameW: 150, frameH: 100, frames: 5, cols: 2, rows: 3 },  // 150x100, 5 frames, 2 cols x 3 rows
-    jump: { frameW: 50, frameH: 100, frames: 2, cols: 1, rows: 2 }    // 50x100, 2 frames, 1 col x 2 rows
+    idle: { frameW: 50, frameH: 100, frames: 2, cols: 1, rows: 2, fps: 2 },   // 2 fps
+    walk: { frameW: 150, frameH: 100, frames: 5, cols: 2, rows: 3, fps: 8 },  // 8 fps
+    jump: { frameW: 50, frameH: 100, frames: 2, cols: 1, rows: 2, fps: 4 }    // 4 fps
 };
-
-// Load border images
-const borderImg = new Image();
-borderImg.src = 'border.png';
-const borderEdgeImg = new Image();
-borderEdgeImg.src = 'borderedge.png';
+// compute frameDuration (ms) helper
+for (const k in spriteMeta) spriteMeta[k].frameDuration = 1000 / spriteMeta[k].fps;
 
 // Platforms - adjusted for new canvas size
 const platforms = [
@@ -164,37 +159,49 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => keys[e.key] = false);
 
-function update() {
-    // Horizontal movement
-    player.vx = 0;
-    if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
-        player.vx = -MOVE_SPEED;
+function update(dt) { // dt in ms
+    const tscale = dt / 16.6667; // scale to approx 60fps base for tuning
+
+    // Horizontal movement: apply acceleration and friction
+    let moveLeft = keys['ArrowLeft'] || keys['a'] || keys['A'];
+    let moveRight = keys['ArrowRight'] || keys['d'] || keys['D'];
+
+    if (moveLeft && !moveRight) {
+        player.vx -= ACCEL * tscale;
         player.facingRight = false;
-        if (player.onGround) player.state = 'walk';
-    }
-    if (keys['ArrowRight'] || keys['d'] || keys['D']) {
-        player.vx = MOVE_SPEED;
+    } else if (moveRight && !moveLeft) {
+        player.vx += ACCEL * tscale;
         player.facingRight = true;
-        if (player.onGround) player.state = 'walk';
+    } else {
+        // apply friction toward 0
+        if (player.vx > 0) {
+            player.vx = Math.max(0, player.vx - FRICTION * tscale);
+        } else if (player.vx < 0) {
+            player.vx = Math.min(0, player.vx + FRICTION * tscale);
+        }
     }
-    
+
+    // clamp to max speed
+    if (player.vx > MOVE_SPEED) player.vx = MOVE_SPEED;
+    if (player.vx < -MOVE_SPEED) player.vx = -MOVE_SPEED;
+
     // Jump
     if ((keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W']) && player.onGround) {
         player.vy = JUMP_FORCE;
         player.onGround = false;
     }
-    
-    // Apply gravity
-    player.vy += GRAVITY;
-    
+
+    // Apply gravity (scale by dt)
+    player.vy += GRAVITY * tscale;
+
     // Update position
-    player.x += player.vx;
-    player.y += player.vy;
-    
+    player.x += player.vx * tscale;
+    player.y += player.vy * tscale;
+
     // Keep player in bounds
     if (player.x < 0) player.x = 0;
     if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-    
+
     // Platform collision
     player.onGround = false;
     for (const platform of platforms) {
@@ -208,121 +215,99 @@ function update() {
             player.onGround = true;
         }
     }
-    
+
     // Update animation state
     if (!player.onGround) {
         player.state = 'jump';
-    } else if (player.vx === 0) {
+    } else if (Math.abs(player.vx) > 0.1) {
+        player.state = 'walk';
+    } else {
         player.state = 'idle';
     }
-    
+
     // Reset animation when state changes
     if (player.prevState !== player.state) {
         player.animFrame = 0;
         player.animTimer = 0;
         player.prevState = player.state;
     }
-    
-    // Update animation frame
-    player.animTimer++;
-    if (player.animTimer >= player.frameDelay) {
-        player.animTimer = 0;
-        const meta = spriteMeta[player.state];
+
+    // Animation timing (time-based)
+    const meta = spriteMeta[player.state];
+    player.animTimer += dt;
+    while (player.animTimer >= meta.frameDuration) {
+        player.animTimer -= meta.frameDuration;
         player.animFrame = (player.animFrame + 1) % meta.frames;
+    }
+
+    // Particle spawning when walking on surface
+    updateParticles(dt);
+    if (player.onGround && Math.abs(player.vx) > 0.6) {
+        // spawn based on walk speed and a cooldown
+        spawnWalkParticles(dt);
     }
 }
 
-function drawBorders() {
-    const borderWidth = 32; // adjust based on your border.png width
-    const edgeSize = 32; // adjust based on your borderedge.png size
-    
-    // Draw left border (vertical)
-    if (borderImg.complete) {
-        for (let y = edgeSize; y < canvas.height; y += borderImg.height) {
-            ctx.drawImage(borderImg, 0, y);
+// Particle system
+const particles = [];
+let particleSpawnAccum = 0;
+function spawnWalkParticles(dt) {
+    particleSpawnAccum += dt;
+    const spawnInterval = 80; // ms between particles
+    while (particleSpawnAccum >= spawnInterval) {
+        particleSpawnAccum -= spawnInterval;
+        const px = player.x + player.width / 2 + (Math.random() - 0.5) * 18;
+        const py = player.y + player.height - 6; // at feet
+        const pvx = -player.vx * 0.25 + (Math.random() - 0.5) * 0.6;
+        const pvy = -(0.5 + Math.random() * 0.6);
+        particles.push({
+            x: px,
+            y: py,
+            vx: pvx,
+            vy: pvy,
+            life: 500 + Math.random() * 400, // ms
+            age: 0,
+            size: 3 + Math.random() * 3
+        });
+    }
+}
+
+function updateParticles(dt) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.age += dt;
+        if (p.age >= p.life) {
+            particles.splice(i, 1);
+            continue;
         }
-    }
-    
-    // Draw bottom-left corner
-    if (borderEdgeImg.complete) {
-        ctx.drawImage(borderEdgeImg, 0, canvas.height - edgeSize);
-    }
-    
-    // Draw right border (vertical, flipped)
-    if (borderImg.complete) {
-        ctx.save();
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-        for (let y = edgeSize; y < canvas.height; y += borderImg.height) {
-            ctx.drawImage(borderImg, 0, y);
-        }
-        ctx.restore();
-    }
-    
-    // Draw bottom-right corner (flipped horizontally)
-    if (borderEdgeImg.complete) {
-        ctx.save();
-        ctx.translate(canvas.width, canvas.height);
-        ctx.scale(-1, -1);
-        ctx.drawImage(borderEdgeImg, 0, 0);
-        ctx.restore();
-    }
-    
-    // Draw top border (horizontal)
-    if (borderImg.complete) {
-        ctx.save();
-        ctx.translate(0, 0);
-        ctx.rotate(-Math.PI / 2);
-        for (let x = -borderWidth; x < canvas.width; x += borderImg.height) {
-            ctx.drawImage(borderImg, x, 0);
-        }
-        ctx.restore();
-    }
-    
-    // Draw top-left corner
-    if (borderEdgeImg.complete) {
-        ctx.save();
-        ctx.translate(0, 0);
-        ctx.rotate(-Math.PI / 2);
-        ctx.drawImage(borderEdgeImg, -edgeSize, 0);
-        ctx.restore();
-    }
-    
-    // Draw top-right corner
-    if (borderEdgeImg.complete) {
-        ctx.save();
-        ctx.translate(canvas.width, 0);
-        ctx.rotate(Math.PI / 2);
-        ctx.drawImage(borderEdgeImg, 0, 0);
-        ctx.restore();
-    }
-    
-    // Draw bottom border (horizontal)
-    if (borderImg.complete) {
-        ctx.save();
-        ctx.translate(canvas.width, canvas.height);
-        ctx.rotate(Math.PI / 2);
-        for (let x = borderWidth; x < canvas.width; x += borderImg.height) {
-            ctx.drawImage(borderImg, x, 0);
-        }
-        ctx.restore();
+        p.vy += (GRAVITY * 0.5) * (dt / 16.6667); // subtle gravity
+        p.x += p.vx * (dt / 16.6667);
+        p.y += p.vy * (dt / 16.6667);
     }
 }
 
 function draw() {
     // Clear canvas
-    ctx.fillStyle = '#1a1a2e';
+    ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw platforms
-    ctx.fillStyle = '#ff2f6d';
-    ctx.shadowColor = 'rgba(255,47,109,0.5)';
-    ctx.shadowBlur = 10;
+
+    // Draw platforms (now white, no glow)
+    ctx.fillStyle = '#ffffff';
     for (const platform of platforms) {
         ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
     }
-    ctx.shadowBlur = 0;
-    
+
+    // Draw particles (behind player)
+    for (const p of particles) {
+        const a = 1 - (p.age / p.life);
+        ctx.globalAlpha = a;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
     // Draw player from sprite sheet
     const sheet = spritesheets[player.state];
     if (sheet.complete) {
@@ -342,18 +327,16 @@ function draw() {
         const sHeight = sFrameH;
 
         // Preserve aspect ratio when drawing into the player's square box.
-        // Fit the source frame inside player.width x player.height using a uniform scale.
         const scale = Math.min(player.width / sWidth, player.height / sHeight);
         const drawW = Math.round(sWidth * scale);
         const drawH = Math.round(sHeight * scale);
 
-        // Center the sprite inside the player's box
+        // Center the sprite inside the player's box and offset ~25px down
         const drawX = Math.round(player.x + (player.width - drawW) / 2);
-        const drawY = Math.round(player.y + (player.height - drawH) / 2);
+        const drawY = Math.round(player.y + (player.height - drawH) / 2 + 25); // <- downward offset
 
         ctx.save();
         if (!player.facingRight) {
-            // translate to the right edge of the destination rect and flip horizontally
             ctx.translate(drawX + drawW, drawY);
             ctx.scale(-1, 1);
             ctx.drawImage(sheet, sx, sy, sWidth, sHeight, 0, 0, drawW, drawH);
@@ -362,33 +345,34 @@ function draw() {
         }
         ctx.restore();
     }
-    
-    // Draw borders
-    drawBorders();
-    
+
     // Update external debug info
     document.getElementById('posText').textContent = `(${Math.floor(player.x)}, ${Math.floor(player.y)})`;
     document.getElementById('stateText').textContent = player.state;
     document.getElementById('groundText').textContent = player.onGround;
 }
 
-function gameLoop() {
-    update();
+let lastTime = 0;
+function gameLoop(ts) {
+    if (!lastTime) lastTime = ts;
+    const dt = ts - lastTime;
+    lastTime = ts;
+    update(dt);
     draw();
     requestAnimationFrame(gameLoop);
 }
 
 // Start game once images load
 let loadedCount = 0;
-const totalImages = 5; // 3 spritesheets + 2 borders
-[...Object.values(spritesheets), borderImg, borderEdgeImg].forEach(img => {
+const totalImages = 3; // 3 spritesheets only
+[...Object.values(spritesheets)].forEach(img => {
     img.onload = () => {
         loadedCount++;
-        if (loadedCount === totalImages) gameLoop();
+        if (loadedCount === totalImages) requestAnimationFrame(gameLoop);
     };
     img.onerror = () => {
         loadedCount++;
-        if (loadedCount === totalImages) gameLoop();
+        if (loadedCount === totalImages) requestAnimationFrame(gameLoop);
     };
 });
 
