@@ -327,21 +327,38 @@ function draw() {
     const sheet = spritesheets[player.state];
     if (sheet.complete) {
         const meta = spriteMeta[player.state];
-        const frameIndex = player.animFrame;
+        const frameIndex = player.animFrame % meta.frames;
         const col = frameIndex % meta.cols;
         const row = Math.floor(frameIndex / meta.cols);
-        const sx = col * meta.frameW;
-        const sy = row * meta.frameH;
-        const sWidth = meta.frameW;
-        const sHeight = meta.frameH;
-        
+
+        // Compute source frame size from the actual image so we don't rely on hard offsets
+        const sFrameW = Math.floor(sheet.width / meta.cols);
+        const sFrameH = Math.floor(sheet.height / meta.rows);
+
+        // Source coordinates
+        const sx = col * sFrameW;
+        const sy = row * sFrameH;
+        const sWidth = sFrameW;
+        const sHeight = sFrameH;
+
+        // Preserve aspect ratio when drawing into the player's square box.
+        // Fit the source frame inside player.width x player.height using a uniform scale.
+        const scale = Math.min(player.width / sWidth, player.height / sHeight);
+        const drawW = Math.round(sWidth * scale);
+        const drawH = Math.round(sHeight * scale);
+
+        // Center the sprite inside the player's box
+        const drawX = Math.round(player.x + (player.width - drawW) / 2);
+        const drawY = Math.round(player.y + (player.height - drawH) / 2);
+
         ctx.save();
         if (!player.facingRight) {
-            ctx.translate(player.x + player.width, player.y);
+            // translate to the right edge of the destination rect and flip horizontally
+            ctx.translate(drawX + drawW, drawY);
             ctx.scale(-1, 1);
-            ctx.drawImage(sheet, sx, sy, sWidth, sHeight, 0, 0, player.width, player.height);
+            ctx.drawImage(sheet, sx, sy, sWidth, sHeight, 0, 0, drawW, drawH);
         } else {
-            ctx.drawImage(sheet, sx, sy, sWidth, sHeight, player.x, player.y, player.width, player.height);
+            ctx.drawImage(sheet, sx, sy, sWidth, sHeight, drawX, drawY, drawW, drawH);
         }
         ctx.restore();
     }
