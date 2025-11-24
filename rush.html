@@ -26,7 +26,7 @@ body {
     position:relative;
 }
 #gameCanvas {
-    border:4px solid white;
+    border:4px solid rgb(216, 222, 255);
     background:#000000;
     image-rendering:pixelated;
     image-rendering:crisp-edges;
@@ -102,8 +102,8 @@ canvas.height = window.innerHeight * 0.9;
 const GRAVITY = 0.3;
 const JUMP_FORCE = -12;
 const MOVE_SPEED = 2.5;
-const ACCELERATION = 0.15; // added: acceleration rate
-const DECELERATION = 0.25; // added: deceleration rate
+const ACCELERATION = MOVE_SPEED / 15; // ~0.25 seconds at 60fps to reach max speed
+const DECELERATION = MOVE_SPEED / 6; // ~0.1 seconds at 60fps to stop
 const GROUND_Y = canvas.height - 200;
 
 // Player - now square 120x120
@@ -115,6 +115,7 @@ const player = {
     vx: 0,
     vy: 0,
     onGround: false,
+    jumpsRemaining: 2, // added: double jump feature
     facingRight: true,
     state: 'idle',
     prevState: 'idle',
@@ -161,18 +162,21 @@ window.addEventListener('keydown', e => {
 window.addEventListener('keyup', e => keys[e.key] = false);
 
 function update() {
-    // Horizontal movement with acceleration/deceleration
+    // Horizontal movement with acceleration/deceleration - fixed multi-key handling
+    let leftPressed = keys['ArrowLeft'] || keys['a'] || keys['A'];
+    let rightPressed = keys['ArrowRight'] || keys['d'] || keys['D'];
+    
     let targetVx = 0;
-    if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+    if (leftPressed && !rightPressed) {
         targetVx = -MOVE_SPEED;
         player.facingRight = false;
         if (player.onGround) player.state = 'walk';
-    }
-    if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+    } else if (rightPressed && !leftPressed) {
         targetVx = MOVE_SPEED;
         player.facingRight = true;
         if (player.onGround) player.state = 'walk';
     }
+    // If both or neither are pressed, targetVx stays 0
     
     // Apply acceleration/deceleration
     if (targetVx !== 0) {
@@ -187,10 +191,16 @@ function update() {
         }
     }
     
-    // Jump
-    if ((keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W']) && player.onGround) {
-        player.vy = JUMP_FORCE;
-        player.onGround = false;
+    // Jump with double jump
+    if ((keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W'])) {
+        if (player.jumpsRemaining > 0 && !player.jumpKeyHeld) {
+            player.vy = JUMP_FORCE;
+            player.jumpsRemaining--;
+            player.onGround = false;
+            player.jumpKeyHeld = true;
+        }
+    } else {
+        player.jumpKeyHeld = false;
     }
     
     // Apply gravity
@@ -215,6 +225,7 @@ function update() {
             player.y = platform.y - player.height;
             player.vy = 0;
             player.onGround = true;
+            player.jumpsRemaining = 2; // reset jumps when landing
         }
     }
     
@@ -279,7 +290,7 @@ function draw() {
     
     // Draw particles
     for (const p of particles) {
-        ctx.fillStyle = `rgba(255, 255, 255, ${p.life})`;
+        ctx.fillStyle = `rgba(216, 222, 255, ${p.life})`;
         ctx.fillRect(p.x, p.y, p.size, p.size);
     }
     
@@ -305,7 +316,7 @@ function draw() {
 
         // Center the sprite inside the player's box with 25px down offset
         const drawX = Math.round(player.x + (player.width - drawW) / 2);
-        const drawY = Math.round(player.y + (player.height - drawH) / 2 + 25);
+        const drawY = Math.round(player.y + (player.height - drawH) / 2 + 5);
 
         ctx.save();
         if (!player.facingRight) {
