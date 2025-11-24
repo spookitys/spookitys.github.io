@@ -118,12 +118,13 @@ const player = {
     onGround: false,
     facingRight: true,
     state: 'idle', // idle, walk, jump
+    prevState: 'idle', // added: track previous state to reset animation on change
     animFrame: 0,
     animTimer: 0,
     frameDelay: 8 // frames to wait before advancing sprite
 };
 
-// Load player sprite sheets (5 frames horizontal)
+// Load player sprite sheets
 const spritesheets = {
     idle: new Image(),
     walk: new Image(),
@@ -132,6 +133,13 @@ const spritesheets = {
 spritesheets.idle.src = 'idlesheet.png';
 spritesheets.walk.src = 'walksheet.png';
 spritesheets.jump.src = 'jumpsheet.png';
+
+// Sprite metadata per state: frame width/height, total frames, columns and rows
+const spriteMeta = {
+    idle: { frameW: 50, frameH: 100, frames: 2, cols: 1, rows: 2 },   // 50x100, 2 frames, 1 col x 2 rows
+    walk: { frameW: 150, frameH: 100, frames: 5, cols: 2, rows: 3 },  // 150x100, 5 frames, 2 cols x 3 rows
+    jump: { frameW: 50, frameH: 100, frames: 2, cols: 1, rows: 2 }    // 50x100, 2 frames, 1 col x 2 rows
+};
 
 // Load border images
 const borderImg = new Image();
@@ -208,11 +216,19 @@ function update() {
         player.state = 'idle';
     }
     
+    // Reset animation when state changes
+    if (player.prevState !== player.state) {
+        player.animFrame = 0;
+        player.animTimer = 0;
+        player.prevState = player.state;
+    }
+    
     // Update animation frame
     player.animTimer++;
     if (player.animTimer >= player.frameDelay) {
         player.animTimer = 0;
-        player.animFrame = (player.animFrame + 1) % 5; // 5 frames in sprite sheet
+        const meta = spriteMeta[player.state];
+        player.animFrame = (player.animFrame + 1) % meta.frames;
     }
 }
 
@@ -310,17 +326,22 @@ function draw() {
     // Draw player from sprite sheet
     const sheet = spritesheets[player.state];
     if (sheet.complete) {
-        const frameWidth = 1200; // each frame is 1200x1200
-        const frameHeight = 1200;
-        const sx = player.animFrame * frameWidth; // source x
+        const meta = spriteMeta[player.state];
+        const frameIndex = player.animFrame;
+        const col = frameIndex % meta.cols;
+        const row = Math.floor(frameIndex / meta.cols);
+        const sx = col * meta.frameW;
+        const sy = row * meta.frameH;
+        const sWidth = meta.frameW;
+        const sHeight = meta.frameH;
         
         ctx.save();
         if (!player.facingRight) {
             ctx.translate(player.x + player.width, player.y);
             ctx.scale(-1, 1);
-            ctx.drawImage(sheet, sx, 0, frameWidth, frameHeight, 0, 0, player.width, player.height);
+            ctx.drawImage(sheet, sx, sy, sWidth, sHeight, 0, 0, player.width, player.height);
         } else {
-            ctx.drawImage(sheet, sx, 0, frameWidth, frameHeight, player.x, player.y, player.width, player.height);
+            ctx.drawImage(sheet, sx, sy, sWidth, sHeight, player.x, player.y, player.width, player.height);
         }
         ctx.restore();
     }
