@@ -6,8 +6,8 @@
 <title>Rush - Platformer</title>
 <style>
 :root {
-    --bg-grad-start:#000000;
-    --bg-grad-mid:#000000;
+    --bg-grad-start:#1a1a1a;
+    --bg-grad-mid:#0a0a0a;
     --bg-grad-end:#000000;
     --fg:#ffffff;
     --accent:#ffffff;
@@ -26,11 +26,11 @@ body {
     position:relative;
 }
 #gameCanvas {
+    border:4px solid white;
     background:#000000;
     image-rendering:pixelated;
     image-rendering:crisp-edges;
     position:relative;
-    border:4px solid #ffffff; /* standard white border */
 }
 #info {
     position:absolute;
@@ -45,7 +45,7 @@ body {
     position:absolute;
     top:20px;
     left:20px;
-    background:#000000;
+    background:rgba(0,0,0,0.9);
     border:1px solid var(--accent);
     border-radius:8px;
     padding:12px 18px;
@@ -99,9 +99,11 @@ canvas.width = window.innerWidth * 0.9;
 canvas.height = window.innerHeight * 0.9;
 
 // Game constants - adjusted
-const GRAVITY = 0.3; // halved from 0.6
+const GRAVITY = 0.3;
 const JUMP_FORCE = -12;
-const MOVE_SPEED = 2.5; // halved from 5
+const MOVE_SPEED = 2.5;
+const ACCELERATION = 0.15; // added: acceleration rate
+const DECELERATION = 0.25; // added: deceleration rate
 const GROUND_Y = canvas.height - 200;
 
 // Player - now square 120x120
@@ -114,12 +116,11 @@ const player = {
     vy: 0,
     onGround: false,
     facingRight: true,
-    state: 'idle', // idle, walk, jump
+    state: 'idle',
     prevState: 'idle',
     animFrame: 0,
-    animTimer: 0, // ms accumulator
-    // frameDelay removed in favor of per-state timing
-    accelTimer: 0
+    animTimer: 0,
+    frameDelay: 30 // will be adjusted per state
 };
 
 // Load player sprite sheets
@@ -132,15 +133,15 @@ spritesheets.idle.src = 'idlesheet.png';
 spritesheets.walk.src = 'walksheet.png';
 spritesheets.jump.src = 'jumpsheet.png';
 
-// Sprite metadata per state: natural frame size is inferred from image
-// include fps for time-based animation
+// Sprite metadata - updated with fps-based delays
 const spriteMeta = {
-    idle: { frameW: 50, frameH: 100, frames: 2, cols: 1, rows: 2, fps: 2 },   // 2 fps
-    walk: { frameW: 150, frameH: 100, frames: 5, cols: 2, rows: 3, fps: 8 },  // 8 fps
-    jump: { frameW: 50, frameH: 100, frames: 2, cols: 1, rows: 2, fps: 4 }    // 4 fps
+    idle: { frameW: 50, frameH: 100, frames: 2, cols: 1, rows: 2, fps: 2 },
+    walk: { frameW: 150, frameH: 100, frames: 5, cols: 2, rows: 3, fps: 8 },
+    jump: { frameW: 50, frameH: 100, frames: 2, cols: 1, rows: 2, fps: 4 }
 };
-// compute frameDuration (ms) helper
-for (const k in spriteMeta) spriteMeta[k].frameDuration = 1000 / spriteMeta[k].fps;
+
+// Particles array
+const particles = [];
 
 // Platforms - adjusted for new canvas size
 const platforms = [
@@ -159,49 +160,50 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => keys[e.key] = false);
 
-function update(dt) { // dt in ms
-    const tscale = dt / 16.6667; // scale to approx 60fps base for tuning
-
-    // Horizontal movement: apply acceleration and friction
-    let moveLeft = keys['ArrowLeft'] || keys['a'] || keys['A'];
-    let moveRight = keys['ArrowRight'] || keys['d'] || keys['D'];
-
-    if (moveLeft && !moveRight) {
-        player.vx -= ACCEL * tscale;
+function update() {
+    // Horizontal movement with acceleration/deceleration
+    let targetVx = 0;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+        targetVx = -MOVE_SPEED;
         player.facingRight = false;
-    } else if (moveRight && !moveLeft) {
-        player.vx += ACCEL * tscale;
+        if (player.onGround) player.state = 'walk';
+    }
+    if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+        targetVx = MOVE_SPEED;
         player.facingRight = true;
+        if (player.onGround) player.state = 'walk';
+    }
+    
+    // Apply acceleration/deceleration
+    if (targetVx !== 0) {
+        if (Math.abs(player.vx) < Math.abs(targetVx)) {
+            player.vx += Math.sign(targetVx) * ACCELERATION;
+            if (Math.abs(player.vx) > Math.abs(targetVx)) player.vx = targetVx;
+        }
     } else {
-        // apply friction toward 0
-        if (player.vx > 0) {
-            player.vx = Math.max(0, player.vx - FRICTION * tscale);
-        } else if (player.vx < 0) {
-            player.vx = Math.min(0, player.vx + FRICTION * tscale);
+        if (Math.abs(player.vx) > 0) {
+            player.vx -= Math.sign(player.vx) * DECELERATION;
+            if (Math.abs(player.vx) < DECELERATION) player.vx = 0;
         }
     }
-
-    // clamp to max speed
-    if (player.vx > MOVE_SPEED) player.vx = MOVE_SPEED;
-    if (player.vx < -MOVE_SPEED) player.vx = -MOVE_SPEED;
-
+    
     // Jump
     if ((keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W']) && player.onGround) {
         player.vy = JUMP_FORCE;
         player.onGround = false;
     }
-
-    // Apply gravity (scale by dt)
-    player.vy += GRAVITY * tscale;
-
+    
+    // Apply gravity
+    player.vy += GRAVITY;
+    
     // Update position
-    player.x += player.vx * tscale;
-    player.y += player.vy * tscale;
-
+    player.x += player.vx;
+    player.y += player.vy;
+    
     // Keep player in bounds
     if (player.x < 0) player.x = 0;
     if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-
+    
     // Platform collision
     player.onGround = false;
     for (const platform of platforms) {
@@ -215,74 +217,52 @@ function update(dt) { // dt in ms
             player.onGround = true;
         }
     }
-
+    
     // Update animation state
     if (!player.onGround) {
         player.state = 'jump';
-    } else if (Math.abs(player.vx) > 0.1) {
-        player.state = 'walk';
-    } else {
+    } else if (Math.abs(player.vx) < 0.1) {
         player.state = 'idle';
     }
-
+    
     // Reset animation when state changes
     if (player.prevState !== player.state) {
         player.animFrame = 0;
         player.animTimer = 0;
         player.prevState = player.state;
+        // Set frame delay based on fps
+        const meta = spriteMeta[player.state];
+        player.frameDelay = Math.floor(60 / meta.fps);
     }
-
-    // Animation timing (time-based)
-    const meta = spriteMeta[player.state];
-    player.animTimer += dt;
-    while (player.animTimer >= meta.frameDuration) {
-        player.animTimer -= meta.frameDuration;
+    
+    // Update animation frame
+    player.animTimer++;
+    if (player.animTimer >= player.frameDelay) {
+        player.animTimer = 0;
+        const meta = spriteMeta[player.state];
         player.animFrame = (player.animFrame + 1) % meta.frames;
     }
-
-    // Particle spawning when walking on surface
-    updateParticles(dt);
-    if (player.onGround && Math.abs(player.vx) > 0.6) {
-        // spawn based on walk speed and a cooldown
-        spawnWalkParticles(dt);
-    }
-}
-
-// Particle system
-const particles = [];
-let particleSpawnAccum = 0;
-function spawnWalkParticles(dt) {
-    particleSpawnAccum += dt;
-    const spawnInterval = 80; // ms between particles
-    while (particleSpawnAccum >= spawnInterval) {
-        particleSpawnAccum -= spawnInterval;
-        const px = player.x + player.width / 2 + (Math.random() - 0.5) * 18;
-        const py = player.y + player.height - 6; // at feet
-        const pvx = -player.vx * 0.25 + (Math.random() - 0.5) * 0.6;
-        const pvy = -(0.5 + Math.random() * 0.6);
+    
+    // Spawn walk particles
+    if (player.onGround && Math.abs(player.vx) > 0.5 && Math.random() < 0.3) {
         particles.push({
-            x: px,
-            y: py,
-            vx: pvx,
-            vy: pvy,
-            life: 500 + Math.random() * 400, // ms
-            age: 0,
-            size: 3 + Math.random() * 3
+            x: player.x + player.width / 2 + (Math.random() - 0.5) * 40,
+            y: player.y + player.height,
+            vx: (Math.random() - 0.5) * 2,
+            vy: -Math.random() * 2 - 1,
+            life: 1.0,
+            size: Math.random() * 3 + 2
         });
     }
-}
-
-function updateParticles(dt) {
+    
+    // Update particles
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.age += dt;
-        if (p.age >= p.life) {
-            particles.splice(i, 1);
-            continue;
-        }
-        p.vy += (GRAVITY * 0.5) * (dt / 16.6667); // subtle gravity
-        p.x += p.vx * (dt / 16.6667);
-        p.y += p.vy * (dt / 16.6667);
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.1; // gravity on particles
+        p.life -= 0.02;
+        if (p.life <= 0) particles.splice(i, 1);
     }
 }
 
@@ -290,24 +270,19 @@ function draw() {
     // Clear canvas
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw platforms (now white, no glow)
+    
+    // Draw platforms
     ctx.fillStyle = '#ffffff';
     for (const platform of platforms) {
         ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
     }
-
-    // Draw particles (behind player)
+    
+    // Draw particles
     for (const p of particles) {
-        const a = 1 - (p.age / p.life);
-        ctx.globalAlpha = a;
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillStyle = `rgba(255, 255, 255, ${p.life})`;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
     }
-    ctx.globalAlpha = 1;
-
+    
     // Draw player from sprite sheet
     const sheet = spritesheets[player.state];
     if (sheet.complete) {
@@ -316,24 +291,21 @@ function draw() {
         const col = frameIndex % meta.cols;
         const row = Math.floor(frameIndex / meta.cols);
 
-        // Compute source frame size from the actual image so we don't rely on hard offsets
         const sFrameW = Math.floor(sheet.width / meta.cols);
         const sFrameH = Math.floor(sheet.height / meta.rows);
 
-        // Source coordinates
         const sx = col * sFrameW;
         const sy = row * sFrameH;
         const sWidth = sFrameW;
         const sHeight = sFrameH;
 
-        // Preserve aspect ratio when drawing into the player's square box.
         const scale = Math.min(player.width / sWidth, player.height / sHeight);
         const drawW = Math.round(sWidth * scale);
         const drawH = Math.round(sHeight * scale);
 
-        // Center the sprite inside the player's box and offset ~25px down
+        // Center the sprite inside the player's box with 25px down offset
         const drawX = Math.round(player.x + (player.width - drawW) / 2);
-        const drawY = Math.round(player.y + (player.height - drawH) / 2 + 25); // <- downward offset
+        const drawY = Math.round(player.y + (player.height - drawH) / 2 + 25);
 
         ctx.save();
         if (!player.facingRight) {
@@ -345,19 +317,16 @@ function draw() {
         }
         ctx.restore();
     }
-
+    
     // Update external debug info
     document.getElementById('posText').textContent = `(${Math.floor(player.x)}, ${Math.floor(player.y)})`;
     document.getElementById('stateText').textContent = player.state;
     document.getElementById('groundText').textContent = player.onGround;
 }
 
-let lastTime = 0;
-function gameLoop(ts) {
-    if (!lastTime) lastTime = ts;
-    const dt = ts - lastTime;
-    lastTime = ts;
-    update(dt);
+// Game loop
+function gameLoop() {
+    update();
     draw();
     requestAnimationFrame(gameLoop);
 }
@@ -365,14 +334,14 @@ function gameLoop(ts) {
 // Start game once images load
 let loadedCount = 0;
 const totalImages = 3; // 3 spritesheets only
-[...Object.values(spritesheets)].forEach(img => {
+Object.values(spritesheets).forEach(img => {
     img.onload = () => {
         loadedCount++;
-        if (loadedCount === totalImages) requestAnimationFrame(gameLoop);
+        if (loadedCount === totalImages) gameLoop();
     };
     img.onerror = () => {
         loadedCount++;
-        if (loadedCount === totalImages) requestAnimationFrame(gameLoop);
+        if (loadedCount === totalImages) gameLoop();
     };
 });
 
