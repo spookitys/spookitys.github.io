@@ -68,6 +68,14 @@
                 0 10px 22px rgba(0,0,0,0.3),
                 0 0 0 1px rgba(255,255,255,0.03) inset;
         }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+        }
+        .info-label {
+            opacity: 0.7;
+        }
         .keybind-row {
             display: flex;
             justify-content: space-between;
@@ -287,10 +295,10 @@
         /* Gamemode buttons */
         .gamemode-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
             margin-top: 30px;
-            max-width: 600px;
+            max-width: 900px;
         }
         .gamemode-btn {
             background: linear-gradient(180deg, rgba(18,18,27,0.95), rgba(18,18,27,0.85));
@@ -412,46 +420,6 @@
                             <div class="mode-desc">For people who think hard mode is easy!</div>
                             <div class="mode-stats">(3x speed, 3x scaling, 2x points, 8x16 grid)</div>
                         </button>
-                        <button class="gamemode-btn" onclick="selectGamemode('ability')">
-                            <div class="mode-title">Ability</div>
-                            <div class="mode-desc">For a chaotic and fun time!</div>
-                            <div class="mode-stats">(1x speed, 1x scaling, 0.5x points)</div>
-                        </button>
-                        <button class="gamemode-btn" onclick="selectGamemode('rngless')">
-                            <div class="mode-title">RNG-less</div>
-                            <div class="mode-desc">For people who hate randomness</div>
-                            <div class="mode-stats">(1x speed, 1x scaling, no scoring)</div>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Ability Selection Screen -->
-            <div id="abilityScreen" class="overlay">
-                <div class="overlay-content">
-                    <h1>SELECT ABILITY</h1>
-                    <p class="subtitle">Choose your power</p>
-                    <div class="gamemode-grid">
-                        <button class="gamemode-btn" onclick="selectAbility('timestop')">
-                            <div class="mode-title">Time Stop</div>
-                            <div class="mode-desc">Freeze time for 10 seconds. Control blocks in a monochrome world.</div>
-                            <div class="mode-stats">Cooldown: 45s</div>
-                        </button>
-                        <button class="gamemode-btn" onclick="selectAbility('phase')">
-                            <div class="mode-title">Phase</div>
-                            <div class="mode-desc">Next block phases through others. Overlapping parts disappear on placement.</div>
-                            <div class="mode-stats">Cooldown: 30s</div>
-                        </button>
-                        <button class="gamemode-btn" onclick="selectAbility('cycle')">
-                            <div class="mode-title">Cycle</div>
-                            <div class="mode-desc">Swap current block with the next in queue instantly.</div>
-                            <div class="mode-stats">Cooldown: 20s</div>
-                        </button>
-                        <button class="gamemode-btn" onclick="selectAbility('inversion')">
-                            <div class="mode-title">Inversion</div>
-                            <div class="mode-desc">Horizontally flip the current block instantly.</div>
-                            <div class="mode-stats">Cooldown: 15s</div>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -461,6 +429,7 @@
                 <div class="overlay-content">
                     <h1>GAME OVER</h1>
                     <p class="stats">Score: <span id="finalScore">0</span></p>
+                    <p class="stats" id="highScoreMessage" style="display: none; color: var(--accent);">New High Score!</p>
                     <button class="btn-large" onclick="restartGame()">PLAY AGAIN</button>
                 </div>
             </div>
@@ -473,7 +442,14 @@
             </div>
             <div class="info">
                 <div class="title">Tetris</div>
-                <div>Score: <span id="score">0</span></div>
+                <div class="info-row">
+                    <span class="info-label">Score:</span>
+                    <span id="score">0</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">High Score:</span>
+                    <span id="highScore">0</span>
+                </div>
             </div>
 
             <!-- Controls (restored so customization UI shows) -->
@@ -511,19 +487,6 @@
                     <span>Back:</span>
                     <button class="keybind-btn" data-action="back">Escape</button>
                 </div>
-                <div class="keybind-row" id="abilityKeybind" style="display: none;">
-                    <span>Ability:</span>
-                    <button class="keybind-btn" data-action="ability">F</button>
-                </div>
-            </div>
-
-            <!-- Ability Display (only shown in ability mode) -->
-            <div id="abilityDisplay" class="ability-display" style="display: none;">
-                <div class="title">Ability: <span id="abilityName">None</span></div>
-                <div class="cooldown-bar">
-                    <div class="cooldown-fill" id="cooldownFill" style="width: 100%;"></div>
-                </div>
-                <div class="cooldown-text" id="cooldownText">Ready</div>
             </div>
 
             <!-- Mobile controls -->
@@ -591,36 +554,39 @@
   // Game states
   let gameState = 'start'; // 'start' | 'playing' | 'paused' | 'gameover'
   let nextPiece = null;
-  let currentGamemode = 'classic'; // 'classic' | 'hard' | 'ultra' | 'ability' | 'rngless'
+  let currentGamemode = 'classic'; // 'classic' | 'hard' | 'ultra'
   
   // Gamemode modifiers
   const gamemodeSettings = {
       classic: { speedMult: 1.0, scaleMult: 1.0, pointMult: 1.0 },
       hard: { speedMult: 2.0, scaleMult: 2.0, pointMult: 1.5 },
-      ultra: { speedMult: 3.0, scaleMult: 3.0, pointMult: 2.0 },
-      ability: { speedMult: 1.0, scaleMult: 1.0, pointMult: 0.5 },
-      rngless: { speedMult: 1.0, scaleMult: 1.0, pointMult: 0.0 }
+      ultra: { speedMult: 3.0, scaleMult: 3.0, pointMult: 2.0 }
   };
 
-  // Ability system
-  let currentAbility = null;
-  let abilityCooldown = 0;
-  let abilityMaxCooldown = 0;
-  let abilityActive = false;
-  let abilityDuration = 0;
-  let phasedBlock = false; // for phase ability
-  let phaseReady = false; // track if phase ability is ready to use (not on cooldown)
-
-  const abilities = {
-      timestop: { name: 'Time Stop', cooldown: 45000, duration: 10000 },
-      phase: { name: 'Phase', cooldown: 30000, duration: 0 },
-      cycle: { name: 'Cycle', cooldown: 20000, duration: 0 },
-      inversion: { name: 'Inversion', cooldown: 15000, duration: 0 }
+  // High score system
+  let highScores = {
+      classic: 0,
+      hard: 0,
+      ultra: 0
   };
 
-  // RNG-less piece sequence
-  let pieceSequenceIndex = 0;
-  const pieceSequence = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
+  // Load high scores
+  try {
+      const saved = localStorage.getItem('tetris_highscores');
+      if (saved) {
+          highScores = { ...highScores, ...JSON.parse(saved) };
+      }
+  } catch(e) {}
+
+  function saveHighScore() {
+      try {
+          localStorage.setItem('tetris_highscores', JSON.stringify(highScores));
+      } catch(e) {}
+  }
+
+  function updateHighScoreDisplay() {
+      document.getElementById('highScore').textContent = highScores[currentGamemode] || 0;
+  }
 
   // Keybind system
   let keybinds = {
@@ -631,8 +597,7 @@
       hard: ' ',
       restart: 'm',
       pause: 'p',
-      back: 'escape',
-      ability: 'f'
+      back: 'escape'
   };
   let listeningFor = null;
 
@@ -916,8 +881,6 @@
   }
 
   function collide(arena, player) {
-      if (phasedBlock) return false; // Phase through everything
-      
       const m = player.matrix;
       const o = player.pos;
       for (let y = 0; y < m.length; ++y) {
@@ -933,8 +896,6 @@
 
   // Collision check for arbitrary position (used by ghost)
   function collideAt(matrix, pos) {
-      if (phasedBlock) return false; // Phase through in ghost calculation too
-      
       for (let y = 0; y < matrix.length; ++y) {
           for (let x = 0; x < matrix[y].length; ++x) {
               if (matrix[y][x] !== 0 &&
@@ -946,45 +907,12 @@
       return false;
   }
 
-  // Check if piece is at bottom of arena (for phased blocks)
-  function isAtBottom(player) {
-      const m = player.matrix;
-      const o = player.pos;
-      for (let y = 0; y < m.length; ++y) {
-          for (let x = 0; x < m[y].length; ++x) {
-              if (m[y][x] !== 0) {
-                  // Check if this block cell would be at or past the bottom
-                  if (y + o.y >= ROWS - 1) {
-                      return true;
-                  }
-              }
-          }
-      }
-      return false;
-  }
-
   function merge(arena, player) {
-      if (phasedBlock) {
-          // Phase merge: only merge non-overlapping blocks
-          player.matrix.forEach((row, y) => {
-              row.forEach((v, x) => {
-                  if (v !== 0) {
-                      const ay = y + player.pos.y;
-                      const ax = x + player.pos.x;
-                      if (arena[ay] && arena[ay][ax] === 0) {
-                          arena[ay][ax] = v;
-                      }
-                  }
-              });
+      player.matrix.forEach((row, y) => {
+          row.forEach((v, x) => {
+              if (v !== 0) arena[y + player.pos.y][x + player.pos.x] = v;
           });
-          phasedBlock = false;
-      } else {
-          player.matrix.forEach((row, y) => {
-              row.forEach((v, x) => {
-                  if (v !== 0) arena[y + player.pos.y][x + player.pos.x] = v;
-              });
-          });
-      }
+      });
   }
 
   function rotate(matrix, dir) {
@@ -999,11 +927,6 @@
   }
 
   function getNextPiece() {
-      if (currentGamemode === 'rngless') {
-          const piece = pieceSequence[pieceSequenceIndex];
-          pieceSequenceIndex = (pieceSequenceIndex + 1) % pieceSequence.length;
-          return piece;
-      }
       if (currentGamemode === 'ultra') {
           const pieces = 'OLSJZUV'; // No T or I pieces, add U and V
           return pieces[(pieces.length * Math.random()) | 0];
@@ -1076,24 +999,6 @@
   function playerDrop() {
       player.pos.y++;
       
-      // For phased blocks, check if we hit the bottom
-      if (phasedBlock && isAtBottom(player)) {
-          player.pos.y--;
-          emitLandingParticles(player);
-          merge(arena, player);
-          const rows = getFullRows();
-          if (rows.length) {
-              clearColors = rows.map(y => arena[y].map(v => colors[v] || '#ffffff'));
-              flashingRows = rows;
-              flashElapsed = 0;
-          } else {
-              playerReset();
-          }
-          dropCounter = 0;
-          return;
-      }
-      
-      // Normal collision check for non-phased blocks
       if (collide(arena, player)) {
           player.pos.y--;
           emitLandingParticles(player);
@@ -1113,40 +1018,6 @@
   }
 
   function hardDrop() {
-      if (phasedBlock) {
-          // Phase ability: drop to bottom, removing overlapping parts
-          // Find the lowest non-colliding position
-          let lowestY = player.pos.y;
-          while (lowestY + 1 < ROWS) {
-              let canGoLower = false;
-              for (let my = 0; my < player.matrix.length; my++) {
-                  for (let mx = 0; mx < player.matrix[my].length; mx++) {
-                      if (player.matrix[my][mx] !== 0 && my + lowestY + 1 < ROWS) {
-                          canGoLower = true;
-                          break;
-                      }
-                  }
-                  if (canGoLower) break;
-              }
-              if (!canGoLower) break;
-              lowestY++;
-          }
-          player.pos.y = lowestY;
-          
-          emitLandingParticles(player);
-          merge(arena, player);
-          
-          // Start cooldown only after placement
-          abilityCooldown = abilityMaxCooldown;
-          phaseReady = false;
-          
-          arenaSweep();
-          playerReset();
-          dropCounter = 0;
-          return;
-      }
-      
-      // Normal hard drop
       do {
           player.pos.y++;
       } while (!collide(arena, player));
@@ -1225,27 +1096,6 @@
 
   // Compute ghost landing Y for current piece
   function getGhostY() {
-      // For phased blocks, ghost shows at bottom
-      if (phasedBlock) {
-          let y = player.pos.y;
-          while (y + 1 < ROWS) {
-              let canGoLower = false;
-              for (let my = 0; my < player.matrix.length; my++) {
-                  for (let mx = 0; mx < player.matrix[my].length; mx++) {
-                      if (player.matrix[my][mx] !== 0 && my + y + 1 < ROWS) {
-                          canGoLower = true;
-                          break;
-                      }
-                  }
-                  if (canGoLower) break;
-              }
-              if (!canGoLower) break;
-              y++;
-          }
-          return y;
-      }
-      
-      // Normal ghost calculation
       let y = player.pos.y;
       while (!collideAt(player.matrix, { x: player.pos.x, y: y + 1 })) {
           y++;
@@ -1256,19 +1106,13 @@
   function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Monochrome effect for timestop - apply BEFORE drawing anything
-      if (abilityActive && currentAbility === 'timestop') {
-          ctx.save();
-          ctx.filter = 'grayscale(100%) contrast(1.2)';
-      }
-
       drawBackground();
 
       // Arena
       drawMatrix(arena, { x: 0, y: 0 }, 'solid');
 
-      // Draw ghost only when piece is active (not flashing) and not phased
-      if (!flashingRows.length && gameState === 'playing' && !phasedBlock) {
+      // Draw ghost only when piece is active (not flashing)
+      if (!flashingRows.length && gameState === 'playing') {
           const gy = getGhostY();
           drawMatrix(player.matrix, { x: player.pos.x, y: gy }, 'ghost');
       }
@@ -1284,25 +1128,11 @@
           ctx.scale(s, s);
           ctx.translate(-cx, -cy);
           
-          // Phase glow effect
-          if (phasedBlock) {
-              ctx.save();
-              ctx.shadowColor = 'rgba(0,240,240,0.8)';
-              ctx.shadowBlur = 20;
-              drawMatrix(player.matrix, player.pos, 'solid');
-              ctx.restore();
-          } else {
-              drawMatrix(player.matrix, player.pos, 'solid');
-          }
+          drawMatrix(player.matrix, player.pos, 'solid');
           ctx.restore();
       }
 
       drawParticles();
-
-      // Restore filter after drawing everything
-      if (abilityActive && currentAbility === 'timestop') {
-          ctx.restore();
-      }
 
       // Pause overlay with animated gradient
       if (gameState === 'paused') {
@@ -1343,23 +1173,6 @@
       lastTime = time;
 
       if (gameState === 'playing') {
-          // Update ability cooldowns
-          if (currentGamemode === 'ability') {
-              if (abilityCooldown > 0) {
-                  abilityCooldown = Math.max(0, abilityCooldown - delta);
-                  if (abilityCooldown === 0 && currentAbility === 'phase') {
-                      phaseReady = true;
-                  }
-              }
-              if (abilityActive) {
-                  abilityDuration = Math.max(0, abilityDuration - delta);
-                  if (abilityDuration <= 0) {
-                      abilityActive = false;
-                  }
-              }
-              updateAbilityDisplay();
-          }
-
           if (flashingRows.length) {
               flashElapsed += delta;
               if (flashElapsed >= FLASH_DURATION) {
@@ -1370,15 +1183,11 @@
                   playerReset();
               }
           } else {
-              // Time stop prevents drop
-              const shouldDrop = !(abilityActive && currentAbility === 'timestop');
-              if (shouldDrop) {
-                  dropCounter += delta;
-                  const settings = gamemodeSettings[currentGamemode];
-                  const baseSpeed = 1000;
-                  const speed = Math.max(100, baseSpeed / settings.speedMult);
-                  if (dropCounter > speed) playerDrop();
-              }
+              dropCounter += delta;
+              const settings = gamemodeSettings[currentGamemode];
+              const baseSpeed = 1000;
+              const speed = Math.max(100, baseSpeed / settings.speedMult);
+              if (dropCounter > speed) playerDrop();
           }
           if (pieceSpawnT > 0) pieceSpawnT -= delta;
           updateParticles(delta);
@@ -1389,11 +1198,7 @@
   }
 
   function updateScore() {
-      if (currentGamemode === 'rngless') {
-          document.getElementById('score').textContent = '-';
-      } else {
-          document.getElementById('score').textContent = player.score;
-      }
+      document.getElementById('score').textContent = player.score;
   }
 
   function selectGamemode(mode) {
@@ -1419,130 +1224,7 @@
       // Recreate arena with new dimensions
       arena = createMatrix(COLS, ROWS);
       
-      if (mode === 'ability') {
-          document.getElementById('startScreen').classList.remove('active');
-          document.getElementById('abilityScreen').classList.add('active');
-      } else {
-          startGame();
-      }
-  }
-
-  function selectAbility(ability) {
-      currentAbility = ability;
-      document.getElementById('abilityScreen').classList.remove('active');
-      document.getElementById('abilityDisplay').style.display = 'block';
-      document.getElementById('abilityKeybind').style.display = 'flex';
-      document.getElementById('abilityName').textContent = abilities[ability].name;
-      abilityMaxCooldown = abilities[ability].cooldown;
-      abilityCooldown = 0;
       startGame();
-  }
-
-  function useAbility() {
-      if (gameState !== 'playing' || flashingRows.length) return;
-      
-      const ability = abilities[currentAbility];
-      
-      switch(currentAbility) {
-          case 'timestop':
-              if (abilityCooldown > 0 || abilityActive) return;
-              abilityCooldown = ability.cooldown;
-              abilityActive = true;
-              abilityDuration = ability.duration;
-              break;
-          case 'phase':
-              if (phasedBlock) {
-                  // Second press: drop the block at current position
-                  emitLandingParticles(player);
-                  merge(arena, player);
-                  
-                  // Start cooldown only after placement
-                  abilityCooldown = ability.cooldown;
-                  phaseReady = false;
-                  
-                  arenaSweep();
-                  playerReset();
-                  dropCounter = 0;
-              } else {
-                  // First press: activate phase if ready
-                  if (!phaseReady) return;
-                  phasedBlock = true;
-              }
-              break;
-          case 'cycle':
-              if (abilityCooldown > 0) return;
-              abilityCooldown = ability.cooldown;
-              // Swap current piece with next
-              const temp = player.matrix;
-              const tempType = getCurrentPieceType();
-              player.matrix = createPiece(nextPiece);
-              nextPiece = tempType;
-              player.pos.x = ((COLS / 2) | 0) - ((player.matrix[0].length / 2) | 0);
-              if (collide(arena, player)) {
-                  // If collision, revert
-                  player.matrix = temp;
-                  nextPiece = getNextPiece();
-              }
-              drawNextPiece();
-              break;
-          case 'inversion':
-              if (abilityCooldown > 0) return;
-              abilityCooldown = ability.cooldown;
-              // Horizontally flip the current piece
-              player.matrix.forEach(row => row.reverse());
-              // Check if flipped piece collides, if so revert
-              if (collide(arena, player)) {
-                  player.matrix.forEach(row => row.reverse());
-                  // Refund cooldown if we couldn't use it
-                  abilityCooldown = 0;
-              }
-              break;
-      }
-      updateAbilityDisplay();
-  }
-
-  function getCurrentPieceType() {
-      const m = player.matrix;
-      if (!m || !m.length) return getNextPiece();
-      // Find first non-zero value to determine type
-      for (let y = 0; y < m.length; y++) {
-          for (let x = 0; x < m[y].length; x++) {
-              if (m[y][x] !== 0) {
-                  const types = ['T', 'O', 'L', 'J', 'I', 'S', 'Z'];
-                  return types[m[y][x] - 1] || 'T';
-              }
-          }
-      }
-      return getNextPiece();
-  }
-
-  function updateAbilityDisplay() {
-      if (currentGamemode !== 'ability') return;
-      
-      const cooldownPct = abilityCooldown > 0 
-          ? ((abilityMaxCooldown - abilityCooldown) / abilityMaxCooldown) * 100 
-          : 100;
-      document.getElementById('cooldownFill').style.width = cooldownPct + '%';
-      
-      // Update phase indicator visibility
-      const phaseIndicator = document.getElementById('phaseIndicator');
-      if (phasedBlock) {
-          phaseIndicator.classList.add('active');
-      } else {
-          phaseIndicator.classList.remove('active');
-      }
-      
-      if (abilityActive) {
-          const remaining = Math.ceil(abilityDuration / 1000);
-          document.getElementById('cooldownText').textContent = `Active: ${remaining}s`;
-      } else if (abilityCooldown > 0) {
-          const remaining = Math.ceil(abilityCooldown / 1000);
-          document.getElementById('cooldownText').textContent = `Cooldown: ${remaining}s`;
-      } else if (phasedBlock) {
-          document.getElementById('cooldownText').textContent = 'Press ability to drop';
-      } else {
-          document.getElementById('cooldownText').textContent = 'Ready';
-      }
   }
 
   function startGame() {
@@ -1551,41 +1233,34 @@
       arena.forEach(row => row.fill(0));
       player.score = 0;
       
-      // Reset piece sequence for RNG-less mode
-      if (currentGamemode === 'rngless') {
-          pieceSequenceIndex = 0;
-      }
-      
       nextPiece = getNextPiece();
       
-      // Hide next preview in hard mode
+      // Hide next preview in hard and ultra mode
       const nextPreview = document.getElementById('nextPreview');
-      if (currentGamemode === 'hard') {
+      if (currentGamemode === 'hard' || currentGamemode === 'ultra') {
           nextPreview.style.display = 'none';
       } else {
           nextPreview.style.display = 'block';
       }
       
-      // Reset ability state
-      if (currentGamemode === 'ability') {
-          abilityCooldown = 0;
-          abilityActive = false;
-          abilityDuration = 0;
-          phasedBlock = false;
-          phaseReady = true; // Phase starts ready
-          updateAbilityDisplay();
-      } else {
-          document.getElementById('abilityDisplay').style.display = 'none';
-          document.getElementById('abilityKeybind').style.display = 'none';
-          document.getElementById('phaseIndicator').classList.remove('active');
-      }
-      
       playerReset();
       updateScore();
+      updateHighScoreDisplay();
   }
 
   function gameOver() {
       gameState = 'gameover';
+      
+      // Check and update high score
+      const isNewHighScore = player.score > (highScores[currentGamemode] || 0);
+      if (isNewHighScore) {
+          highScores[currentGamemode] = player.score;
+          saveHighScore();
+          document.getElementById('highScoreMessage').style.display = 'block';
+      } else {
+          document.getElementById('highScoreMessage').style.display = 'none';
+      }
+      
       document.getElementById('finalScore').textContent = player.score;
       document.getElementById('gameOverScreen').classList.add('active');
   }
@@ -1594,8 +1269,6 @@
       document.getElementById('gameOverScreen').classList.remove('active');
       document.getElementById('startScreen').classList.add('active');
       gameState = 'start';
-      currentAbility = null;
-      phaseReady = false;
       
       // Reset to default grid
       COLS = 10;
@@ -1606,9 +1279,6 @@
       ctx.scale(SIZE/24, SIZE/24);
       arena = createMatrix(COLS, ROWS);
       
-      document.getElementById('abilityDisplay').style.display = 'none';
-      document.getElementById('abilityKeybind').style.display = 'none';
-      document.getElementById('phaseIndicator').classList.remove('active');
       document.getElementById('nextPreview').style.display = 'block';
   }
 
@@ -1654,10 +1324,6 @@
       else if (k === keybinds.soft) { e.preventDefault(); playerDrop(); }
       else if (k === keybinds.rotate) { e.preventDefault(); playerRotate(1); }
       else if (k === keybinds.hard) { e.preventDefault(); hardDrop(); }
-      else if (k === keybinds.ability && currentGamemode === 'ability') { 
-          e.preventDefault(); 
-          useAbility(); 
-      }
       else if (k === keybinds.restart) {
           e.preventDefault();
           restartGame();
@@ -1677,7 +1343,6 @@
           rotate: () => playerRotate(1),
           soft: () => playerDrop(),
           hard: () => hardDrop(),
-          ability: () => useAbility(),
           pause: () => { 
               gameState = gameState === 'paused' ? 'playing' : 'paused';
           },
@@ -1703,6 +1368,7 @@
   // Don't auto-start, wait for user
   drawNextPiece();
   updateScore();
+  updateHighScoreDisplay();
   update();
 </script>
 </body>
