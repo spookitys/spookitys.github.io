@@ -13,8 +13,8 @@
     --panel:#12121b;
     --panel-alt:#0f0f18;
     --fg:#eef1ff;
-    --accent:#ff2f6d;
-    --accent-soft:rgba(255,47,109,0.35);
+    --accent:#4d57ba; /* Updated */
+    --accent-soft:rgba(77,87,186,0.35); /* Updated */
     --radius:10px;
     --font:"Courier New", monospace;
 }
@@ -33,8 +33,8 @@ body:before {
     content:"";
     position:fixed; inset:0;
     background:
-        radial-gradient(circle at 30% 15%, rgba(255,47,109,0.08), transparent 60%),
-        radial-gradient(circle at 75% 80%, rgba(255,47,109,0.06), transparent 65%);
+        radial-gradient(circle at 30% 15%, rgba(77,87,186,0.08), transparent 60%), /* Updated */
+        radial-gradient(circle at 75% 80%, rgba(77,87,186,0.06), transparent 65%); /* Updated */
     pointer-events:none;
     animation:glowShift 12s linear infinite;
 }
@@ -46,7 +46,7 @@ body:before {
     position:fixed; inset:0;
     width:100%; height:100%;
     z-index:0;
-    filter:drop-shadow(0 0 6px rgba(255,47,109,0.5));
+    filter:drop-shadow(0 0 6px rgba(77,87,186,0.5)); /* Updated */
 }
 .content {
     position:relative;
@@ -58,7 +58,7 @@ body:before {
 .header-container {
     margin-bottom:26px;
     padding-bottom:20px;
-    border-bottom:1px solid rgba(255,47,109,0.25);
+    border-bottom:1px solid rgba(77,87,186,0.25); /* Updated */
 }
 h1 {
     position:relative;
@@ -67,7 +67,7 @@ h1 {
     font-weight:700;
     letter-spacing:1px;
     color:var(--fg);
-    text-shadow:0 0 14px rgba(255,47,109,0.55);
+    text-shadow:0 0 14px rgba(77,87,186,0.55); /* Updated */
     height:1.6em; line-height:1.6em;
     overflow:hidden;
     width:fit-content;
@@ -97,17 +97,17 @@ h1:after {
     border-radius:var(--radius);
     box-shadow:
         0 10px 24px rgba(0,0,0,0.45),
-        0 0 0 2px rgba(255,47,109,0.08) inset,
-        0 0 26px rgba(255,47,109,0.18);
+        0 0 0 2px rgba(77,87,186,0.08) inset, /* Updated */
+        0 0 26px rgba(77,87,186,0.18); /* Updated */
     transition:box-shadow .25s ease, transform .25s ease, border-color .25s ease;
 }
 .expandable-box:hover {
-    border-color:rgba(255,47,109,0.55);
+    border-color:rgba(77,87,186,0.55); /* Updated */
     transform:translateY(-3px);
     box-shadow:
         0 16px 36px rgba(0,0,0,0.55),
-        0 0 0 2px rgba(255,47,109,0.16) inset,
-        0 0 42px rgba(255,47,109,0.35);
+        0 0 0 2px rgba(77,87,186,0.16) inset, /* Updated */
+        0 0 42px rgba(77,87,186,0.35); /* Updated */
 }
 .box-header {
     cursor:pointer;
@@ -116,7 +116,7 @@ h1:after {
     position:relative;
     color:var(--accent);
     letter-spacing:.5px;
-    text-shadow:0 0 8px rgba(255,47,109,0.6);
+    text-shadow:0 0 8px rgba(77,87,186,0.6); /* Updated */
     user-select:none;
     display:flex;
     align-items:center;
@@ -148,12 +148,12 @@ h1:after {
     position:relative;
 }
 .box-content a:hover {
-    text-shadow:0 0 10px rgba(255,47,109,0.7);
+    text-shadow:0 0 10px rgba(77,87,186,0.7); /* Updated */
     color:var(--accent);
 }
 .box-content ul { list-style:none; margin:8px 0; padding:0; }
 .box-content li { margin:3px 0; }
-.category { color:var(--accent); font-weight:700; text-shadow:0 0 6px rgba(255,47,109,0.55); }
+.category { color:var(--accent); font-weight:700; text-shadow:0 0 6px rgba(77,87,186,0.55); /* Updated */ }
 
 .message {
     color:var(--fg);
@@ -163,7 +163,7 @@ h1:after {
     border-radius:8px;
     font-size:14px;
     backdrop-filter:blur(4px);
-    box-shadow:0 10px 28px rgba(0,0,0,0.55), 0 0 0 2px rgba(255,47,109,0.10) inset;
+    box-shadow:0 10px 28px rgba(0,0,0,0.55), 0 0 0 2px rgba(77,87,186,0.10) inset; /* Updated */
     opacity:0;
     transition:opacity .35s ease;
 }
@@ -179,10 +179,10 @@ h1:after {
     font-weight:700;
     font-family:var(--font);
     cursor:pointer;
-    box-shadow:0 8px 18px rgba(0,0,0,0.55), 0 0 18px rgba(255,47,109,0.25);
+    box-shadow:0 8px 18px rgba(0,0,0,0.55), 0 0 18px rgba(77,87,186,0.25); /* Updated */
     transition:transform .25s ease, border-color .25s ease;
 }
-.terminal-button:hover { transform:translateY(-3px); border-color:rgba(255,47,109,0.55); }
+.terminal-button:hover { transform:translateY(-3px); border-color:rgba(77,87,186,0.55); } /* Updated */
 
 .terminal {
     position:fixed; left:14px; bottom:70px; z-index:4;
@@ -198,8 +198,8 @@ h1:after {
     font-family:var(--font);
     box-shadow:
         0 10px 30px rgba(0,0,0,0.55),
-        0 0 0 2px rgba(255,47,109,0.10) inset,
-        0 0 42px rgba(255,47,109,0.30);
+        0 0 0 2px rgba(77,87,186,0.10) inset, /* Updated */
+        0 0 42px rgba(77,87,186,0.30); /* Updated */
 }
 .terminal.hidden { display:none; }
 .terminal-output {
@@ -210,7 +210,7 @@ h1:after {
 .terminal-output::-webkit-scrollbar { width:8px; }
 .terminal-output::-webkit-scrollbar-track { background:#09090f; }
 .terminal-output::-webkit-scrollbar-thumb { background:var(--accent); border-radius:4px; }
-.terminal-prompt { display:flex; align-items:center; gap:8px; border-top:1px solid rgba(255,47,109,0.35); padding-top:8px; margin-top:8px; }
+.terminal-prompt { display:flex; align-items:center; gap:8px; border-top:1px solid rgba(77,87,186,0.35); padding-top:8px; margin-top:8px; } /* Updated */
 .terminal-input {
     flex:1; background:transparent; border:none; outline:none;
     color:var(--accent); caret-color:var(--accent);
@@ -221,7 +221,7 @@ h1:after {
 .gif-overlay img {
     border:1px solid var(--accent-soft);
     border-radius:10px;
-    box-shadow:0 0 0 2px rgba(255,47,109,0.10), 0 12px 28px rgba(0,0,0,0.6), 0 0 34px rgba(255,47,109,0.35);
+    box-shadow:0 0 0 2px rgba(77,87,186,0.10), 0 12px 28px rgba(0,0,0,0.6), 0 0 34px rgba(77,87,186,0.35); /* Updated */
     background:#000;
 }
 
@@ -238,8 +238,8 @@ h1:after {
     animation:panelGlow .6s ease forwards;
 }
 @keyframes panelGlow {
-    0% { box-shadow:0 10px 24px rgba(0,0,0,0.45),0 0 0 2px rgba(255,47,109,0.08) inset,0 0 26px rgba(255,47,109,0.18); }
-    100% { box-shadow:0 16px 36px rgba(0,0,0,0.6),0 0 0 2px rgba(255,47,109,0.16) inset,0 0 50px rgba(255,47,109,0.42); }
+    0% { box-shadow:0 10px 24px rgba(0,0,0,0.45),0 0 0 2px rgba(77,87,186,0.08) inset,0 0 26px rgba(77,87,186,0.18); } /* Updated */
+    100% { box-shadow:0 16px 36px rgba(0,0,0,0.6),0 0 0 2px rgba(77,87,186,0.16) inset,0 0 50px rgba(77,87,186,0.42); } /* Updated */
 }
 
 /* rotate chevron when expanded via parent class */
@@ -261,7 +261,7 @@ h1:after {
     font-family: inherit;
     font-size: 14px;
     color: var(--accent);
-    text-shadow: 0 0 10px rgba(255,47,109,0.7);
+    text-shadow: 0 0 10px rgba(77,87,186,0.7); /* Updated */
     pointer-events: none;
     opacity: 0;
     transform: translateY(0) scale(0.9);
@@ -435,86 +435,62 @@ Terminal Protcol Initiated [Website Version: 0.2]
         if (parent) parent.classList.toggle('expanded');
     }
     
-    /* REPLACED background effect (old number matrix) with neon grid flicker + mouse ripple. */
+    /* REPLACED with dynamic pixelated perlin-like noise gradient. */
     (function(){
         const canvas = document.getElementById('numberCanvas');
         const ctx = canvas.getContext('2d');
-        let w=0,h=0, cols=0, rows=0;
-        const CELL = 28;
-        let grid=[];
-        let mouse={x:-999,y:-999};
+        let w=0, h=0, cols=0, rows=0;
+        const CELL = 30; // Pixelated block size
+        let time = 0;
+
         function resize(){
             w = canvas.width = window.innerWidth;
             h = canvas.height = window.innerHeight;
             cols = Math.ceil(w / CELL);
             rows = Math.ceil(h / CELL);
-            grid = [];
-            for(let y=0;y<rows;y++){
-                const row=[];
-                for(let x=0;x<cols;x++){
-                    row.push({
-                        b: Math.random()*0.25, // brightness
-                        t: 0 // ripple timer
-                    });
-                }
-                grid.push(row);
-            }
         }
+
         function draw(){
-            ctx.clearRect(0,0,w,h);
-            // subtle dark backdrop
-            ctx.fillStyle='#07070c';
-            ctx.fillRect(0,0,w,h);
-            for(let y=0;y<rows;y++){
-                for(let x=0;x<cols;x++){
-                    const cell = grid[y][x];
-                    // decay brightness
-                    cell.b *= 0.96;
-                    if (cell.b < 0.08 && Math.random() < 0.003) cell.b = 0.9;
-                    if (cell.t > 0) cell.t -= 1;
-                    // compute position
-                    const px = x*CELL + CELL/2;
-                    const py = y*CELL + CELL/2;
-                    // ripple from mouse
-                    const dx = px - mouse.x;
-                    const dy = py - mouse.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    const ripple = Math.max(0, 1 - dist/220);
-                    const b = Math.min(1, cell.b + ripple*0.9);
-                    // color shift by row for mild variation
-                    const hue = 328 + (y/rows)*12;
-                    const sat = 84;
-                    const light = 12 + b*62;
-                    ctx.fillStyle=`hsl(${hue} ${sat}% ${light}%)`;
-                    // draw square
-                    const size = (CELL * 0.42) + b*4;
-                    ctx.beginPath();
-                    ctx.roundRect(px-size/2, py-size/2, size, size, 4);
-                    ctx.fill();
-                    // optional inner core
-                    if (b>0.7){
-                        ctx.fillStyle=`hsla(${hue} ${sat}% ${Math.min(88,light+20)}% / ${0.35 + b*0.3})`;
-                        ctx.fillRect(px-size*0.25, py-size*0.25, size*0.5, size*0.5);
-                    }
+            ctx.clearRect(0, 0, w, h);
+            // Draw background grid
+            for(let y=0; y<rows; y++){
+                for(let x=0; x<cols; x++){
+                    // Coordinates scaled for noise
+                    const sx = x * 0.08;
+                    const sy = y * 0.08;
+                    const t = time * 0.002;
+                    
+                    // Simple Plasma / Value Noise approximation
+                    // Combining sine waves to create a drifting cloud/noise effect
+                    const v1 = Math.sin(sx + t);
+                    const v2 = Math.sin(sy + t * 0.5);
+                    const v3 = Math.sin((sx + sy) + t * 0.8);
+                    
+                    // Normalize to approximately 0-1 range
+                    const val = (v1 + v2 + v3 + 3) / 6; 
+                    
+                    // Map value to HSL color (Dark Blue Theme)
+                    // Hue: ~235 (Blue-Purple)
+                    // Saturation: ~45%
+                    // Lightness: Very dark (5%) to slightly lighter (18%)
+                    const hue = 230 + val * 20; 
+                    const sat = 45;
+                    const light = 4 + val * 14; 
+                    
+                    ctx.fillStyle = `hsl(${hue}, ${sat}%, ${light}%)`;
+                    // Draw slightly overlapping rects to avoid sub-pixel gaps
+                    ctx.fillRect(x * CELL, y * CELL, CELL + 0.5, CELL + 0.5);
                 }
             }
-            // faint grid lines
-            ctx.strokeStyle='rgba(255,47,109,0.08)';
-            ctx.lineWidth=1;
-            ctx.beginPath();
-            for(let x=0;x<=cols;x++){
-                ctx.moveTo(x*CELL+0.5,0); ctx.lineTo(x*CELL+0.5,h);
-            }
-            for(let y=0;y<=rows;y++){
-                ctx.moveTo(0,y*CELL+0.5); ctx.lineTo(w,y*CELL+0.5);
-            }
-            ctx.stroke();
+            
+            // Increment time for animation
+            time++;
             requestAnimationFrame(draw);
         }
-        window.addEventListener('resize',resize);
-        window.addEventListener('mousemove',e=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
-        window.addEventListener('mouseleave',()=>{ mouse.x=-999; mouse.y=-999; });
-        resize(); draw();
+
+        window.addEventListener('resize', resize);
+        resize(); 
+        draw();
     })();
     
     function copyUsername() {
@@ -643,7 +619,7 @@ Terminal Protcol Initiated [Website Version: 0.2]
 
         if (normalized === 'info' || normalized === 'help' || normalized === '?' || normalized === 'commands' || normalized === 'command list' || normalized === 'command' || normalized === 'cmds') {
             printLine('welcome to the terminal. available commands:');
-            printLine('help/cmds/?/commands/command list/command - shows this message');
+            printLine('help/cmds/?/commands/command - shows this message');
             printLine('tetris - launches tetris');
             printLine('rush - launches rush platformer');
             printLine('dog - plays a dog gif');
