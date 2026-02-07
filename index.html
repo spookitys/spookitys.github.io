@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>My Site</title>
+<title>Sanctorum</title>
+<link rel="icon" href="favicon.png">
 <style>
 /* --- Neon Tetris-like Theme --- */
 :root {
@@ -13,7 +14,7 @@
     --panel:#12121b;
     --panel-alt:#0f0f18;
     --fg:#eef1ff;
-    --accent:#4d57ba; /* Updated */
+    --accent:#d0d5ff; /* Updated */
     --accent-soft:rgba(77,87,186,0.35); /* Updated */
     --radius:10px;
     --font:"Courier New", monospace;
@@ -310,6 +311,8 @@ h1:after {
                     <li>        <a href="https://www.roblox.com/games/6403373529/" target="_blank" class="game-link">Slap Battles</a></li>
                     <li>        <a href="https://www.roblox.com/games/78515341506665/" target="_blank" class="game-link">Alter Ego</a></li>
                     <li>        <a href="https://www.roblox.com/games/16483433878/" target="_blank" class="game-link">Block Tales</a></li>
+                    <li class="category">My Projects</li>
+                    <div id="dynamicGames"></div>
                     <li class="category">Steam</li>
                     <li>        <a href="https://store.steampowered.com/app/960090/Bloons_TD_6/" target="_blank" class="game-link">Bloons Tower Defense 6</a></li>
                     <li>        <a href="https://store.steampowered.com/app/553850/HELLDIVERS_2/" target="_blank" class="game-link">Helldivers 2</a></li>
@@ -435,55 +438,79 @@ Terminal Protcol Initiated [Website Version: 0.2]
         if (parent) parent.classList.toggle('expanded');
     }
     
-    /* REPLACED with dynamic pixelated perlin-like noise gradient. */
+    /* Smooth topographical-style animated background */
     (function(){
         const canvas = document.getElementById('numberCanvas');
         const ctx = canvas.getContext('2d');
-        let w=0, h=0, cols=0, rows=0;
-        const CELL = 30; // Pixelated block size
+        let w=0, h=0;
         let time = 0;
+        let imageData;
+        let data;
 
         function resize(){
             w = canvas.width = window.innerWidth;
             h = canvas.height = window.innerHeight;
-            cols = Math.ceil(w / CELL);
-            rows = Math.ceil(h / CELL);
+            imageData = ctx.createImageData(w, h);
+            data = imageData.data;
+        }
+
+        // Smooth noise function using multiple sine waves
+        function smoothNoise(x, y, t) {
+            const scale1 = 0.003;
+            const scale2 = 0.006;
+            const scale3 = 0.012;
+            
+            const v1 = Math.sin(x * scale1 + t * 0.5) * Math.cos(y * scale1 + t * 0.3);
+            const v2 = Math.sin((x + y) * scale2 + t * 0.7) * Math.cos((x - y) * scale2 + t * 0.4);
+            const v3 = Math.sin(x * scale3 + t * 1.2) * Math.sin(y * scale3 + t * 0.9);
+            const v4 = Math.cos((x * 0.5 + y * 0.5) * scale1 + t * 0.6);
+            
+            return (v1 + v2 * 0.5 + v3 * 0.3 + v4 * 0.4) / 2.2;
         }
 
         function draw(){
-            ctx.clearRect(0, 0, w, h);
-            // Draw background grid
-            for(let y=0; y<rows; y++){
-                for(let x=0; x<cols; x++){
-                    // Coordinates scaled for noise
-                    const sx = x * 0.08;
-                    const sy = y * 0.08;
-                    const t = time * 0.002;
+            const t = time * 0.02;
+            
+            // Draw smooth gradient with topographical contours
+            for(let y = 0; y < h; y += 1){
+                for(let x = 0; x < w; x += 1){
+                    const idx = (y * w + x) * 4;
                     
-                    // Simple Plasma / Value Noise approximation
-                    // Combining sine waves to create a drifting cloud/noise effect
-                    const v1 = Math.sin(sx + t);
-                    const v2 = Math.sin(sy + t * 0.5);
-                    const v3 = Math.sin((sx + sy) + t * 0.8);
+                    // Get noise value
+                    const noiseVal = smoothNoise(x, y, t);
+                    const normalized = (noiseVal + 1) * 0.5; // 0 to 1
                     
-                    // Normalize to approximately 0-1 range
-                    const val = (v1 + v2 + v3 + 3) / 6; 
+                    // Create contour levels for topographical effect
+                    const levels = 12;
+                    const stepped = Math.floor(normalized * levels) / levels;
+                    const contour = Math.abs((normalized * levels) % 1 - 0.5) < 0.08 ? 0.3 : 0;
                     
-                    // Map value to HSL color (Dark Blue Theme)
-                    // Hue: ~235 (Blue-Purple)
-                    // Saturation: ~45%
-                    // Lightness: Very dark (5%) to slightly lighter (18%)
-                    const hue = 230 + val * 20; 
-                    const sat = 45;
-                    const light = 4 + val * 14; 
+                    // Map to dark blue theme colors
+                    const hue = 230 + normalized * 25;
+                    const sat = 0.45;
+                    const light = 0.04 + stepped * 0.15 + contour;
                     
-                    ctx.fillStyle = `hsl(${hue}, ${sat}%, ${light}%)`;
-                    // Draw slightly overlapping rects to avoid sub-pixel gaps
-                    ctx.fillRect(x * CELL, y * CELL, CELL + 0.5, CELL + 0.5);
+                    // Convert HSL to RGB
+                    const c = (1 - Math.abs(2 * light - 1)) * sat;
+                    const x2 = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+                    const m = light - c / 2;
+                    
+                    let r, g, b;
+                    if (hue < 60) { r = c; g = x2; b = 0; }
+                    else if (hue < 120) { r = x2; g = c; b = 0; }
+                    else if (hue < 180) { r = 0; g = c; b = x2; }
+                    else if (hue < 240) { r = 0; g = x2; b = c; }
+                    else if (hue < 300) { r = x2; g = 0; b = c; }
+                    else { r = c; g = 0; b = x2; }
+                    
+                    data[idx] = (r + m) * 255;
+                    data[idx + 1] = (g + m) * 255;
+                    data[idx + 2] = (b + m) * 255;
+                    data[idx + 3] = 255;
                 }
             }
             
-            // Increment time for animation
+            ctx.putImageData(imageData, 0, 0);
             time++;
             requestAnimationFrame(draw);
         }
@@ -583,6 +610,33 @@ Terminal Protcol Initiated [Website Version: 0.2]
         window.location.href = url;
     }
 
+    // Dynamic game links management
+    function addDynamicGame(name, path) {
+        try {
+            let games = JSON.parse(localStorage.getItem('dynamicGames') || '[]');
+            if (!games.find(g => g.name === name)) {
+                games.push({ name, path });
+                localStorage.setItem('dynamicGames', JSON.stringify(games));
+                renderDynamicGames();
+            }
+        } catch (e) {}
+    }
+
+    function renderDynamicGames() {
+        const container = document.getElementById('dynamicGames');
+        if (!container) return;
+        
+        try {
+            const games = JSON.parse(localStorage.getItem('dynamicGames') || '[]');
+            container.innerHTML = games.map(game => 
+                `<li>        <a href="javascript:void(0)" onclick="launchWithToken('${game.path}')" class="game-link">${game.name}</a></li>`
+            ).join('');
+        } catch (e) {}
+    }
+
+    // Load dynamic games on page load
+    window.addEventListener('DOMContentLoaded', renderDynamicGames);
+
     function handleCommand(cmd) {
         if (!cmd) return;
         const raw = cmd.trim();
@@ -595,12 +649,14 @@ Terminal Protcol Initiated [Website Version: 0.2]
 
         if (normalized === '16zetatetris' || normalized === 'tetris') {
             printLine('Launching Tetris...');
-            launchWithToken('tetris.html');
+            addDynamicGame('Tetris', 'Tetris.html');
+            launchWithToken('Tetris.html');
             return;
         }
 
         if (normalized === '77deltarush' || normalized === 'rush') {
             printLine('Launching Rush...');
+            addDynamicGame('Rush', 'rush.html');
             launchWithToken('rush.html');
             return;
         }
