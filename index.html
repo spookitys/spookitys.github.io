@@ -1,753 +1,721 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Sanctorum</title>
-<link rel="icon" href="favicon.png">
-<style>
-/* --- Neon Tetris-like Theme --- */
-:root {
-    --bg-grad-start:#121226;
-    --bg-grad-mid:#0b0b14;
-    --bg-grad-end:#05050a;
-    --panel:#12121b;
-    --panel-alt:#0f0f18;
-    --fg:#eef1ff;
-    --accent:#d0d5ff; /* Updated */
-    --accent-soft:rgba(77,87,186,0.35); /* Updated */
-    --radius:10px;
-    --font:"Courier New", monospace;
-}
-* { box-sizing:border-box; }
-body {
-    margin:0;
-    font-family:var(--font);
-    color:var(--fg);
-    background:
-        radial-gradient(1200px 800px at 20% 10%, var(--bg-grad-start) 0%, var(--bg-grad-mid) 55%, var(--bg-grad-end) 100%);
-    overflow:hidden;
-    min-height:100vh;
-}
-/* animated subtle global glow pulse */
-body:before {
-    content:"";
-    position:fixed; inset:0;
-    background:
-        radial-gradient(circle at 30% 15%, rgba(77,87,186,0.08), transparent 60%), /* Updated */
-        radial-gradient(circle at 75% 80%, rgba(77,87,186,0.06), transparent 65%); /* Updated */
-    pointer-events:none;
-    animation:glowShift 12s linear infinite;
-}
-@keyframes glowShift {
-    0%,100% { filter:brightness(1); }
-    50% { filter:brightness(1.15); }
-}
-#numberCanvas {
-    position:fixed; inset:0;
-    width:100%; height:100%;
-    z-index:0;
-    filter:drop-shadow(0 0 6px rgba(77,87,186,0.5)); /* Updated */
-}
-.content {
-    position:relative;
-    z-index:2;
-    padding:54px clamp(24px,6vw,70px);
-    max-width:1100px;
-    margin:0 auto;
-}
-.header-container {
-    margin-bottom:26px;
-    padding-bottom:20px;
-    border-bottom:1px solid rgba(77,87,186,0.25); /* Updated */
-}
-h1 {
-    position:relative;
-    font-size:1.65em;
-    margin:0;
-    font-weight:700;
-    letter-spacing:1px;
-    color:var(--fg);
-    text-shadow:0 0 14px rgba(77,87,186,0.55); /* Updated */
-    height:1.6em; line-height:1.6em;
-    overflow:hidden;
-    width:fit-content;
-    transition:width .5s ease-in-out;
-}
-h1 span { position:absolute; white-space:nowrap; }
-h1:after {
-    content:"";
-    position:absolute; left:0; bottom:0;
-    height:2px; width:100%;
-    background:linear-gradient(90deg,var(--accent), transparent 70%);
-    opacity:.65;
-    animation:underlineFlow 3.5s linear infinite;
-}
-@keyframes underlineFlow {
-    0% { transform:translateX(-30%); }
-    100% { transform:translateX(100%); }
-}
-.expandable-box {
-    margin-bottom:20px;
-    position:relative;
-    width:fit-content;
-    background: linear-gradient(180deg, rgba(18,18,27,0.35) 0%, rgba(18,18,27,0.22) 100%);
-    backdrop-filter: blur(6px) saturate(120%);
-    -webkit-backdrop-filter: blur(6px) saturate(120%);
-    border:1px solid var(--accent-soft);
-    border-radius:var(--radius);
-    box-shadow:
-        0 10px 24px rgba(0,0,0,0.45),
-        0 0 0 2px rgba(77,87,186,0.08) inset, /* Updated */
-        0 0 26px rgba(77,87,186,0.18); /* Updated */
-    transition:box-shadow .25s ease, transform .25s ease, border-color .25s ease;
-}
-.expandable-box:hover {
-    border-color:rgba(77,87,186,0.55); /* Updated */
-    transform:translateY(-3px);
-    box-shadow:
-        0 16px 36px rgba(0,0,0,0.55),
-        0 0 0 2px rgba(77,87,186,0.16) inset, /* Updated */
-        0 0 42px rgba(77,87,186,0.35); /* Updated */
-}
-.box-header {
-    cursor:pointer;
-    font-weight:700;
-    padding:12px 18px;
-    position:relative;
-    color:var(--accent);
-    letter-spacing:.5px;
-    text-shadow:0 0 8px rgba(77,87,186,0.6); /* Updated */
-    user-select:none;
-    display:flex;
-    align-items:center;
-    gap:10px;
-}
-.box-header:before {
-    content:"▶";
-    font-size:12px;
-    opacity:.6;
-    transition:transform .3s ease;
-}
-.box-content.expanded ~ .box-header:before,
-.expandable-box.expanded .box-header:before { transform:rotate(90deg); }
-.box-content {
-    max-height:0;
-    overflow:hidden;
-    transition:max-height .45s cubic-bezier(.62,.04,.36,1), padding .3s ease;
-}
-.box-content.expanded { max-height:520px; }
-.box-content-inner {
-    padding:0 18px 16px 18px;
-    font-size:14px;
-    line-height:1.5;
-    color:var(--fg);
-}
-.box-content a, .box-content li a {
-    color:var(--fg);
-    text-decoration:none;
-    position:relative;
-}
-.box-content a:hover {
-    text-shadow:0 0 10px rgba(77,87,186,0.7); /* Updated */
-    color:var(--accent);
-}
-.box-content ul { list-style:none; margin:8px 0; padding:0; }
-.box-content li { margin:3px 0; }
-.category { color:var(--accent); font-weight:700; text-shadow:0 0 6px rgba(77,87,186,0.55); /* Updated */ }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>spookitys</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --body: #000000;
+      --accent: #ffffff;
+      --accent-rgb: 255, 255, 255;
+      --bar-border: rgba(255, 255, 255, 0.28);
+      --bar-glow: rgba(255, 255, 255, 0.12);
+    }
 
-.message {
-    color:var(--fg);
-    background:rgba(18,18,27,0.9);
-    border:1px solid var(--accent-soft);
-    padding:10px 20px;
-    border-radius:8px;
-    font-size:14px;
-    backdrop-filter:blur(4px);
-    box-shadow:0 10px 28px rgba(0,0,0,0.55), 0 0 0 2px rgba(77,87,186,0.10) inset; /* Updated */
-    opacity:0;
-    transition:opacity .35s ease;
-}
-.message.show { opacity:1; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-.terminal-button {
-    position:fixed; left:14px; bottom:14px; z-index:5;
-    width:46px; height:46px;
-    background:linear-gradient(180deg, var(--panel) 0%, var(--panel-alt) 100%);
-    border:1px solid var(--accent-soft);
-    border-radius:8px;
-    color:var(--accent);
-    font-weight:700;
-    font-family:var(--font);
-    cursor:pointer;
-    box-shadow:0 8px 18px rgba(0,0,0,0.55), 0 0 18px rgba(77,87,186,0.25); /* Updated */
-    transition:transform .25s ease, border-color .25s ease;
-}
-.terminal-button:hover { transform:translateY(-3px); border-color:rgba(77,87,186,0.55); } /* Updated */
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--body);
+      color: var(--accent);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+    }
 
-.terminal {
-    position:fixed; left:14px; bottom:70px; z-index:4;
-    width:60vw; max-width:840px; min-width:320px; height:42vh;
-    background: rgba(18,18,27,0.32);
-    backdrop-filter: blur(10px) saturate(120%);
-    -webkit-backdrop-filter: blur(10px) saturate(120%);
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius:10px;
-    color:var(--accent);
-    padding:14px;
-    display:flex; flex-direction:column;
-    font-family:var(--font);
-    box-shadow:
-        0 10px 30px rgba(0,0,0,0.55),
-        0 0 0 2px rgba(77,87,186,0.10) inset, /* Updated */
-        0 0 42px rgba(77,87,186,0.30); /* Updated */
-}
-.terminal.hidden { display:none; }
-.terminal-output {
-    flex:1; overflow-y:auto; white-space:pre-wrap;
-    font-size:13px;
-    scrollbar-width:thin;
-}
-.terminal-output::-webkit-scrollbar { width:8px; }
-.terminal-output::-webkit-scrollbar-track { background:#09090f; }
-.terminal-output::-webkit-scrollbar-thumb { background:var(--accent); border-radius:4px; }
-.terminal-prompt { display:flex; align-items:center; gap:8px; border-top:1px solid rgba(77,87,186,0.35); padding-top:8px; margin-top:8px; } /* Updated */
-.terminal-input {
-    flex:1; background:transparent; border:none; outline:none;
-    color:var(--accent); caret-color:var(--accent);
-    font-family:inherit; font-size:14px;
-}
-.terminal-prompt-label { color:var(--accent); }
+    #matrix {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+      pointer-events: none;
+    }
 
-.gif-overlay img {
-    border:1px solid var(--accent-soft);
-    border-radius:10px;
-    box-shadow:0 0 0 2px rgba(77,87,186,0.10), 0 12px 28px rgba(0,0,0,0.6), 0 0 34px rgba(77,87,186,0.35); /* Updated */
-    background:#000;
-}
+    .shell {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      padding: 1.25rem;
+      pointer-events: none;
+    }
 
-@media (max-width:768px),(orientation:portrait) {
-    .content { padding:54px 24px; text-align:center; }
-    h1 { margin:0 auto; }
-    .expandable-box { width:100%; max-width:420px; }
-    .terminal { width:92vw; left:4vw; bottom:74px; height:48vh; }
-}
+    .terminal {
+      position: relative;
+      width: min(560px, 100%);
+      pointer-events: auto;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--bar-border);
+      background:
+        linear-gradient(
+          155deg,
+          rgba(var(--accent-rgb), 0.22) 0%,
+          rgba(var(--accent-rgb), 0.08) 28%,
+          rgba(0, 0, 0, 0.28) 62%,
+          rgba(0, 0, 0, 0.42) 100%
+        );
+      backdrop-filter: blur(28px) saturate(1.35);
+      -webkit-backdrop-filter: blur(28px) saturate(1.35);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+        0 18px 50px rgba(0, 0, 0, 0.45),
+        0 0 40px var(--bar-glow);
+      transition: border-color 0.35s ease, box-shadow 0.35s ease;
+    }
 
-/* expansion visual state */
-.expandable-box.expanded,
-.box-content.expanded {
-    animation:panelGlow .6s ease forwards;
-}
-@keyframes panelGlow {
-    0% { box-shadow:0 10px 24px rgba(0,0,0,0.45),0 0 0 2px rgba(77,87,186,0.08) inset,0 0 26px rgba(77,87,186,0.18); } /* Updated */
-    100% { box-shadow:0 16px 36px rgba(0,0,0,0.6),0 0 0 2px rgba(77,87,186,0.16) inset,0 0 50px rgba(77,87,186,0.42); } /* Updated */
-}
+    .terminal::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.05) 18%,
+        transparent 48%
+      );
+      opacity: 0.7;
+    }
 
-/* rotate chevron when expanded via parent class */
-.expandable-box.expanded .box-header:before { transform: rotate(90deg); }
+    .terminal:focus-within {
+      border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.45),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+        0 22px 56px rgba(0, 0, 0, 0.5),
+        0 0 52px var(--bar-glow);
+    }
 
-/* Animated terminal output lines */
-.term-line {
-    opacity: 0;
-    transform: translateY(6px);
-    animation: lineIn .24s ease forwards;
-}
-@keyframes lineIn {
-    to { opacity: 1; transform: translateY(0); }
-}
+    .prompt-row {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.85rem 1.05rem;
+      min-height: 3.1rem;
+    }
 
-/* Per-key pop animation */
-.key-pop {
-    position: absolute;
-    font-family: inherit;
-    font-size: 14px;
-    color: var(--accent);
-    text-shadow: 0 0 10px rgba(77,87,186,0.7); /* Updated */
-    pointer-events: none;
-    opacity: 0;
-    transform: translateY(0) scale(0.9);
-    animation: keyPop .5s ease-out forwards;
-}
-@keyframes keyPop {
-    0% { opacity: 0; transform: translateY(0) scale(0.9); }
-    20% { opacity: 1; }
-    100% { opacity: 0; transform: translateY(-16px) scale(1.2); }
-}
-</style>
+    .prompt-glyph {
+      color: var(--accent);
+      opacity: 0.7;
+      user-select: none;
+      flex-shrink: 0;
+      font-weight: 500;
+    }
+
+    .field {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      height: 1.35em;
+    }
+
+    #commandInput {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      border: 0;
+      outline: none;
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
+      caret-color: transparent;
+    }
+
+    #commandInput::placeholder {
+      color: color-mix(in srgb, var(--accent) 35%, transparent);
+    }
+
+    #commandInput:not(:placeholder-shown)::placeholder {
+      opacity: 0;
+    }
+
+    .caret {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 2px;
+      height: 1.1em;
+      margin-top: -0.55em;
+      border-radius: 1px;
+      background: var(--accent);
+      pointer-events: none;
+      opacity: 0;
+      will-change: transform, opacity;
+    }
+
+    .caret.visible {
+      opacity: 1;
+    }
+
+    .measure {
+      position: absolute;
+      visibility: hidden;
+      white-space: pre;
+      font: inherit;
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
+      pointer-events: none;
+    }
+
+    .console {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+      border-top: 0 solid transparent;
+    }
+
+    .console.open {
+      grid-template-rows: 1fr;
+      border-top: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .console-inner {
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    #consoleOut {
+      max-height: min(42vh, 320px);
+      overflow: hidden;
+      padding: 0;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: color-mix(in srgb, var(--accent) 78%, transparent);
+    }
+
+    .console.open #consoleOut {
+      padding: 0.85rem 1.05rem 1rem;
+    }
+
+    .line {
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: hidden;
+      max-height: 6em;
+      opacity: 1;
+      transform: translateY(0);
+      transition:
+        opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+        max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+        margin-top 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+      animation: lineIn 0.28s ease both;
+    }
+
+    .line + .line {
+      margin-top: 0.35rem;
+    }
+
+    .line.cmd {
+      color: var(--accent);
+      opacity: 0.55;
+    }
+
+    .line.err {
+      color: color-mix(in srgb, var(--accent) 70%, #ff6b6b);
+    }
+
+    .line.leaving {
+      opacity: 0 !important;
+      transform: translateY(-6px);
+      max-height: 0;
+      margin-top: 0 !important;
+      pointer-events: none;
+      animation: none;
+    }
+
+    @keyframes lineIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
 </head>
 <body>
-<canvas id="numberCanvas"></canvas>
-<div class="content">
-    <div class="header-container">
-        <h1 id="mainHeader">Welcome to my Website!</h1>
-    </div>
-    
-    <div class="expandable-box">
-        <div class="box-header" onclick="toggleBox('intro')">Introduction</div>
-        <div id="intro" class="box-content">
-            <div class="box-content-inner">
-                <ul>Hello! My name is Andrew, otherwise known as Spookitys online, and welcome to my slice of the internet!
-                <li>I'm a developer in LUA and hobbyist with a passion for creating fun experiences and games on the internet.
-                <li>I'm 16 years old currently and in high school as a junior, I plan on going to college for computer science!
-                <li>My work is currently in LuaU for Roblox, but I dabble in other languages such as JavaScript.
-                <li>I mostly do freelancing work so I don't have many projects to show off, but expect some soon! (I am not currently accepting commissions.)
-                <ul>
-            </div>
-        </div>
-    </div>
-    
-    <div class="expandable-box">
-        <div class="box-header" onclick="toggleBox('games')">Games</div>
-        <div id="games" class="box-content">
-            <div class="box-content-inner">
-                Here are some games I enjoy:
-                <ul>
-                    <li class="category">Roblox</li>
-                    <li>        <a href="https://www.roblox.com/games/71895508397153/" target="_blank" class="game-link">Die of Death</a></li>
-                    <li>        <a href="https://www.roblox.com/games/7138009149/" target="_blank" class="game-link">Phighting</a></li>
-                    <li>        <a href="https://www.roblox.com/games/18687417158/" target="_blank" class="game-link">Forsaken</a></li>
-                    <li>        <a href="https://www.roblox.com/games/3260590327/" target="_blank" class="game-link">Tower Defense Simulator</a></li>
-                    <li>        <a href="https://www.roblox.com/games/9503261072/" target="_blank" class="game-link">Tower Defense X</a></li>
-                    <li>        <a href="https://www.roblox.com/games/6403373529/" target="_blank" class="game-link">Slap Battles</a></li>
-                    <li>        <a href="https://www.roblox.com/games/78515341506665/" target="_blank" class="game-link">Alter Ego</a></li>
-                    <li>        <a href="https://www.roblox.com/games/16483433878/" target="_blank" class="game-link">Block Tales</a></li>
-                    <li class="category">My Projects</li>
-                    <div id="dynamicGames"></div>
-                    <li class="category">Steam</li>
-                    <li>        <a href="https://store.steampowered.com/app/960090/Bloons_TD_6/" target="_blank" class="game-link">Bloons Tower Defense 6</a></li>
-                    <li>        <a href="https://store.steampowered.com/app/553850/HELLDIVERS_2/" target="_blank" class="game-link">Helldivers 2</a></li>
-                    <li>        <a href="https://store.steampowered.com/app/105600/Terraria" target="_blank" class="game-link">Terraria</a></li>
-                    <li>        <a href="https://store.steampowered.com/app/945360/Among_Us" target="_blank" class="game-link">Among Us</a></li>
-                    <li class="category">Looking Forward To</li>
-                    <li>        <a href="https://store.steampowered.com/app/1030300/Hollow_Knight_Silksong" target="_blank" class="game-link">Hollow Knight / Silksong</a></li>
-                    <li>        <a href="https://www.youtube.com/watch?v=HTs0s6urogA" target="_blank" class="game-link">Give Me Your Best! [UNRELEASED]</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
+  <canvas id="matrix" aria-hidden="true"></canvas>
 
-    <div class="expandable-box">
-        <div class="box-header" onclick="toggleBox('media')">Media</div>
-        <div id="media" class="box-content">
-            <div class="box-content-inner">
-                Here is some media I enjoy:
-                <ul>
-                    <li class="category">Shows</li>
-                    <li>        <a href="https://www.paramountplus.com/shows/dexter/" target="_blank" class="game-link">Dexter</a></li>
-                    <li>        <a href="https://www.paramountplus.com/shows/dexter-new-blood/" target="_blank" class="game-link">Dexter: New Blood</a></li>
-                    <li>        <a href="https://www.paramountplus.com/shows/dexter-original-sin/" target="_blank" class="game-link">Dexter: Original Sin</a></li>
-                    <li>        <a href="https://www.paramountplus.com/shows/dexter-resurrection/" target="_blank" class="game-link">Dexter: Ressurrection</a></li>
-                    <li>        <a href="https://www.youtube.com/watch?v=nBnW5TIg31Q" target="_blank" class="game-link">Rick and Morty</a></li>
-                    <li>        <a href="https://www.disneyplus.com/browse/entity-8f8c5cbb-e5ba-4285-9e2c-86abcac9fd50" target="_blank" class="game-link">LOKI</a></li>
-                    <li>        <a href="https://www.amazon.com/INVINCIBLE-SEASON-1/dp/B08WJN83XZ" target="_blank" class="game-link">Invincible</a></li>
-                    <li class="category">Movies</li>
-                    <li>        <a href="https://www.netflix.com/title/70305903" target="_blank" class="game-link">Interstellar</a></li>
-                    <li>        <a href="https://www.netflix.com/title/11819086" target="_blank" class="game-link">The Truman Show</a></li>
-                    <li>        <a href="https://www.disneyplus.com/browse/entity-9a136e06-852a-41bf-b71d-fa061cb43225" target="_blank" class="game-link">Avengers: Infinity War</a></li>
-                    <li class="category">Looking Forward To</li>
-                    <li>        <a href="https://www.netflix.com/title/70241956" target="_blank" class="game-link">Hannibal</a></li>
-                </ul>
-            </div>
+  <div class="shell">
+    <div class="terminal" id="terminal">
+      <form class="prompt-row" id="commandForm" autocomplete="off">
+        <span class="prompt-glyph" aria-hidden="true">&gt;</span>
+        <div class="field">
+          <input
+            id="commandInput"
+            type="text"
+            spellcheck="false"
+            autocapitalize="off"
+            autocorrect="off"
+            placeholder="type a command…"
+            aria-label="Command"
+          />
+          <span class="measure" id="caretMeasure" aria-hidden="true"></span>
+          <div class="caret" id="caret" aria-hidden="true"></div>
         </div>
-    </div>
-    
-    <div class="expandable-box">
-        <div class="box-header" onclick="toggleBox('socials')">Socials</div>
-        <div id="socials" class="box-content">
-            <div class="box-content-inner">
-                <a href="https://www.roblox.com/users/453133356/profile" target="_blank">Roblox</a>
-                <a href="https://steamcommunity.com/id/Karbonites/" target="_blank">Steam</a>
-                <a onclick="copyUsername()">Discord</a>
-            </div>
+      </form>
+      <div class="console" id="console" aria-live="polite">
+        <div class="console-inner">
+          <div id="consoleOut"></div>
         </div>
+      </div>
     </div>
-</div>
-<div id="copyMessage" class="message">username copied to clipboard</div>
-<button id="terminalButton" class="terminal-button">\</button>
-<div id="terminalPanel" class="terminal hidden" aria-label="Terminal">
-    <div id="terminalOutput" class="terminal-output">
-Terminal Protcol Initiated [Website Version: 0.2]
-© Copyright Legal Registration. All rights reserved.
+  </div>
 
-    </div>
-    <div class="terminal-prompt">
-        <span class="terminal-prompt-label">C:/cmd&gt;</span>
-        <input id="terminalInput" class="terminal-input" type="text" autocomplete="off" spellcheck="false" />
-    </div>
-</div>
+  <script>
+    const canvas = document.getElementById("matrix");
+    const ctx = canvas.getContext("2d", { alpha: true });
+    const form = document.getElementById("commandForm");
+    const input = document.getElementById("commandInput");
+    const caretEl = document.getElementById("caret");
+    const caretMeasure = document.getElementById("caretMeasure");
+    const consoleEl = document.getElementById("console");
+    const consoleOut = document.getElementById("consoleOut");
+    const root = document.documentElement;
 
-<script>
-    const phrases = [
-        "Welcome to my Website!",
-        "Greetings and Salutations!",
-        "Welcome to my slice of the internet!",
-        "Welcome in!",
-        "Hello, fellow internet traveler!"
+    const FLIP_MS = 250;
+    const CELL = 18;
+    const FALLOFF = 90;
+    const TRAIL_MS = 500;
+    const LINE_TTL_MS = 15000;
+    const LINE_EXIT_MS = 360;
+    const TRAIL_SAMPLE_GAP = 4;
+    const CARET_EASE = 0.22;
+    const CARET_BLINK_MS = 1100;
+
+    let cols = 0;
+    let rows = 0;
+    let cells = [];
+    let mouse = {
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+      active: false,
+    };
+    let trail = [];
+    let accentRGB = { r: 255, g: 255, b: 255 };
+    let dpr = 1;
+
+    let caretTargetX = 0;
+    let caretX = 0;
+    let caretBlinkReset = 0;
+    let caretFocused = false;
+
+    function parseColor(raw) {
+      const value = raw.trim();
+      if (!value) return null;
+
+      const probe = document.createElement("span");
+      probe.style.color = "";
+      probe.style.color = value;
+      if (!probe.style.color) return null;
+
+      document.body.appendChild(probe);
+      const computed = getComputedStyle(probe).color;
+      document.body.removeChild(probe);
+
+      const match = computed.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+      if (!match) return null;
+
+      return {
+        css: value,
+        r: Number(match[1]),
+        g: Number(match[2]),
+        b: Number(match[3]),
+      };
+    }
+
+    function setAccent(color) {
+      const parsed = parseColor(color);
+      if (!parsed) return false;
+      accentRGB = { r: parsed.r, g: parsed.g, b: parsed.b };
+      root.style.setProperty("--accent", parsed.css);
+      root.style.setProperty("--accent-rgb", `${parsed.r}, ${parsed.g}, ${parsed.b}`);
+      root.style.setProperty(
+        "--bar-border",
+        `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, 0.28)`
+      );
+      root.style.setProperty(
+        "--bar-glow",
+        `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, 0.12)`
+      );
+      return true;
+    }
+
+    function setBody(color) {
+      const parsed = parseColor(color);
+      if (!parsed) return false;
+      root.style.setProperty("--body", parsed.css);
+      document.body.style.background = parsed.css;
+      return true;
+    }
+
+    function rebuildGrid() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      cols = Math.ceil(w / CELL) + 1;
+      rows = Math.ceil(h / CELL) + 1;
+      const now = performance.now();
+      cells = new Array(cols * rows);
+      for (let i = 0; i < cells.length; i++) {
+        cells[i] = {
+          bit: Math.random() < 0.5 ? 0 : 1,
+          nextFlip: now + Math.random() * FLIP_MS,
+        };
+      }
+    }
+
+    function pushTrail(x, y, t) {
+      const last = trail[trail.length - 1];
+      if (last) {
+        const dx = x - last.x;
+        const dy = y - last.y;
+        if (dx * dx + dy * dy < TRAIL_SAMPLE_GAP * TRAIL_SAMPLE_GAP) return;
+      }
+      trail.push({ x, y, t });
+    }
+
+    function pruneTrail(now) {
+      const cutoff = now - TRAIL_MS;
+      let i = 0;
+      while (i < trail.length && trail[i].t < cutoff) i++;
+      if (i > 0) trail = trail.slice(i);
+    }
+
+    function distToSegment(px, py, ax, ay, bx, by) {
+      const abx = bx - ax;
+      const aby = by - ay;
+      const lenSq = abx * abx + aby * aby;
+      if (lenSq < 0.0001) {
+        const dx = px - ax;
+        const dy = py - ay;
+        return { dist: Math.sqrt(dx * dx + dy * dy), t: 0 };
+      }
+      let t = ((px - ax) * abx + (py - ay) * aby) / lenSq;
+      t = Math.max(0, Math.min(1, t));
+      const cx = ax + abx * t;
+      const cy = ay + aby * t;
+      const dx = px - cx;
+      const dy = py - cy;
+      return { dist: Math.sqrt(dx * dx + dy * dy), t };
+    }
+
+    // Cursor blob + 0.5s inverse cone: widest at cursor, tapering off toward the tail
+    function influenceAt(cx, cy, now) {
+      const dx = cx - mouse.x;
+      const dy = cy - mouse.y;
+      let best = Math.exp(-Math.sqrt(dx * dx + dy * dy) / FALLOFF);
+
+      const points = trail.length
+        ? trail.concat({ x: mouse.x, y: mouse.y, t: now })
+        : [{ x: mouse.x, y: mouse.y, t: now }];
+
+      for (let i = 0; i < points.length - 1; i++) {
+        const a = points[i];
+        const b = points[i + 1];
+        const hit = distToSegment(cx, cy, a.x, a.y, b.x, b.y);
+        const ageA = (now - a.t) / TRAIL_MS;
+        const ageB = (now - b.t) / TRAIL_MS;
+        const age = Math.max(0, Math.min(1, ageA + (ageB - ageA) * hit.t));
+
+        // Inverse cone: wide at head (age 0), narrow at tail (age 1)
+        const halfWidth = FALLOFF * (1.15 - age * 0.95);
+        if (hit.dist > halfWidth * 2.2) continue;
+
+        const radial = Math.exp(-hit.dist / Math.max(halfWidth * 0.5, 1));
+        const longitudinal = Math.pow(1 - age, 1.5);
+        best = Math.max(best, radial * longitudinal);
+      }
+
+      return best;
+    }
+
+    function onPointer(e) {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      mouse.active = true;
+      pushTrail(mouse.x, mouse.y, performance.now());
+    }
+
+    function onPointerLeave() {
+      mouse.active = false;
+    }
+
+    window.addEventListener("pointermove", onPointer, { passive: true });
+    window.addEventListener("pointerdown", onPointer, { passive: true });
+    window.addEventListener("pointerleave", onPointerLeave);
+    window.addEventListener("blur", onPointerLeave);
+    window.addEventListener("resize", () => {
+      const wasInactive = !mouse.active;
+      rebuildGrid();
+      if (wasInactive) {
+        mouse.x = window.innerWidth / 2;
+        mouse.y = window.innerHeight / 2;
+      }
+      syncCaretTarget(true);
+    });
+
+    function syncCaretTarget(snap = false) {
+      const pos = input.selectionStart ?? input.value.length;
+      caretMeasure.textContent = input.value.slice(0, pos) || "";
+      caretTargetX = caretMeasure.offsetWidth;
+      if (snap) caretX = caretTargetX;
+      caretBlinkReset = performance.now();
+    }
+
+    function updateCaret(now) {
+      const focused = caretFocused && document.activeElement === input;
+      caretEl.classList.toggle("visible", focused);
+
+      if (!focused) {
+        caretEl.style.opacity = "0";
+        return;
+      }
+
+      caretX += (caretTargetX - caretX) * CARET_EASE;
+      if (Math.abs(caretTargetX - caretX) < 0.05) caretX = caretTargetX;
+      caretEl.style.transform = `translate3d(${caretX}px, 0, 0)`;
+
+      // Smooth sine blink; resets on typing / caret move so it stays visible while active
+      const phase = ((now - caretBlinkReset) % CARET_BLINK_MS) / CARET_BLINK_MS;
+      const blink = 0.5 + 0.5 * Math.cos(phase * Math.PI * 2);
+      caretEl.style.opacity = String(0.2 + blink * 0.8);
+    }
+
+    function draw(now) {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      ctx.clearRect(0, 0, w, h);
+      ctx.font = `500 ${Math.floor(CELL * 0.72)}px "IBM Plex Mono", monospace`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      pruneTrail(now);
+      pushTrail(mouse.x, mouse.y, now);
+
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const i = y * cols + x;
+          const cell = cells[i];
+          if (now >= cell.nextFlip) {
+            cell.bit ^= 1;
+            cell.nextFlip += FLIP_MS;
+            if (cell.nextFlip < now) cell.nextFlip = now + Math.random() * FLIP_MS;
+          }
+
+          const cx = x * CELL + CELL * 0.5;
+          const cy = y * CELL + CELL * 0.5;
+          const alpha = influenceAt(cx, cy, now);
+          if (alpha < 0.02) continue;
+
+          ctx.fillStyle = `rgba(${accentRGB.r}, ${accentRGB.g}, ${accentRGB.b}, ${alpha})`;
+          ctx.fillText(String(cell.bit), cx, cy);
+        }
+      }
+
+      updateCaret(now);
+      requestAnimationFrame(draw);
+    }
+
+    function openConsole() {
+      consoleEl.classList.add("open");
+    }
+
+    function closeConsole() {
+      consoleEl.classList.remove("open");
+    }
+
+    function activeLines() {
+      return [...consoleOut.children].filter((el) => !el.classList.contains("leaving"));
+    }
+
+    function maybeCloseConsole() {
+      if (!activeLines().length && !consoleOut.querySelector(".line.leaving")) {
+        closeConsole();
+      }
+    }
+
+    function removeLine(el) {
+      if (!el || el.classList.contains("leaving")) return;
+      el.classList.add("leaving");
+      const finish = () => {
+        if (el.parentNode) el.remove();
+        maybeCloseConsole();
+        pruneOverflow();
+      };
+      el.addEventListener("transitionend", finish, { once: true });
+      setTimeout(finish, LINE_EXIT_MS);
+    }
+
+    function pruneOverflow() {
+      while (
+        consoleOut.scrollHeight > consoleOut.clientHeight + 1
+      ) {
+        const el = activeLines()[0];
+        if (!el) break;
+        removeLine(el);
+      }
+      maybeCloseConsole();
+    }
+
+    function pruneExpired() {
+      const now = Date.now();
+      for (const el of activeLines()) {
+        if (now - Number(el.dataset.born) >= LINE_TTL_MS) {
+          removeLine(el);
+        }
+      }
+    }
+
+    function appendLine(text, className = "") {
+      openConsole();
+      const line = document.createElement("div");
+      line.className = `line${className ? ` ${className}` : ""}`;
+      line.textContent = text;
+      line.dataset.born = String(Date.now());
+      consoleOut.appendChild(line);
+      requestAnimationFrame(() => {
+        pruneOverflow();
+        requestAnimationFrame(pruneOverflow);
+      });
+    }
+
+    const HELP = [
+      "cmds | help | commands  — list all commands",
+      "refresh                 — reload the page",
+      "changeaccent <color>    — set accent color",
+      "changebody <color>      — set body/background color",
     ];
-    let phraseIndex = 0;
-    const header = document.getElementById('mainHeader');
-    const animationInterval = 3000;
-    let animationTimer;
 
-    function slideText() {
-        const oldSpans = header.querySelectorAll('span');
-        
-        oldSpans.forEach(span => {
-            if (span.style.transform === 'translateY(0px)') { 
-                span.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
-                span.style.transform = 'translateY(-100%)';
-                span.style.opacity = '0';
-                span.addEventListener('transitionend', () => span.remove(), { once: true });
-            } else {
-                span.remove();
-            }
-        });
+    function runCommand(raw) {
+      const trimmed = raw.trim();
+      if (!trimmed) return;
 
-        phraseIndex = (phraseIndex + 1) % phrases.length;
-        const newSpan = document.createElement('span');
-        newSpan.textContent = phrases[phraseIndex];
-        newSpan.style.transform = 'translateY(100%)';
-        newSpan.style.opacity = '0';
-        header.appendChild(newSpan);
+      appendLine(`> ${trimmed}`, "cmd");
 
-        header.style.width = newSpan.offsetWidth + 'px';
-        
-        newSpan.getBoundingClientRect(); 
+      const parts = trimmed.split(/\s+/);
+      const cmd = parts[0].toLowerCase().replace(/\/+$/, "");
+      const args = parts.slice(1);
 
-        newSpan.style.transition = 'transform 0.5s ease-in-out, opacity 0.5s ease-in-out';
-        newSpan.style.transform = 'translateY(0)';
-        newSpan.style.opacity = '1';
+      switch (cmd) {
+        case "cmds":
+        case "help":
+        case "commands":
+          HELP.forEach((line) => appendLine(line));
+          break;
 
-        animationTimer = setTimeout(slideText, animationInterval);
+        case "refresh":
+          appendLine("refreshing…");
+          setTimeout(() => location.reload(), 180);
+          break;
+
+        case "changeaccent": {
+          if (!args.length) {
+            appendLine("usage: changeaccent <color>", "err");
+            break;
+          }
+          const color = args.join(" ");
+          if (setAccent(color)) {
+            appendLine(`accent → ${color}`);
+          } else {
+            appendLine(`invalid color: ${color}`, "err");
+          }
+          break;
+        }
+
+        case "changebody": {
+          if (!args.length) {
+            appendLine("usage: changebody <color>", "err");
+            break;
+          }
+          const color = args.join(" ");
+          if (setBody(color)) {
+            appendLine(`body → ${color}`);
+          } else {
+            appendLine(`invalid color: ${color}`, "err");
+          }
+          break;
+        }
+
+        default:
+          appendLine(`unknown command: ${cmd}`, "err");
+          appendLine("type help for available commands");
+          break;
+      }
     }
 
-    const initialSpan = document.createElement('span');
-    initialSpan.textContent = phrases[0];
-    header.innerHTML = '';
-    header.appendChild(initialSpan);
-    initialSpan.style.transform = 'translateY(0)'; 
-    header.style.width = initialSpan.offsetWidth + 'px';
-    phraseIndex = 0;
-
-    animationTimer = setTimeout(slideText, animationInterval);
-    
-    function toggleBox(boxId) {
-        const box = document.getElementById(boxId);
-        box.classList.toggle('expanded');
-        const parent = box.closest('.expandable-box');
-        if (parent) parent.classList.toggle('expanded');
-    }
-    
-    /* Optimized smooth topographical-style animated background */
-    (function(){
-        const canvas = document.getElementById('numberCanvas');
-        const ctx = canvas.getContext('2d');
-        let w=0, h=0, renderW=0, renderH=0;
-        let time = 0;
-        let offCanvas, offCtx, imageData, data;
-        const SCALE = 3; // Render at 1/3 resolution for performance
-
-        function resize(){
-            w = canvas.width = window.innerWidth;
-            h = canvas.height = window.innerHeight;
-            renderW = Math.ceil(w / SCALE);
-            renderH = Math.ceil(h / SCALE);
-            
-            // Create offscreen canvas at lower resolution
-            offCanvas = document.createElement('canvas');
-            offCanvas.width = renderW;
-            offCanvas.height = renderH;
-            offCtx = offCanvas.getContext('2d');
-            imageData = offCtx.createImageData(renderW, renderH);
-            data = imageData.data;
-        }
-
-        // Optimized noise function
-        function smoothNoise(x, y, t) {
-            const scale1 = 0.003;
-            const scale2 = 0.006;
-            const scale3 = 0.012;
-            
-            const v1 = Math.sin(x * scale1 + t * 0.5) * Math.cos(y * scale1 + t * 0.3);
-            const v2 = Math.sin((x + y) * scale2 + t * 0.7) * Math.cos((x - y) * scale2 + t * 0.4);
-            const v3 = Math.sin(x * scale3 + t * 1.2) * Math.sin(y * scale3 + t * 0.9);
-            const v4 = Math.cos((x * 0.5 + y * 0.5) * scale1 + t * 0.6);
-            
-            return (v1 + v2 * 0.5 + v3 * 0.3 + v4 * 0.4) / 2.2;
-        }
-
-        // Pre-calculate RGB conversion for common hue range
-        function hslToRgb(h, s, l) {
-            const c = (1 - Math.abs(2 * l - 1)) * s;
-            const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-            const m = l - c / 2;
-            
-            let r, g, b;
-            if (h < 240) { r = 0; g = x; b = c; }
-            else if (h < 300) { r = x; g = 0; b = c; }
-            else { r = c; g = 0; b = x; }
-            
-            return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
-        }
-
-        function draw(){
-            const t = time * 0.02;
-            
-            // Draw at lower resolution
-            for(let y = 0; y < renderH; y++){
-                for(let x = 0; x < renderW; x++){
-                    const idx = (y * renderW + x) * 4;
-                    
-                    // Scale coordinates back for noise sampling
-                    const sampX = x * SCALE;
-                    const sampY = y * SCALE;
-                    
-                    const noiseVal = smoothNoise(sampX, sampY, t);
-                    const normalized = (noiseVal + 1) * 0.5;
-                    
-                    // Topographical contours
-                    const levels = 12;
-                    const stepped = Math.floor(normalized * levels) / levels;
-                    const contour = Math.abs((normalized * levels) % 1 - 0.5) < 0.08 ? 0.3 : 0;
-                    
-                    const hue = 230 + normalized * 25;
-                    const light = 0.04 + stepped * 0.15 + contour;
-                    
-                    const [r, g, b] = hslToRgb(hue, 0.45, light);
-                    
-                    data[idx] = r;
-                    data[idx + 1] = g;
-                    data[idx + 2] = b;
-                    data[idx + 3] = 255;
-                }
-            }
-            
-            // Draw low-res image to offscreen canvas
-            offCtx.putImageData(imageData, 0, 0);
-            
-            // Scale up to main canvas with smoothing
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'low';
-            ctx.drawImage(offCanvas, 0, 0, renderW, renderH, 0, 0, w, h);
-            
-            time++;
-            requestAnimationFrame(draw);
-        }
-
-        window.addEventListener('resize', resize);
-        resize(); 
-        draw();
-    })();
-    
-    function copyUsername() {
-        navigator.clipboard.writeText('spookitys').then(() => {
-            const message = document.getElementById('copyMessage');
-            message.classList.add('show');
-            setTimeout(() => {
-                message.classList.remove('show');
-            }, 1000);
-        });
-    }
-
-    let currentGifEl = null;
-    let currentGifTimer = null;
-
-    function hideGif() {
-        if (currentGifTimer) {
-            clearTimeout(currentGifTimer);
-            currentGifTimer = null;
-        }
-        if (currentGifEl) {
-            currentGifEl.remove();
-            currentGifEl = null;
-        }
-    }
-
-    function showGifOnce(url, estDurationMs = 3000) {
-        hideGif();
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'gif-overlay';
-
-        const img = document.createElement('img');
-        img.alt = 'animated overlay';
-        img.decoding = 'async';
-        img.src = url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
-
-        wrapper.appendChild(img);
-        currentGifEl = wrapper;
-
-        img.addEventListener('load', () => {
-            document.body.appendChild(wrapper);
-            currentGifTimer = setTimeout(hideGif, estDurationMs);
-        });
-    }
-
-    const terminalBtn = document.getElementById('terminalButton');
-    const terminalPanel = document.getElementById('terminalPanel');
-    const terminalOutput = document.getElementById('terminalOutput');
-    const terminalInput = document.getElementById('terminalInput');
-
-    function toggleTerminal(forceShow) {
-        const show = forceShow !== undefined ? forceShow : terminalPanel.classList.contains('hidden');
-        terminalPanel.classList.toggle('hidden', !show);
-        if (show) setTimeout(() => terminalInput.focus(), 0);
-    }
-
-    // animated output with optional typewriter
-    function printLine(text = '', color = 'var(--accent)', typed) {
-        if (typed === undefined) typed = !String(text).startsWith('C:/cmd>');
-        const line = document.createElement('div');
-        line.className = 'term-line';
-        line.style.color = color;
-        terminalOutput.appendChild(line);
-        terminalOutput.scrollTop = terminalOutput.scrollHeight;
-
-        if (!typed || !text) {
-            line.textContent = text;
-            terminalOutput.scrollTop = terminalOutput.scrollHeight;
-            return;
-        }
-        let i = 0;
-        const chars = String(text);
-        const speed = 12; // ms per char
-        const typer = setInterval(() => {
-            line.textContent += chars[i++];
-            terminalOutput.scrollTop = terminalOutput.scrollHeight;
-            if (i >= chars.length) clearInterval(typer);
-        }, speed);
-    }
-
-    // launch-token helper for Tetris
-    function launchWithToken(path) {
-        const token = Math.random().toString(36).slice(2) + Date.now().toString(36);
-        try {
-            sessionStorage.setItem('alpha_launch_token', token);
-            sessionStorage.setItem('alpha_launch_expiry', String(Date.now() + 60 * 1000));
-        } catch (e) {}
-        const url = path + '?lt=' + encodeURIComponent(token);
-        window.location.href = url;
-    }
-
-    // Dynamic game links management
-    function addDynamicGame(name, path) {
-        try {
-            let games = JSON.parse(localStorage.getItem('dynamicGames') || '[]');
-            if (!games.find(g => g.name === name)) {
-                games.push({ name, path });
-                localStorage.setItem('dynamicGames', JSON.stringify(games));
-                renderDynamicGames();
-            }
-        } catch (e) {}
-    }
-
-    function renderDynamicGames() {
-        const container = document.getElementById('dynamicGames');
-        if (!container) return;
-        
-        try {
-            const games = JSON.parse(localStorage.getItem('dynamicGames') || '[]');
-            container.innerHTML = games.map(game => 
-                `<li>        <a href="javascript:void(0)" onclick="launchWithToken('${game.path}')" class="game-link">${game.name}</a></li>`
-            ).join('');
-        } catch (e) {}
-    }
-
-    // Load dynamic games on page load
-    window.addEventListener('DOMContentLoaded', renderDynamicGames);
-
-    function handleCommand(cmd) {
-        if (!cmd) return;
-        const raw = cmd.trim();
-        const normalized = raw.toLowerCase();
-
-        if (normalized === '57alphaclicker' || normalized === 'clicker') {
-            printLine('clicker is currently unavailable', 'orange');
-            return;
-        }
-
-        if (normalized === '16zetatetris' || normalized === 'tetris') {
-            printLine('Launching Tetris...');
-            addDynamicGame('Tetris', 'tetris.html');
-            launchWithToken('tetris.html');
-            return;
-        }
-
-        if (normalized === '77deltarush' || normalized === 'rush') {
-            printLine('Launching Rush...');
-            addDynamicGame('Rush', 'rush.html');
-            launchWithToken('rush.html');
-            return;
-        }
-
-        if (normalized === 'cat') {
-            printLine('playing: cat.gif');
-            showGifOnce('https://media.tenor.com/_WZy7E7hoTcAAAAM/cat-smile.gif', 3000);
-            return;
-        }
-
-        if (normalized === 'dog') {
-            printLine('playing: dog.gif');
-            showGifOnce('https://media.tenor.com/7_KRHOBcSnEAAAAM/happy-birthday-ashleigh.gif', 3500);
-            return;
-        }
-
-        if (normalized === 'info' || normalized === 'help' || normalized === '?' || normalized === 'commands' || normalized === 'command list' || normalized === 'command' || normalized === 'cmds') {
-            printLine('welcome to the terminal. available commands:');
-            printLine('help/cmds/?/commands/command - shows this message');
-            printLine('tetris - launches tetris');
-            printLine('rush - launches rush platformer');
-            printLine('dog - plays a dog gif');
-            printLine('cat - plays a cat gif');
-        } else {
-            printLine(`'${cmd}' is not recognized as an internal or external command.`);
-        }
-    }
-
-    terminalBtn.addEventListener('click', () => toggleTerminal());
-
-    terminalInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const cmd = terminalInput.value;
-            printLine(`C:/cmd> ${cmd}`, 'var(--fg)', false);
-            handleCommand(cmd);
-            terminalInput.value = '';
-        } else if (e.key === 'Escape') {
-            toggleTerminal(false);
-        }
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const value = input.value;
+      input.value = "";
+      runCommand(value);
+      syncCaretTarget(true);
     });
 
-    // Per-letter typed animation (key pop near caret)
-    terminalInput.addEventListener('input', (e) => {
-        if (!e.data || e.data.length !== 1) return;
-        const ch = e.data;
-        const panelRect = terminalPanel.getBoundingClientRect();
-        const inputRect = terminalInput.getBoundingClientRect();
-
-        // measure current input text width using a hidden measurer
-        const measurer = document.createElement('span');
-        const cs = getComputedStyle(terminalInput);
-        measurer.style.position = 'absolute';
-        measurer.style.visibility = 'hidden';
-        measurer.style.whiteSpace = 'pre';
-        measurer.style.fontFamily = cs.fontFamily;
-        measurer.style.fontSize = cs.fontSize;
-        measurer.style.fontWeight = cs.fontWeight;
-        measurer.textContent = terminalInput.value;
-        document.body.appendChild(measurer);
-        const textW = measurer.offsetWidth;
-        document.body.removeChild(measurer);
-
-        const span = document.createElement('span');
-        span.className = 'key-pop';
-        span.textContent = ch;
-        // place near the caret inside the terminal panel
-        span.style.left = (inputRect.left - panelRect.left + Math.min(textW + 6, inputRect.width - 10)) + 'px';
-        span.style.top  = (inputRect.top - panelRect.top + inputRect.height/2 - 4) + 'px';
-        terminalPanel.appendChild(span);
-        span.addEventListener('animationend', () => span.remove());
+    input.addEventListener("focus", () => {
+      caretFocused = true;
+      syncCaretTarget(true);
     });
-</script>
+    input.addEventListener("blur", () => {
+      caretFocused = false;
+    });
+    input.addEventListener("input", () => syncCaretTarget());
+    input.addEventListener("click", () => syncCaretTarget());
+    input.addEventListener("keyup", () => syncCaretTarget());
+    input.addEventListener("select", () => syncCaretTarget());
+    input.addEventListener("keydown", (e) => {
+      // Position updates after the key affects selection
+      requestAnimationFrame(() => syncCaretTarget());
+      if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) {
+        caretBlinkReset = performance.now();
+      }
+    });
+
+    setInterval(pruneExpired, 250);
+
+    rebuildGrid();
+    syncCaretTarget(true);
+    requestAnimationFrame(draw);
+    input.focus();
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "/" && document.activeElement !== input) {
+        e.preventDefault();
+        input.focus();
+      }
+    });
+  </script>
 </body>
 </html>
