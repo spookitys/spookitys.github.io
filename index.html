@@ -14,6 +14,8 @@
       --accent-rgb: 255, 255, 255;
       --bar-border: rgba(255, 255, 255, 0.28);
       --bar-glow: rgba(255, 255, 255, 0.12);
+      --line-ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --line-ms: 380ms;
     }
 
     * {
@@ -183,7 +185,7 @@
       z-index: 1;
       display: grid;
       grid-template-rows: 0fr;
-      transition: grid-template-rows 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: grid-template-rows 0.42s var(--line-ease);
       border-top: 0 solid transparent;
     }
 
@@ -198,12 +200,12 @@
     }
 
     #consoleOut {
-      max-height: min(42vh, 320px);
       overflow: hidden;
       padding: 0;
       font-size: 0.82rem;
       line-height: 1.55;
       color: color-mix(in srgb, var(--accent) 78%, transparent);
+      transition: padding var(--line-ms) var(--line-ease);
     }
 
     .console.open #consoleOut {
@@ -211,56 +213,349 @@
     }
 
     .line {
+      display: grid;
+      grid-template-rows: 0fr;
+      opacity: 0;
+      margin-bottom: 0;
+      transition:
+        grid-template-rows var(--line-ms) var(--line-ease),
+        opacity var(--line-ms) var(--line-ease),
+        margin-bottom var(--line-ms) var(--line-ease);
+    }
+
+    .line.show {
+      grid-template-rows: 1fr;
+      opacity: 1;
+      margin-bottom: 0.35rem;
+    }
+
+    .line.leaving {
+      grid-template-rows: 0fr;
+      opacity: 0;
+      margin-bottom: 0;
+      pointer-events: none;
+    }
+
+    .line-clip {
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .line-main {
       white-space: pre-wrap;
       word-break: break-word;
-      overflow: hidden;
-      max-height: 6em;
-      opacity: 1;
-      transform: translateY(0);
-      transition:
-        opacity 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-        max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-        margin-top 0.34s cubic-bezier(0.22, 1, 0.36, 1);
-      animation: lineIn 0.28s ease both;
     }
 
-    .line + .line {
-      margin-top: 0.35rem;
-    }
-
-    .line.cmd {
+    .line.cmd .line-main {
       color: var(--accent);
       opacity: 0.55;
     }
 
-    .line.err {
+    .line.err .line-main {
       color: color-mix(in srgb, var(--accent) 70%, #ff6b6b);
     }
 
-    .line.leaving {
-      opacity: 0 !important;
-      transform: translateY(-6px);
-      max-height: 0;
-      margin-top: 0 !important;
-      pointer-events: none;
-      animation: none;
+    .line.expandable {
+      cursor: default;
     }
 
-    @keyframes lineIn {
-      from {
-        opacity: 0;
-        transform: translateY(4px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .line.expandable .line-main {
+      color: var(--accent);
+    }
+
+    .line-detail {
+      display: grid;
+      grid-template-rows: 0fr;
+      transition: grid-template-rows var(--line-ms) var(--line-ease);
+    }
+
+    .line.expandable:hover .line-detail,
+    .line.expandable:focus-within .line-detail {
+      grid-template-rows: 1fr;
+    }
+
+    .line-detail-pad {
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .line-detail-text {
+      padding: 0.2rem 0 0.05rem 1.1rem;
+      color: color-mix(in srgb, var(--accent) 40%, transparent);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* --- floating windows --- */
+    #windows {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .site-window {
+      position: absolute;
+      width: 280px;
+      height: 210px;
+      pointer-events: auto;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--bar-border);
+      background:
+        linear-gradient(
+          155deg,
+          rgba(var(--accent-rgb), 0.22) 0%,
+          rgba(var(--accent-rgb), 0.08) 28%,
+          rgba(0, 0, 0, 0.28) 62%,
+          rgba(0, 0, 0, 0.42) 100%
+        );
+      backdrop-filter: blur(28px) saturate(1.35);
+      -webkit-backdrop-filter: blur(28px) saturate(1.35);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+        0 18px 50px rgba(0, 0, 0, 0.45),
+        0 0 40px var(--bar-glow);
+      transition:
+        width 0.38s var(--line-ease),
+        height 0.38s var(--line-ease),
+        border-radius 0.38s var(--line-ease),
+        box-shadow 0.35s ease,
+        border-color 0.35s ease;
+      will-change: transform, left, top;
+      user-select: none;
+    }
+
+    .site-window::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.05) 18%,
+        transparent 48%
+      );
+      opacity: 0.7;
+      z-index: 0;
+    }
+
+    .site-window.entering {
+      transition:
+        left 0.72s var(--line-ease),
+        top 0.72s var(--line-ease),
+        width 0.38s var(--line-ease),
+        height 0.38s var(--line-ease),
+        border-radius 0.38s var(--line-ease),
+        opacity 0.72s var(--line-ease);
+    }
+
+    .site-window.dragging {
+      transition: none;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.45),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+        0 22px 56px rgba(0, 0, 0, 0.55),
+        0 0 52px var(--bar-glow);
+      border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+    }
+
+    .site-window.dragging.entering {
+      transition: none;
+    }
+
+    .window-bar {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.45rem 0.55rem;
+      min-height: 2.35rem;
+      cursor: grab;
+      border-bottom: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+
+    .site-window.dragging .window-bar {
+      cursor: grabbing;
+    }
+
+    .window-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+    .window-btn {
+      width: 1.35rem;
+      height: 1.35rem;
+      border-radius: 6px;
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.78rem;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      padding: 0;
+      opacity: 0.75;
+      transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .window-btn:hover {
+      opacity: 1;
+      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+    }
+
+    .window-btn.close:hover {
+      background: color-mix(in srgb, #ff6b6b 35%, transparent);
+      border-color: color-mix(in srgb, #ff6b6b 55%, transparent);
+    }
+
+    .window-title {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-width: 0;
+    }
+
+    .window-name {
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      color: var(--accent);
+      opacity: 0.85;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .window-logo {
+      width: 1.15rem;
+      height: 1.15rem;
+      flex-shrink: 0;
+      display: block;
+      color: var(--accent);
+    }
+
+    .window-logo svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .window-body {
+      position: relative;
+      z-index: 1;
+      display: block;
+      height: 168px;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .window-preview {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 1.1rem;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 2.55rem);
+      gap: 0.4rem;
+      transition: transform 0.35s var(--line-ease);
+    }
+
+    .window-body:hover .preview-grid {
+      transform: scale(1.04);
+    }
+
+    .preview-cell {
+      width: 2.55rem;
+      height: 2.55rem;
+      border-radius: 7px;
+      border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+      color: var(--accent);
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: grid;
+      place-items: center;
+      pointer-events: none;
+    }
+
+    .preview-cell.open {
+      background: color-mix(in srgb, var(--accent) 4%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+
+    .preview-cell.flagged {
+      color: color-mix(in srgb, var(--accent) 85%, #ffb347);
+    }
+
+    .preview-cell.n1 { color: #7ec8ff; }
+    .preview-cell.n2 { color: #7dffa0; }
+    .preview-cell.n3 { color: #ff8a8a; }
+    .preview-cell.n4 { color: #c9a0ff; }
+    .preview-cell.n5 { color: #ffb86c; }
+    .preview-cell.n6 { color: #6ee7e0; }
+    .preview-cell.n7 { color: #f0f0f0; }
+    .preview-cell.n8 { color: #b0b0b0; }
+
+    /* minimized → logo only */
+    .site-window.minimized {
+      width: 2.6rem;
+      height: 2.6rem;
+      border-radius: 12px;
+    }
+
+    .site-window.minimized .window-bar {
+      border-bottom: 0;
+      padding: 0;
+      min-height: 0;
+      width: 100%;
+      height: 100%;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .site-window.minimized .window-controls,
+    .site-window.minimized .window-name,
+    .site-window.minimized .window-body {
+      display: none;
+    }
+
+    .site-window.minimized .window-title {
+      margin: 0;
+      pointer-events: none;
+    }
+
+    .site-window.minimized .window-logo {
+      width: 1.35rem;
+      height: 1.35rem;
     }
   </style>
 </head>
 <body>
   <canvas id="matrix" aria-hidden="true"></canvas>
+
+  <div id="windows" aria-live="polite"></div>
 
   <div class="shell">
     <div class="terminal" id="terminal">
@@ -297,6 +592,8 @@
     const caretMeasure = document.getElementById("caretMeasure");
     const consoleEl = document.getElementById("console");
     const consoleOut = document.getElementById("consoleOut");
+    const terminal = document.getElementById("terminal");
+    const windowsLayer = document.getElementById("windows");
     const root = document.documentElement;
 
     const FLIP_MS = 250;
@@ -304,10 +601,37 @@
     const FALLOFF = 90;
     const TRAIL_MS = 500;
     const LINE_TTL_MS = 15000;
-    const LINE_EXIT_MS = 360;
+    const LINE_EXIT_MS = 400;
     const TRAIL_SAMPLE_GAP = 4;
     const CARET_EASE = 0.22;
     const CARET_BLINK_MS = 1100;
+    const COLOR_EASE_MS = 250;
+    const CONSOLE_MAX_PX = () => Math.min(window.innerHeight * 0.42, 320);
+
+    const MATRIX_STYLES = {
+      glowingtrail: "cursor glow with a trailing cone",
+      glowing: "cursor glow without a trail",
+      ripple: "expanding ripples on click",
+      disco: "random cells pulse on and off",
+      perlin: "topographic noise field",
+      none: "all numbers transparent",
+      illuminate: "all numbers fully lit",
+    };
+
+    const COMMANDS = [
+      { name: "cmds | help | commands", detail: "list all commands" },
+      { name: "refresh", detail: "reload the page" },
+      { name: "changeaccent <color>", detail: "set accent color (CSS color)" },
+      { name: "matrixstyle <style>", detail: "set the binary matrix style" },
+      { name: "minesweeper", detail: "open a minesweeper window" },
+    ];
+
+    const WINDOW_W = 280;
+    const WINDOW_H = 210;
+    const WINDOW_MIN_SIZE = 42;
+    const WINDOW_PAD = 16;
+    const WINDOW_DRAG_EASE = 0.22;
+    let windowZ = 10;
 
     let cols = 0;
     let rows = 0;
@@ -318,14 +642,25 @@
       active: false,
     };
     let trail = [];
-    let accentRGB = { r: 255, g: 255, b: 255 };
+    let ripples = [];
+    let matrixStyle = "glowingtrail";
     let dpr = 1;
+
+    let accentNow = { r: 255, g: 255, b: 255 };
+    let bodyNow = { r: 0, g: 0, b: 0 };
+    let accentFrom = { r: 255, g: 255, b: 255 };
+    let bodyFrom = { r: 0, g: 0, b: 0 };
+    let accentTarget = { r: 255, g: 255, b: 255 };
+    let bodyTarget = { r: 0, g: 0, b: 0 };
+    let colorAnimStart = 0;
+    let colorAnimating = false;
 
     let caretTargetX = 0;
     let caretX = 0;
     let caretBlinkReset = 0;
     let caretFocused = false;
 
+    // --- color helpers ---
     function parseColor(raw) {
       const value = raw.trim();
       if (!value) return null;
@@ -350,31 +685,138 @@
       };
     }
 
+    function isBlack(c) {
+      return c.r <= 5 && c.g <= 5 && c.b <= 5;
+    }
+
+    function isWhite(c) {
+      return c.r >= 250 && c.g >= 250 && c.b >= 250;
+    }
+
+    function lerpColor(a, b, t) {
+      return {
+        r: a.r + (b.r - a.r) * t,
+        g: a.g + (b.g - a.g) * t,
+        b: a.b + (b.b - a.b) * t,
+      };
+    }
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function rgbCss(c) {
+      return `rgb(${Math.round(c.r)}, ${Math.round(c.g)}, ${Math.round(c.b)})`;
+    }
+
+    function applyColors(accent, body) {
+      const ar = Math.round(accent.r);
+      const ag = Math.round(accent.g);
+      const ab = Math.round(accent.b);
+      root.style.setProperty("--accent", rgbCss(accent));
+      root.style.setProperty("--accent-rgb", `${ar}, ${ag}, ${ab}`);
+      root.style.setProperty("--bar-border", `rgba(${ar}, ${ag}, ${ab}, 0.28)`);
+      root.style.setProperty("--bar-glow", `rgba(${ar}, ${ag}, ${ab}, 0.12)`);
+      root.style.setProperty("--body", rgbCss(body));
+      document.body.style.background = rgbCss(body);
+    }
+
+    function startColorTransition(nextAccent, nextBody) {
+      accentFrom = { ...accentNow };
+      bodyFrom = { ...bodyNow };
+      accentTarget = { ...nextAccent };
+      bodyTarget = { ...nextBody };
+      colorAnimStart = performance.now();
+      colorAnimating = true;
+    }
+
+    function updateColorAnimation(now) {
+      if (!colorAnimating) return;
+      const t = Math.min(1, (now - colorAnimStart) / COLOR_EASE_MS);
+      const e = easeOutCubic(t);
+      accentNow = lerpColor(accentFrom, accentTarget, e);
+      bodyNow = lerpColor(bodyFrom, bodyTarget, e);
+      applyColors(accentNow, bodyNow);
+      if (t >= 1) {
+        accentNow = { ...accentTarget };
+        bodyNow = { ...bodyTarget };
+        applyColors(accentNow, bodyNow);
+        colorAnimating = false;
+      }
+    }
+
     function setAccent(color) {
       const parsed = parseColor(color);
       if (!parsed) return false;
-      accentRGB = { r: parsed.r, g: parsed.g, b: parsed.b };
-      root.style.setProperty("--accent", parsed.css);
-      root.style.setProperty("--accent-rgb", `${parsed.r}, ${parsed.g}, ${parsed.b}`);
-      root.style.setProperty(
-        "--bar-border",
-        `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, 0.28)`
-      );
-      root.style.setProperty(
-        "--bar-glow",
-        `rgba(${parsed.r}, ${parsed.g}, ${parsed.b}, 0.12)`
-      );
+
+      const nextAccent = { r: parsed.r, g: parsed.g, b: parsed.b };
+      let nextBody = { ...bodyTarget };
+
+      if (isBlack(nextAccent)) {
+        nextBody = { r: 255, g: 255, b: 255 };
+      } else if (isBlack(accentTarget) || isWhite(bodyTarget)) {
+        // Leaving black accent (or auto-white body): restore black background
+        nextBody = { r: 0, g: 0, b: 0 };
+      }
+
+      startColorTransition(nextAccent, nextBody);
       return true;
     }
 
-    function setBody(color) {
-      const parsed = parseColor(color);
-      if (!parsed) return false;
-      root.style.setProperty("--body", parsed.css);
-      document.body.style.background = parsed.css;
-      return true;
+    // --- perlin / value noise for topographic style ---
+    const PERM = new Uint8Array(512);
+    (function initPerm() {
+      const p = new Uint8Array(256);
+      for (let i = 0; i < 256; i++) p[i] = i;
+      for (let i = 255; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = p[i];
+        p[i] = p[j];
+        p[j] = tmp;
+      }
+      for (let i = 0; i < 512; i++) PERM[i] = p[i & 255];
+    })();
+
+    function fade(t) {
+      return t * t * t * (t * (t * 6 - 15) + 10);
     }
 
+    function grad(hash, x, y) {
+      const h = hash & 3;
+      const u = h < 2 ? x : y;
+      const v = h < 2 ? y : x;
+      return ((h & 1) === 0 ? u : -u) + ((h & 2) === 0 ? v : -v);
+    }
+
+    function perlin2(x, y) {
+      const X = Math.floor(x) & 255;
+      const Y = Math.floor(y) & 255;
+      const xf = x - Math.floor(x);
+      const yf = y - Math.floor(y);
+      const u = fade(xf);
+      const v = fade(yf);
+      const aa = PERM[PERM[X] + Y];
+      const ab = PERM[PERM[X] + Y + 1];
+      const ba = PERM[PERM[X + 1] + Y];
+      const bb = PERM[PERM[X + 1] + Y + 1];
+      const x1 = grad(aa, xf, yf) * (1 - u) + grad(ba, xf - 1, yf) * u;
+      const x2 = grad(ab, xf, yf - 1) * (1 - u) + grad(bb, xf - 1, yf - 1) * u;
+      return (x1 * (1 - v) + x2 * v) * 0.5 + 0.5;
+    }
+
+    function fbm(x, y) {
+      let sum = 0;
+      let amp = 0.5;
+      let freq = 1;
+      for (let i = 0; i < 4; i++) {
+        sum += amp * perlin2(x * freq, y * freq);
+        freq *= 2;
+        amp *= 0.5;
+      }
+      return sum;
+    }
+
+    // --- matrix ---
     function rebuildGrid() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       const w = window.innerWidth;
@@ -393,6 +835,7 @@
         cells[i] = {
           bit: Math.random() < 0.5 ? 0 : 1,
           nextFlip: now + Math.random() * FLIP_MS,
+          pulse: 0,
         };
       }
     }
@@ -414,6 +857,10 @@
       if (i > 0) trail = trail.slice(i);
     }
 
+    function pruneRipples(now) {
+      ripples = ripples.filter((r) => now - r.t0 < r.life);
+    }
+
     function distToSegment(px, py, ax, ay, bx, by) {
       const abx = bx - ax;
       const aby = by - ay;
@@ -432,11 +879,11 @@
       return { dist: Math.sqrt(dx * dx + dy * dy), t };
     }
 
-    // Cursor blob + 0.5s inverse cone: widest at cursor, tapering off toward the tail
-    function influenceAt(cx, cy, now) {
+    function glowInfluence(cx, cy, now, withTrail) {
       const dx = cx - mouse.x;
       const dy = cy - mouse.y;
       let best = Math.exp(-Math.sqrt(dx * dx + dy * dy) / FALLOFF);
+      if (!withTrail) return best;
 
       const points = trail.length
         ? trail.concat({ x: mouse.x, y: mouse.y, t: now })
@@ -449,32 +896,88 @@
         const ageA = (now - a.t) / TRAIL_MS;
         const ageB = (now - b.t) / TRAIL_MS;
         const age = Math.max(0, Math.min(1, ageA + (ageB - ageA) * hit.t));
-
-        // Inverse cone: wide at head (age 0), narrow at tail (age 1)
         const halfWidth = FALLOFF * (1.15 - age * 0.95);
         if (hit.dist > halfWidth * 2.2) continue;
-
         const radial = Math.exp(-hit.dist / Math.max(halfWidth * 0.5, 1));
         const longitudinal = Math.pow(1 - age, 1.5);
         best = Math.max(best, radial * longitudinal);
       }
-
       return best;
     }
 
-    function onPointer(e) {
+    function rippleInfluence(cx, cy, now) {
+      let best = 0;
+      for (const r of ripples) {
+        const age = (now - r.t0) / r.life;
+        if (age < 0 || age > 1) continue;
+        const radius = age * r.maxR;
+        const dx = cx - r.x;
+        const dy = cy - r.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const ring = Math.abs(dist - radius);
+        const band = Math.exp(-ring / 14);
+        const fadeOut = 1 - age;
+        best = Math.max(best, band * fadeOut);
+      }
+      return best;
+    }
+
+    function alphaForCell(cell, cx, cy, now) {
+      switch (matrixStyle) {
+        case "none":
+          return 0;
+        case "illuminate":
+          return 0.92;
+        case "glowing":
+          return glowInfluence(cx, cy, now, false);
+        case "glowingtrail":
+          return glowInfluence(cx, cy, now, true);
+        case "ripple":
+          return rippleInfluence(cx, cy, now);
+        case "disco":
+          return cell.pulse;
+        case "perlin": {
+          const n = fbm(cx * 0.012, cy * 0.012 + now * 0.00018);
+          // Contour bands → topographic ridges
+          const ridges = Math.pow(1 - Math.abs(Math.sin(n * Math.PI * 7)), 2.2);
+          return ridges * 0.95;
+        }
+        default:
+          return glowInfluence(cx, cy, now, true);
+      }
+    }
+
+    function onPointerMove(e) {
       mouse.x = e.clientX;
       mouse.y = e.clientY;
       mouse.active = true;
-      pushTrail(mouse.x, mouse.y, performance.now());
+      if (matrixStyle === "glowingtrail") {
+        pushTrail(mouse.x, mouse.y, performance.now());
+      }
+    }
+
+    function onPointerDown(e) {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      mouse.active = true;
+
+      if (matrixStyle === "ripple" && !terminal.contains(e.target) && !windowsLayer.contains(e.target)) {
+        ripples.push({
+          x: e.clientX,
+          y: e.clientY,
+          t0: performance.now(),
+          life: 1400,
+          maxR: Math.max(window.innerWidth, window.innerHeight) * 0.55,
+        });
+      }
     }
 
     function onPointerLeave() {
       mouse.active = false;
     }
 
-    window.addEventListener("pointermove", onPointer, { passive: true });
-    window.addEventListener("pointerdown", onPointer, { passive: true });
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerdown", onPointerDown, { passive: true });
     window.addEventListener("pointerleave", onPointerLeave);
     window.addEventListener("blur", onPointerLeave);
     window.addEventListener("resize", () => {
@@ -485,6 +988,11 @@
         mouse.y = window.innerHeight / 2;
       }
       syncCaretTarget(true);
+      pruneOverflow();
+      for (const el of windowsLayer.querySelectorAll(".site-window")) {
+        const pos = parsePos(el);
+        setWindowPos(el, pos.x, pos.y);
+      }
     });
 
     function syncCaretTarget(snap = false) {
@@ -508,7 +1016,6 @@
       if (Math.abs(caretTargetX - caretX) < 0.05) caretX = caretTargetX;
       caretEl.style.transform = `translate3d(${caretX}px, 0, 0)`;
 
-      // Smooth sine blink; resets on typing / caret move so it stays visible while active
       const phase = ((now - caretBlinkReset) % CARET_BLINK_MS) / CARET_BLINK_MS;
       const blink = 0.5 + 0.5 * Math.cos(phase * Math.PI * 2);
       caretEl.style.opacity = String(0.2 + blink * 0.8);
@@ -522,8 +1029,17 @@
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
-      pruneTrail(now);
-      pushTrail(mouse.x, mouse.y, now);
+      updateColorAnimation(now);
+
+      if (matrixStyle === "glowingtrail") {
+        pruneTrail(now);
+        pushTrail(mouse.x, mouse.y, now);
+      }
+      if (matrixStyle === "ripple") pruneRipples(now);
+
+      const ar = accentNow.r;
+      const ag = accentNow.g;
+      const ab = accentNow.b;
 
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
@@ -535,12 +1051,18 @@
             if (cell.nextFlip < now) cell.nextFlip = now + Math.random() * FLIP_MS;
           }
 
+          if (matrixStyle === "disco") {
+            if (Math.random() < 0.0018) cell.pulse = 1;
+            cell.pulse *= 0.965;
+            if (cell.pulse < 0.02) cell.pulse = 0;
+          }
+
           const cx = x * CELL + CELL * 0.5;
           const cy = y * CELL + CELL * 0.5;
-          const alpha = influenceAt(cx, cy, now);
+          const alpha = alphaForCell(cell, cx, cy, now);
           if (alpha < 0.02) continue;
 
-          ctx.fillStyle = `rgba(${accentRGB.r}, ${accentRGB.g}, ${accentRGB.b}, ${alpha})`;
+          ctx.fillStyle = `rgba(${ar}, ${ag}, ${ab}, ${alpha})`;
           ctx.fillText(String(cell.bit), cx, cy);
         }
       }
@@ -549,6 +1071,283 @@
       requestAnimationFrame(draw);
     }
 
+    // --- floating windows ---
+    function randomInRange(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function pickEdgeOrigin(w, h) {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const edge = Math.floor(Math.random() * 4);
+      switch (edge) {
+        case 0: // top
+          return { x: randomInRange(0, vw - w), y: -h - 20 };
+        case 1: // right
+          return { x: vw + 20, y: randomInRange(0, vh - h) };
+        case 2: // bottom
+          return { x: randomInRange(0, vw - w), y: vh + 20 };
+        default: // left
+          return { x: -w - 20, y: randomInRange(0, vh - h) };
+      }
+    }
+
+    function pickTargetPosition(w, h) {
+      const maxX = Math.max(WINDOW_PAD, window.innerWidth - w - WINDOW_PAD);
+      const maxY = Math.max(WINDOW_PAD, window.innerHeight - h - WINDOW_PAD);
+      return {
+        x: randomInRange(WINDOW_PAD, maxX),
+        y: randomInRange(WINDOW_PAD, maxY),
+      };
+    }
+
+    function bringWindowFront(el) {
+      windowZ += 1;
+      el.style.zIndex = String(windowZ);
+    }
+
+    function windowSize(el) {
+      if (el.classList.contains("minimized")) {
+        return { w: WINDOW_MIN_SIZE, h: WINDOW_MIN_SIZE };
+      }
+      return { w: WINDOW_W, h: WINDOW_H };
+    }
+
+    function setWindowPos(el, x, y) {
+      const { w, h } = windowSize(el);
+      const maxX = Math.max(0, window.innerWidth - w);
+      const maxY = Math.max(0, window.innerHeight - h);
+      el.style.left = `${clamp(x, 0, maxX)}px`;
+      el.style.top = `${clamp(y, 0, maxY)}px`;
+    }
+
+    function parsePos(el) {
+      return {
+        x: parseFloat(el.style.left) || 0,
+        y: parseFloat(el.style.top) || 0,
+      };
+    }
+
+    function attachWindowDrag(el, bar) {
+      let dragging = false;
+      let moved = false;
+      let pointerId = null;
+      let grabOffsetX = 0;
+      let grabOffsetY = 0;
+      let targetX = 0;
+      let targetY = 0;
+      let currentX = 0;
+      let currentY = 0;
+      let rafId = 0;
+
+      function clampTarget(x, y) {
+        const { w, h } = windowSize(el);
+        const maxX = Math.max(0, window.innerWidth - w);
+        const maxY = Math.max(0, window.innerHeight - h);
+        return {
+          x: clamp(x, 0, maxX),
+          y: clamp(y, 0, maxY),
+        };
+      }
+
+      function tick() {
+        currentX += (targetX - currentX) * WINDOW_DRAG_EASE;
+        currentY += (targetY - currentY) * WINDOW_DRAG_EASE;
+
+        if (Math.abs(targetX - currentX) < 0.35) currentX = targetX;
+        if (Math.abs(targetY - currentY) < 0.35) currentY = targetY;
+
+        el.style.left = `${currentX}px`;
+        el.style.top = `${currentY}px`;
+
+        const settling =
+          Math.abs(targetX - currentX) > 0.35 ||
+          Math.abs(targetY - currentY) > 0.35;
+
+        if (dragging || settling) {
+          rafId = requestAnimationFrame(tick);
+        } else {
+          rafId = 0;
+          el.classList.remove("dragging");
+        }
+      }
+
+      function ensureTick() {
+        if (!rafId) rafId = requestAnimationFrame(tick);
+      }
+
+      bar.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0) return;
+        if (e.target.closest(".window-btn")) return;
+        if (el.classList.contains("minimized")) return;
+
+        const pos = parsePos(el);
+        currentX = pos.x;
+        currentY = pos.y;
+        targetX = pos.x;
+        targetY = pos.y;
+        grabOffsetX = e.clientX - pos.x;
+        grabOffsetY = e.clientY - pos.y;
+
+        dragging = true;
+        moved = false;
+        pointerId = e.pointerId;
+        bringWindowFront(el);
+        el.classList.add("dragging");
+        bar.setPointerCapture(e.pointerId);
+        ensureTick();
+        e.preventDefault();
+      });
+
+      bar.addEventListener("pointermove", (e) => {
+        if (!dragging || e.pointerId !== pointerId) return;
+        const next = clampTarget(e.clientX - grabOffsetX, e.clientY - grabOffsetY);
+        if (
+          Math.abs(next.x - targetX) > 1 ||
+          Math.abs(next.y - targetY) > 1
+        ) {
+          moved = true;
+        }
+        targetX = next.x;
+        targetY = next.y;
+        ensureTick();
+      });
+
+      function endDrag(e) {
+        if (!dragging || (e && e.pointerId !== pointerId)) return;
+        dragging = false;
+        pointerId = null;
+        el.dataset.didDrag = moved ? "1" : "0";
+        ensureTick();
+      }
+
+      bar.addEventListener("pointerup", endDrag);
+      bar.addEventListener("pointercancel", endDrag);
+    }
+
+    function randomPreviewKind() {
+      const roll = Math.random();
+      if (roll < 0.28) return { kind: "empty" };
+      if (roll < 0.48) return { kind: "flagged" };
+      return { kind: "number", n: 1 + Math.floor(Math.random() * 8) };
+    }
+
+    function fillPreviewGrid(grid) {
+      grid.innerHTML = "";
+      for (let i = 0; i < 4; i++) {
+        const cell = document.createElement("div");
+        const pick = randomPreviewKind();
+        cell.className = "preview-cell";
+        if (pick.kind === "empty") {
+          cell.classList.add("open");
+        } else if (pick.kind === "flagged") {
+          cell.classList.add("flagged");
+          cell.textContent = "▲";
+        } else {
+          cell.classList.add("open", `n${pick.n}`);
+          cell.textContent = String(pick.n);
+        }
+        grid.appendChild(cell);
+      }
+    }
+
+    function spawnWindow({ title, href, logoSvg }) {
+      const el = document.createElement("div");
+      el.className = "site-window entering";
+      el.setAttribute("role", "dialog");
+      el.setAttribute("aria-label", title);
+
+      const origin = pickEdgeOrigin(WINDOW_W, WINDOW_H);
+      const target = pickTargetPosition(WINDOW_W, WINDOW_H);
+      el.style.left = `${origin.x}px`;
+      el.style.top = `${origin.y}px`;
+      bringWindowFront(el);
+
+      el.innerHTML = `
+        <div class="window-bar">
+          <div class="window-title">
+            <span class="window-logo" aria-hidden="true">${logoSvg}</span>
+            <span class="window-name"></span>
+          </div>
+          <div class="window-controls">
+            <button type="button" class="window-btn minimize" aria-label="Minimize" title="Minimize">–</button>
+            <button type="button" class="window-btn close" aria-label="Close" title="Close">×</button>
+          </div>
+        </div>
+        <a class="window-body" href="">
+          <div class="window-preview">
+            <div class="preview-grid"></div>
+          </div>
+        </a>
+      `;
+
+      el.querySelector(".window-name").textContent = title;
+      fillPreviewGrid(el.querySelector(".preview-grid"));
+      const bodyLink = el.querySelector(".window-body");
+      bodyLink.href = href;
+
+      const bar = el.querySelector(".window-bar");
+      const minBtn = el.querySelector(".window-btn.minimize");
+      const closeBtn = el.querySelector(".window-btn.close");
+
+      attachWindowDrag(el, bar);
+
+      minBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        el.classList.add("minimized");
+        el.setAttribute("aria-label", `${title} (minimized)`);
+        const pos = parsePos(el);
+        setWindowPos(el, pos.x, pos.y);
+      });
+
+      closeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        el.remove();
+      });
+
+      bar.addEventListener("click", (e) => {
+        if (!el.classList.contains("minimized")) return;
+        if (e.target.closest(".window-btn")) return;
+        el.classList.remove("minimized");
+        el.setAttribute("aria-label", title);
+        const pos = parsePos(el);
+        setWindowPos(el, pos.x, pos.y);
+      });
+
+      bodyLink.addEventListener("click", (e) => {
+        if (el.dataset.didDrag === "1") {
+          e.preventDefault();
+          el.dataset.didDrag = "0";
+        }
+      });
+
+      el.addEventListener("pointerdown", () => bringWindowFront(el));
+
+      windowsLayer.appendChild(el);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setWindowPos(el, target.x, target.y);
+          window.setTimeout(() => el.classList.remove("entering"), 750);
+        });
+      });
+
+      return el;
+    }
+
+    const MINESWEEPER_LOGO = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="13" r="6.5"/>
+        <path d="M12 3.5v2.2M12 20.3v.7M4.2 13H3.5M20.5 13h-.7M6.4 7.4l-.9-.9M18.5 19.5l-.9-.9M17.6 7.4l.9-.9M5.5 19.5l.9-.9"/>
+        <circle cx="10.2" cy="11.2" r="0.9" fill="currentColor" stroke="none"/>
+      </svg>
+    `;
+
+    // --- console ---
     function openConsole() {
       consoleEl.classList.add("open");
     }
@@ -558,7 +1357,9 @@
     }
 
     function activeLines() {
-      return [...consoleOut.children].filter((el) => !el.classList.contains("leaving"));
+      return [...consoleOut.children].filter(
+        (el) => el.classList.contains("line") && !el.classList.contains("leaving")
+      );
     }
 
     function maybeCloseConsole() {
@@ -567,22 +1368,40 @@
       }
     }
 
+    function measureCoreHeight() {
+      const lines = activeLines().filter((el) => el.classList.contains("show"));
+      if (!lines.length) return 0;
+
+      let total = 0;
+      const style = getComputedStyle(consoleOut);
+      total += (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+
+      lines.forEach((el, i) => {
+        const main = el.querySelector(".line-main");
+        total += main ? main.getBoundingClientRect().height : 0;
+        if (i < lines.length - 1) {
+          total += parseFloat(getComputedStyle(el).marginBottom) || 0;
+        }
+      });
+
+      return total;
+    }
+
     function removeLine(el) {
       if (!el || el.classList.contains("leaving")) return;
+      el.classList.remove("show");
       el.classList.add("leaving");
-      const finish = () => {
+
+      window.setTimeout(() => {
         if (el.parentNode) el.remove();
         maybeCloseConsole();
         pruneOverflow();
-      };
-      el.addEventListener("transitionend", finish, { once: true });
-      setTimeout(finish, LINE_EXIT_MS);
+      }, LINE_EXIT_MS);
     }
 
     function pruneOverflow() {
-      while (
-        consoleOut.scrollHeight > consoleOut.clientHeight + 1
-      ) {
+      let guard = 40;
+      while (guard-- > 0 && measureCoreHeight() > CONSOLE_MAX_PX() + 1) {
         const el = activeLines()[0];
         if (!el) break;
         removeLine(el);
@@ -599,25 +1418,62 @@
       }
     }
 
-    function appendLine(text, className = "") {
-      openConsole();
-      const line = document.createElement("div");
-      line.className = `line${className ? ` ${className}` : ""}`;
-      line.textContent = text;
-      line.dataset.born = String(Date.now());
-      consoleOut.appendChild(line);
+    function revealLine(line) {
       requestAnimationFrame(() => {
-        pruneOverflow();
-        requestAnimationFrame(pruneOverflow);
+        requestAnimationFrame(() => {
+          line.classList.add("show");
+          pruneOverflow();
+        });
       });
     }
 
-    const HELP = [
-      "cmds | help | commands  — list all commands",
-      "refresh                 — reload the page",
-      "changeaccent <color>    — set accent color",
-      "changebody <color>      — set body/background color",
-    ];
+    function buildLine({ text, className = "", detail = null }) {
+      openConsole();
+
+      const line = document.createElement("div");
+      line.className = `line${className ? ` ${className}` : ""}${detail ? " expandable" : ""}`;
+      line.dataset.born = String(Date.now());
+      if (detail) line.tabIndex = 0;
+
+      const clip = document.createElement("div");
+      clip.className = "line-clip";
+
+      const main = document.createElement("div");
+      main.className = "line-main";
+      main.textContent = text;
+      clip.appendChild(main);
+
+      if (detail) {
+        const detailEl = document.createElement("div");
+        detailEl.className = "line-detail";
+        const pad = document.createElement("div");
+        pad.className = "line-detail-pad";
+        const detailText = document.createElement("div");
+        detailText.className = "line-detail-text";
+        detailText.textContent = detail;
+        pad.appendChild(detailText);
+        detailEl.appendChild(pad);
+        clip.appendChild(detailEl);
+      }
+
+      line.appendChild(clip);
+      consoleOut.appendChild(line);
+      revealLine(line);
+      return line;
+    }
+
+    function appendLine(text, className = "") {
+      return buildLine({ text, className });
+    }
+
+    function appendExpandable(name, detail) {
+      return buildLine({ text: name, detail });
+    }
+
+    function showParamHelp(cmd, hintLines) {
+      appendLine(`invalid parameter for ${cmd}`, "err");
+      hintLines.forEach((line) => appendLine(line));
+    }
 
     function runCommand(raw) {
       const trimmed = raw.trim();
@@ -633,7 +1489,7 @@
         case "cmds":
         case "help":
         case "commands":
-          HELP.forEach((line) => appendLine(line));
+          COMMANDS.forEach((item) => appendExpandable(item.name, item.detail));
           break;
 
         case "refresh":
@@ -643,31 +1499,61 @@
 
         case "changeaccent": {
           if (!args.length) {
-            appendLine("usage: changeaccent <color>", "err");
+            showParamHelp("changeaccent", [
+              "needs a CSS color value",
+              "examples: #ff00aa | rgb(255,0,0) | white | hsl(200 80% 50%)",
+            ]);
             break;
           }
           const color = args.join(" ");
+          const wasBlack = isBlack(accentTarget);
           if (setAccent(color)) {
             appendLine(`accent → ${color}`);
+            if (isBlack(accentTarget)) {
+              appendLine("body → #ffffff (auto)");
+            } else if (wasBlack) {
+              appendLine("body → #000000 (auto)");
+            }
           } else {
-            appendLine(`invalid color: ${color}`, "err");
+            showParamHelp("changeaccent", [
+              "needs a CSS color value",
+              "examples: #ff00aa | rgb(255,0,0) | white | hsl(200 80% 50%)",
+            ]);
           }
           break;
         }
 
-        case "changebody": {
+        case "matrixstyle": {
           if (!args.length) {
-            appendLine("usage: changebody <color>", "err");
+            showParamHelp("matrixstyle", [
+              "styles:",
+              ...Object.keys(MATRIX_STYLES).map((s) => `  ${s}`),
+            ]);
             break;
           }
-          const color = args.join(" ");
-          if (setBody(color)) {
-            appendLine(`body → ${color}`);
-          } else {
-            appendLine(`invalid color: ${color}`, "err");
+          const style = args[0].toLowerCase();
+          if (!(style in MATRIX_STYLES)) {
+            showParamHelp("matrixstyle", [
+              "styles:",
+              ...Object.keys(MATRIX_STYLES).map((s) => `  ${s}`),
+            ]);
+            break;
           }
+          matrixStyle = style;
+          if (style !== "glowingtrail") trail = [];
+          if (style !== "ripple") ripples = [];
+          appendLine(`matrixstyle → ${style}`);
           break;
         }
+
+        case "minesweeper":
+          spawnWindow({
+            title: "minesweeper",
+            href: "minesweeper.html",
+            logoSvg: MINESWEEPER_LOGO,
+          });
+          appendLine("opened minesweeper window");
+          break;
 
         default:
           appendLine(`unknown command: ${cmd}`, "err");
@@ -696,7 +1582,6 @@
     input.addEventListener("keyup", () => syncCaretTarget());
     input.addEventListener("select", () => syncCaretTarget());
     input.addEventListener("keydown", (e) => {
-      // Position updates after the key affects selection
       requestAnimationFrame(() => syncCaretTarget());
       if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) {
         caretBlinkReset = performance.now();
@@ -705,6 +1590,7 @@
 
     setInterval(pruneExpired, 250);
 
+    applyColors(accentNow, bodyNow);
     rebuildGrid();
     syncCaretTarget(true);
     requestAnimationFrame(draw);

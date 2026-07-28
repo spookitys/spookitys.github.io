@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>minesweeper — spookitys</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --body: #000000;
+      --accent: #ffffff;
+      --accent-rgb: 255, 255, 255;
+      --bar-border: rgba(255, 255, 255, 0.28);
+      --bar-glow: rgba(255, 255, 255, 0.12);
+      --line-ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --chrome: 11rem;
+      --gap: 4px;
+      --cell: clamp(
+        18px,
+        calc((min(96vw, 92dvh) - 3.5rem - (14 * var(--gap))) / 15),
+        52px
+      );
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      background: var(--body);
+      color: var(--accent);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+    }
+
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 0.85rem;
+      background:
+        radial-gradient(
+          ellipse at 50% 0%,
+          rgba(var(--accent-rgb), 0.08),
+          transparent 55%
+        ),
+        var(--body);
+    }
+
+    .frame {
+      width: min(96vw, calc(15 * var(--cell) + 14 * var(--gap) + 3.5rem));
+      max-height: 96dvh;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--bar-border);
+      background:
+        linear-gradient(
+          155deg,
+          rgba(var(--accent-rgb), 0.22) 0%,
+          rgba(var(--accent-rgb), 0.08) 28%,
+          rgba(0, 0, 0, 0.28) 62%,
+          rgba(0, 0, 0, 0.42) 100%
+        );
+      backdrop-filter: blur(28px) saturate(1.35);
+      -webkit-backdrop-filter: blur(28px) saturate(1.35);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+        0 18px 50px rgba(0, 0, 0, 0.45),
+        0 0 40px var(--bar-glow);
+      position: relative;
+      animation: rise-in 0.55s var(--line-ease) both;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.05) 18%,
+        transparent 48%
+      );
+      opacity: 0.7;
+      z-index: 0;
+    }
+
+    @keyframes rise-in {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .top {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+      flex-shrink: 0;
+    }
+
+    .back {
+      color: color-mix(in srgb, var(--accent) 55%, transparent);
+      text-decoration: none;
+      font-size: 0.95rem;
+      transition: color 0.2s ease;
+    }
+
+    .back:hover {
+      color: var(--accent);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      opacity: 0.9;
+    }
+
+    .brand svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    .hud {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem 0.65rem;
+      font-size: 0.95rem;
+      color: color-mix(in srgb, var(--accent) 70%, transparent);
+      flex-shrink: 0;
+    }
+
+    .stat {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      min-width: 5.5rem;
+    }
+
+    .stat strong {
+      color: var(--accent);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      font-size: 1.15rem;
+    }
+
+    .reset {
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.9rem;
+      padding: 0.45rem 0.95rem;
+      border-radius: 10px;
+      cursor: pointer;
+      opacity: 0.85;
+      transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .reset:hover {
+      opacity: 1;
+      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+    }
+
+    .board-wrap {
+      position: relative;
+      z-index: 1;
+      padding: 0.5rem 1.25rem 0.85rem;
+      display: grid;
+      place-items: center;
+      flex: 1;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(15, var(--cell));
+      gap: var(--gap);
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    .cell {
+      width: var(--cell);
+      height: var(--cell);
+      border-radius: calc(var(--cell) * 0.18);
+      border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+      color: var(--accent);
+      font: inherit;
+      font-size: calc(var(--cell) * 0.42);
+      font-weight: 600;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      padding: 0;
+      transition:
+        background 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.25s ease,
+        transform 0.2s var(--line-ease),
+        opacity 0.2s ease,
+        color 0.2s ease;
+    }
+
+    .cell:hover:not(.open):not(:disabled) {
+      background: color-mix(in srgb, var(--accent) 16%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    }
+
+    .cell:active:not(.open):not(:disabled) {
+      transform: scale(0.94);
+    }
+
+    .cell.open {
+      background: color-mix(in srgb, var(--accent) 4%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 12%, transparent);
+      cursor: default;
+    }
+
+    .cell.flagged {
+      color: color-mix(in srgb, var(--accent) 85%, #ffb347);
+    }
+
+    .cell.mine {
+      background: color-mix(in srgb, #ff6b6b 28%, transparent);
+      border-color: color-mix(in srgb, #ff6b6b 55%, transparent);
+    }
+
+    .cell.blast {
+      background: color-mix(in srgb, #ff6b6b 55%, transparent);
+      border-color: #ff6b6b;
+    }
+
+    .cell.lit {
+      background: color-mix(in srgb, var(--accent) 42%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 85%, transparent);
+      box-shadow:
+        0 0 14px color-mix(in srgb, var(--accent) 45%, transparent),
+        inset 0 0 10px color-mix(in srgb, var(--accent) 20%, transparent);
+      transform: scale(1.06);
+      color: #fff;
+    }
+
+    .cell.n1 { color: #7ec8ff; }
+    .cell.n2 { color: #7dffa0; }
+    .cell.n3 { color: #ff8a8a; }
+    .cell.n4 { color: #c9a0ff; }
+    .cell.n5 { color: #ffb86c; }
+    .cell.n6 { color: #6ee7e0; }
+    .cell.n7 { color: #f0f0f0; }
+    .cell.n8 { color: #b0b0b0; }
+
+    .cell.lit.n1,
+    .cell.lit.n2,
+    .cell.lit.n3,
+    .cell.lit.n4,
+    .cell.lit.n5,
+    .cell.lit.n6,
+    .cell.lit.n7,
+    .cell.lit.n8,
+    .cell.lit.flagged {
+      color: #fff;
+    }
+
+    .status {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 0 1.25rem 0.65rem;
+      min-height: 1.5rem;
+      font-size: 0.95rem;
+      color: color-mix(in srgb, var(--accent) 55%, transparent);
+      transition: color 0.25s ease;
+      flex-shrink: 0;
+    }
+
+    .status.win {
+      color: color-mix(in srgb, var(--accent) 70%, #7dffa0);
+    }
+
+    .status.lose {
+      color: color-mix(in srgb, var(--accent) 55%, #ff6b6b);
+    }
+
+    .hint {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 0 1.25rem 1.1rem;
+      font-size: 0.78rem;
+      color: color-mix(in srgb, var(--accent) 32%, transparent);
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <header class="top">
+      <a class="back" href="index.html">← home</a>
+      <div class="brand">
+        <span>minesweeper</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="13" r="6.5"/>
+          <path d="M12 3.5v2.2M12 20.3v.7M4.2 13H3.5M20.5 13h-.7M6.4 7.4l-.9-.9M18.5 19.5l-.9-.9M17.6 7.4l.9-.9M5.5 19.5l.9-.9"/>
+          <circle cx="10.2" cy="11.2" r="0.9" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+    </header>
+
+    <div class="hud">
+      <div class="stat">mines <strong id="minesLeft">35</strong></div>
+      <button type="button" class="reset" id="resetBtn">reset</button>
+      <div class="stat" style="justify-content: flex-end">time <strong id="timer">0</strong></div>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board" role="grid" aria-label="Minesweeper board"></div>
+    </div>
+
+    <div class="status" id="status">clear the field</div>
+    <p class="hint">click to reveal · right-click / shift-click to flag</p>
+  </div>
+
+  <script>
+    const ROWS = 15;
+    const COLS = 15;
+    const MINE_COUNT = 35;
+    const SHOCKWAVE_MS = 42;
+
+    const boardEl = document.getElementById("board");
+    const minesLeftEl = document.getElementById("minesLeft");
+    const timerEl = document.getElementById("timer");
+    const statusEl = document.getElementById("status");
+    const resetBtn = document.getElementById("resetBtn");
+
+    let cells = [];
+    let started = false;
+    let over = false;
+    let won = false;
+    let flags = 0;
+    let revealed = 0;
+    let timer = 0;
+    let timerId = null;
+    let shockwaveTimers = [];
+
+    function idx(r, c) {
+      return r * COLS + c;
+    }
+
+    function inBounds(r, c) {
+      return r >= 0 && r < ROWS && c >= 0 && c < COLS;
+    }
+
+    function neighbors(r, c) {
+      const out = [];
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue;
+          const nr = r + dr;
+          const nc = c + dc;
+          if (inBounds(nr, nc)) out.push(cells[idx(nr, nc)]);
+        }
+      }
+      return out;
+    }
+
+    function stopTimer() {
+      if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
+
+    function clearShockwave() {
+      for (const id of shockwaveTimers) clearTimeout(id);
+      shockwaveTimers = [];
+    }
+
+    function startTimer() {
+      stopTimer();
+      timer = 0;
+      timerEl.textContent = "0";
+      timerId = setInterval(() => {
+        timer += 1;
+        timerEl.textContent = String(timer);
+      }, 1000);
+    }
+
+    function placeMines(safeR, safeC) {
+      let placed = 0;
+      while (placed < MINE_COUNT) {
+        const r = Math.floor(Math.random() * ROWS);
+        const c = Math.floor(Math.random() * COLS);
+        if (Math.abs(r - safeR) <= 1 && Math.abs(c - safeC) <= 1) continue;
+        const cell = cells[idx(r, c)];
+        if (cell.mine) continue;
+        cell.mine = true;
+        placed += 1;
+      }
+
+      for (const cell of cells) {
+        if (cell.mine) {
+          cell.count = 0;
+          continue;
+        }
+        cell.count = neighbors(cell.r, cell.c).filter((n) => n.mine).length;
+      }
+    }
+
+    function updateHud() {
+      minesLeftEl.textContent = String(Math.max(0, MINE_COUNT - flags));
+    }
+
+    function paintCell(cell) {
+      const btn = cell.el;
+      const wasLit = btn.classList.contains("lit");
+      btn.className = "cell";
+      btn.disabled = over || cell.open;
+      btn.textContent = "";
+
+      if (cell.open) {
+        btn.classList.add("open");
+        if (cell.mine) {
+          btn.classList.add("mine");
+          if (cell.blast) btn.classList.add("blast");
+          btn.textContent = "●";
+        } else if (cell.count > 0) {
+          btn.classList.add(`n${cell.count}`);
+          btn.textContent = String(cell.count);
+        }
+      } else if (cell.flagged) {
+        btn.classList.add("flagged");
+        btn.textContent = "▲";
+      }
+
+      if (over && !won && cell.mine && !cell.open) {
+        btn.classList.add("open", "mine");
+        btn.textContent = "●";
+      }
+
+      if (wasLit) btn.classList.add("lit");
+    }
+
+    function playWinShockwave(origin) {
+      clearShockwave();
+      const ranked = cells
+        .map((cell) => ({
+          cell,
+          dist: Math.hypot(cell.r - origin.r, cell.c - origin.c),
+        }))
+        .sort((a, b) => a.dist - b.dist);
+
+      for (const { cell, dist } of ranked) {
+        const delay = Math.round(dist * SHOCKWAVE_MS);
+        const id = window.setTimeout(() => {
+          cell.el.classList.add("lit");
+        }, delay);
+        shockwaveTimers.push(id);
+      }
+    }
+
+    function reveal(cell) {
+      if (cell.open || cell.flagged || over) return;
+      cell.open = true;
+      revealed += 1;
+      paintCell(cell);
+
+      if (cell.mine) {
+        cell.blast = true;
+        paintCell(cell);
+        endGame(false);
+        return;
+      }
+
+      if (cell.count === 0) {
+        for (const n of neighbors(cell.r, cell.c)) {
+          if (!n.open && !n.flagged) reveal(n);
+        }
+      }
+
+      if (revealed === ROWS * COLS - MINE_COUNT) {
+        endGame(true, cell);
+      }
+    }
+
+    function toggleFlag(cell) {
+      if (cell.open || over) return;
+      cell.flagged = !cell.flagged;
+      flags += cell.flagged ? 1 : -1;
+      paintCell(cell);
+      updateHud();
+    }
+
+    function endGame(success, origin) {
+      over = true;
+      won = success;
+      stopTimer();
+      statusEl.className = `status ${success ? "win" : "lose"}`;
+      statusEl.textContent = success ? "cleared — nice" : "boom — try again";
+      for (const cell of cells) paintCell(cell);
+      if (success && origin) playWinShockwave(origin);
+    }
+
+    function onReveal(cell) {
+      if (over) return;
+      if (!started) {
+        started = true;
+        placeMines(cell.r, cell.c);
+        startTimer();
+        statusEl.className = "status";
+        statusEl.textContent = "sweeping…";
+      }
+      if (cell.flagged) return;
+      reveal(cell);
+    }
+
+    function buildBoard() {
+      boardEl.innerHTML = "";
+      cells = [];
+      started = false;
+      over = false;
+      won = false;
+      flags = 0;
+      revealed = 0;
+      stopTimer();
+      clearShockwave();
+      timer = 0;
+      timerEl.textContent = "0";
+      statusEl.className = "status";
+      statusEl.textContent = "clear the field";
+      updateHud();
+
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "cell";
+          btn.setAttribute("role", "gridcell");
+          btn.setAttribute("aria-label", `row ${r + 1} column ${c + 1}`);
+
+          const cell = {
+            r,
+            c,
+            mine: false,
+            count: 0,
+            open: false,
+            flagged: false,
+            blast: false,
+            el: btn,
+          };
+          cells.push(cell);
+
+          btn.addEventListener("click", (e) => {
+            if (e.shiftKey) {
+              toggleFlag(cell);
+              return;
+            }
+            onReveal(cell);
+          });
+
+          btn.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            toggleFlag(cell);
+          });
+
+          boardEl.appendChild(btn);
+        }
+      }
+    }
+
+    resetBtn.addEventListener("click", buildBoard);
+    buildBoard();
+  </script>
+</body>
+</html>
