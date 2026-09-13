@@ -15,25 +15,25 @@
       --bar-border: rgba(255, 255, 255, 0.28);
       --bar-glow: rgba(255, 255, 255, 0.12);
       --line-ease: cubic-bezier(0.22, 1, 0.36, 1);
-      --gap: 3px;
+      --gap: 1px;
       --cell: max(
         12px,
         min(
           7.5vw,
-          calc((88dvh - 15rem) / 20),
+          calc((88dvh - 16.5rem) / 20),
           30px
         )
       );
       --mini: var(--cell);
-      --side: calc(4 * var(--mini) + 3 * var(--gap));
+      --side: max(7.5rem, calc(4 * var(--mini) + 3 * var(--gap) + 1.2rem));
 
-      --p-i: #6ee7e0;
-      --p-j: #7ec8ff;
-      --p-l: #ffb86c;
-      --p-o: #ffe57e;
-      --p-s: #7dffa0;
-      --p-t: #c9a0ff;
-      --p-z: #ff8a8a;
+      --p-i: #00e5e5;
+      --p-j: #2b6cff;
+      --p-l: #ff9a1a;
+      --p-o: #f0d000;
+      --p-s: #22d94a;
+      --p-t: #b44dff;
+      --p-z: #f23838;
     }
 
     * {
@@ -164,19 +164,36 @@
       position: relative;
       z-index: 1;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 0.75rem;
-      padding: 1rem 1.25rem 0.65rem;
+      padding: 0.85rem 1.25rem 0.55rem;
       font-size: 0.9rem;
       color: color-mix(in srgb, var(--accent) 70%, transparent);
       flex-shrink: 0;
+    }
+
+    .hud-scores {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
     }
 
     .stat {
       display: flex;
       align-items: baseline;
       gap: 0.4rem;
+      line-height: 1.2;
+    }
+
+    .stat.high {
+      font-size: 0.78rem;
+      color: color-mix(in srgb, var(--accent) 48%, transparent);
+    }
+
+    .stat.high strong {
+      font-size: 0.9rem;
+      color: color-mix(in srgb, var(--accent) 78%, transparent);
     }
 
     .stat strong {
@@ -197,6 +214,7 @@
       cursor: pointer;
       opacity: 0.85;
       transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+      margin-top: 0.15rem;
     }
 
     .reset:hover {
@@ -241,48 +259,106 @@
       letter-spacing: 0.08em;
       color: color-mix(in srgb, var(--accent) 80%, transparent);
       pointer-events: none;
+      z-index: 2;
+    }
+
+    .fx {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .particle {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--tint, #fff);
+      box-shadow: 0 0 8px color-mix(in srgb, var(--tint, #fff) 55%, transparent);
+      opacity: 0.95;
+      animation: particle-burst var(--life, 520ms) var(--line-ease) forwards;
+      will-change: transform, opacity;
+    }
+
+    @keyframes particle-burst {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.95;
+      }
+      100% {
+        transform: translate(var(--dx), var(--dy)) scale(0.15);
+        opacity: 0;
+      }
     }
 
     .cell {
       width: var(--cell);
       height: var(--cell);
-      border-radius: calc(var(--cell) * 0.2);
-      border: 1px solid color-mix(in srgb, var(--accent) 12%, transparent);
-      background: color-mix(in srgb, var(--accent) 4%, transparent);
+      border-radius: 0;
+      border: none;
+      background: rgba(255, 255, 255, 0.045);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
-    .cell.filled {
-      background: color-mix(in srgb, var(--tint) 42%, transparent);
-      border-color: color-mix(in srgb, var(--tint) 75%, transparent);
-      box-shadow: inset 0 0 8px color-mix(in srgb, var(--tint) 22%, transparent);
+    .cell.filled,
+    .cell.active {
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255, 255, 255, 0.72) 0%,
+          rgba(255, 255, 255, 0.28) 18%,
+          rgba(255, 255, 255, 0) 42%
+        ),
+        linear-gradient(
+          320deg,
+          rgba(0, 0, 0, 0.38) 0%,
+          rgba(0, 0, 0, 0.12) 28%,
+          transparent 52%
+        ),
+        var(--tint);
+      box-shadow:
+        inset 2px 2px 0 rgba(255, 255, 255, 0.55),
+        inset -2px -2px 0 rgba(0, 0, 0, 0.38),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.22),
+        0 0 8px color-mix(in srgb, var(--tint) 45%, transparent);
     }
 
     .cell.active {
-      background: color-mix(in srgb, var(--tint) 58%, transparent);
-      border-color: color-mix(in srgb, var(--tint) 92%, transparent);
-      box-shadow:
-        0 0 10px color-mix(in srgb, var(--tint) 35%, transparent),
-        inset 0 0 8px color-mix(in srgb, var(--tint) 26%, transparent);
+      filter: brightness(1.08);
     }
 
-    .cell.ghost {
-      background: color-mix(in srgb, var(--tint) 7%, transparent);
-      border-color: color-mix(in srgb, var(--tint) 34%, transparent);
+    .ghost-outline {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+      z-index: 1;
+    }
+
+    .ghost-outline path {
+      fill: none;
+      stroke: color-mix(in srgb, var(--ghost-tint, #fff) 75%, #ffffff);
+      stroke-width: 2;
+      stroke-dasharray: 5 4;
+      stroke-linejoin: miter;
+      vector-effect: non-scaling-stroke;
     }
 
     .cell.lit {
-      background: color-mix(in srgb, var(--accent) 55%, transparent);
-      border-color: color-mix(in srgb, var(--accent) 90%, transparent);
-      box-shadow:
-        0 0 14px color-mix(in srgb, var(--accent) 45%, transparent),
-        inset 0 0 10px color-mix(in srgb, var(--accent) 20%, transparent);
-      transform: scale(1.06);
+      background: #ffffff;
+      box-shadow: none;
+      filter: none;
+      border: none;
     }
 
     .side {
       display: flex;
       flex-direction: column;
-      gap: 0.85rem;
+      gap: 1rem;
       width: var(--side);
       flex-shrink: 0;
     }
@@ -292,33 +368,128 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: color-mix(in srgb, var(--accent) 40%, transparent);
-      margin-bottom: 0.35rem;
+      margin-bottom: 0.4rem;
+      text-align: center;
+    }
+
+    .next-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .next-box {
+      display: grid;
+      place-items: center;
+      width: calc(4 * var(--mini) + 3 * var(--gap) + 0.7rem);
+      height: calc(4 * var(--mini) + 3 * var(--gap) + 0.7rem);
+      padding: 0.35rem;
+      border-radius: 0;
+      border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+      background: color-mix(in srgb, var(--accent) 6%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
     .mini {
       display: grid;
-      grid-template-columns: repeat(4, var(--mini));
-      grid-auto-rows: var(--mini);
       gap: var(--gap);
+      justify-self: center;
+      align-self: center;
     }
 
     .mini-cell {
       width: var(--mini);
       height: var(--mini);
-      border-radius: calc(var(--mini) * 0.22);
-      border: 1px solid transparent;
+      border-radius: 0;
+      border: none;
+      background: transparent;
     }
 
     .mini-cell.filled {
-      background: color-mix(in srgb, var(--tint) 45%, transparent);
-      border-color: color-mix(in srgb, var(--tint) 80%, transparent);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255, 255, 255, 0.72) 0%,
+          rgba(255, 255, 255, 0.28) 18%,
+          rgba(255, 255, 255, 0) 42%
+        ),
+        linear-gradient(
+          320deg,
+          rgba(0, 0, 0, 0.38) 0%,
+          rgba(0, 0, 0, 0.12) 28%,
+          transparent 52%
+        ),
+        var(--tint);
+      box-shadow:
+        inset 2px 2px 0 rgba(255, 255, 255, 0.55),
+        inset -2px -2px 0 rgba(0, 0, 0, 0.38),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.22),
+        0 0 7px color-mix(in srgb, var(--tint) 45%, transparent);
+    }
+
+    .binds {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .bind-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 0.35rem;
+      min-height: 1.55rem;
+    }
+
+    .bind-label {
+      font-size: 0.68rem;
+      letter-spacing: 0.04em;
+      color: color-mix(in srgb, var(--accent) 42%, transparent);
+      text-transform: lowercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bind-key {
+      min-width: 2.1rem;
+      height: 1.55rem;
+      padding: 0 0.35rem;
+      border-radius: 7px;
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .bind-key:hover {
+      background: color-mix(in srgb, var(--accent) 16%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 48%, transparent);
+    }
+
+    .bind-key.listening {
+      background: color-mix(in srgb, var(--accent) 22%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+      color: #fff;
+      animation: listen-pulse 0.9s ease infinite;
+    }
+
+    @keyframes listen-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
     }
 
     .status {
       position: relative;
       z-index: 1;
       text-align: center;
-      padding: 0 1.25rem 0.65rem;
+      padding: 0 1.25rem 1.1rem;
       min-height: 1.5rem;
       font-size: 0.95rem;
       color: color-mix(in srgb, var(--accent) 55%, transparent);
@@ -332,16 +503,6 @@
 
     .status.lose {
       color: color-mix(in srgb, var(--accent) 55%, #ff6b6b);
-    }
-
-    .hint {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-      padding: 0 1.25rem 1.1rem;
-      font-size: 0.78rem;
-      color: color-mix(in srgb, var(--accent) 32%, transparent);
-      flex-shrink: 0;
     }
   </style>
 </head>
@@ -359,22 +520,32 @@
     </header>
 
     <div class="hud">
-      <div class="stat">score <strong id="score">0</strong></div>
+      <div class="hud-scores">
+        <div class="stat high">high <strong id="highScore">0</strong></div>
+        <div class="stat">score <strong id="score">0</strong></div>
+      </div>
       <button type="button" class="reset" id="resetBtn">reset</button>
     </div>
 
     <div class="play-wrap">
-      <div class="board" id="board" role="grid" aria-label="Tetris board" data-overlay=""></div>
+      <div class="board" id="board" role="grid" aria-label="Tetris board" data-overlay="">
+        <div class="fx" id="fx" aria-hidden="true"></div>
+      </div>
       <div class="side">
-        <div>
+        <div class="next-panel">
           <div class="panel-label">next</div>
-          <div class="mini" id="next"></div>
+          <div class="next-box">
+            <div class="mini" id="next"></div>
+          </div>
+        </div>
+        <div>
+          <div class="panel-label">keys</div>
+          <div class="binds" id="binds"></div>
         </div>
       </div>
     </div>
 
     <div class="status" id="status">stack them up</div>
-    <p class="hint">a d move · q e rotate · s drop · space hard drop · p pause</p>
   </div>
 
   <script>
@@ -382,6 +553,8 @@
     const ROWS = 20;
     const CLEAR_FLASH_MS = 190;
     const SHOCKWAVE_MS = 26;
+    const HS_KEY = "spookitys-tetris-high";
+    const BINDS_KEY = "spookitys-tetris-binds";
 
     const PIECES = {
       I: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
@@ -395,13 +568,30 @@
 
     const KEYS = Object.keys(PIECES);
     const KICKS = [0, -1, 1, -2, 2];
-    const LINE_SCORE = [0, 100, 300, 500, 800];
+
+    // Classic Tetris (NES / BPS) line-clear scoring: base × (level + 1)
+    const LINE_SCORE = [0, 40, 100, 300, 1200];
+    const PLACE_SCORE = 10;
+
+    const BIND_DEFS = [
+      { action: "left", label: "left", defaultKey: "a" },
+      { action: "right", label: "right", defaultKey: "d" },
+      { action: "soft", label: "soft drop", defaultKey: "s" },
+      { action: "hard", label: "hard drop", defaultKey: " " },
+      { action: "rotL", label: "rotate ccw", defaultKey: "q" },
+      { action: "rotR", label: "rotate cw", defaultKey: "e" },
+      { action: "pause", label: "pause", defaultKey: "p" },
+      { action: "reset", label: "reset", defaultKey: "m" },
+    ];
 
     const boardEl = document.getElementById("board");
+    const fxEl = document.getElementById("fx");
     const scoreEl = document.getElementById("score");
+    const highScoreEl = document.getElementById("highScore");
     const statusEl = document.getElementById("status");
     const resetBtn = document.getElementById("resetBtn");
     const nextEl = document.getElementById("next");
+    const bindsEl = document.getElementById("binds");
 
     let cellEls = [];
     let grid = [];
@@ -409,8 +599,9 @@
     let queue = [];
     let piece = null;
     let score = 0;
+    let highScore = Number(localStorage.getItem(HS_KEY)) || 0;
     let lines = 0;
-    let level = 1;
+    let level = 0;
     let paused = false;
     let over = false;
     let clearing = false;
@@ -418,9 +609,63 @@
     let lastFrame = 0;
     let rafId = 0;
     let shockwaveTimers = [];
+    let binds = loadBinds();
+    let listeningAction = null;
+
+    function defaultBinds() {
+      const out = {};
+      for (const def of BIND_DEFS) out[def.action] = def.defaultKey;
+      return out;
+    }
+
+    function loadBinds() {
+      try {
+        const raw = localStorage.getItem(BINDS_KEY);
+        if (!raw) return defaultBinds();
+        const parsed = JSON.parse(raw);
+        const base = defaultBinds();
+        for (const def of BIND_DEFS) {
+          if (typeof parsed[def.action] === "string") base[def.action] = parsed[def.action];
+        }
+        return base;
+      } catch {
+        return defaultBinds();
+      }
+    }
+
+    function saveBinds() {
+      localStorage.setItem(BINDS_KEY, JSON.stringify(binds));
+    }
+
+    function normalizeKey(key) {
+      if (key === " ") return " ";
+      if (key.length === 1) return key.toLowerCase();
+      return key.toLowerCase();
+    }
+
+    function displayKey(key) {
+      if (key === " ") return "spc";
+      if (key === "arrowleft") return "←";
+      if (key === "arrowright") return "→";
+      if (key === "arrowup") return "↑";
+      if (key === "arrowdown") return "↓";
+      if (key === "escape") return "esc";
+      if (key === "enter") return "↵";
+      if (key.startsWith("arrow")) return key.slice(5);
+      return key.length === 1 ? key.toUpperCase() : key;
+    }
+
+    function actionForKey(key) {
+      const k = normalizeKey(key);
+      for (const def of BIND_DEFS) {
+        if (binds[def.action] === k) return def.action;
+      }
+      return null;
+    }
 
     function dropInterval() {
-      return Math.max(90, 820 - (level - 1) * 72);
+      // Linear gravity: half the previous per-level step
+      return Math.max(70, 800 - level * 32);
     }
 
     function refillBag() {
@@ -482,6 +727,99 @@
       return y;
     }
 
+    function cellSize() {
+      const probe = cellEls[0];
+      if (!probe) return 20;
+      return probe.getBoundingClientRect().width;
+    }
+
+    function spawnHardDropParticles(blocks, key) {
+      const size = cellSize();
+      const gap = parseFloat(getComputedStyle(boardEl).gap) || 1;
+      const step = size + gap;
+      const tint = getComputedStyle(document.documentElement)
+        .getPropertyValue(`--p-${key.toLowerCase()}`)
+        .trim() || "#ffffff";
+
+      for (const b of blocks) {
+        if (b.r < 0) continue;
+        const cx = b.c * step + size / 2;
+        const cy = b.r * step + size / 2;
+        const count = 7 + Math.floor(Math.random() * 4);
+
+        for (let i = 0; i < count; i++) {
+          const p = document.createElement("div");
+          p.className = "particle";
+          const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.45;
+          const dist = 14 + Math.random() * 34;
+          const life = 420 + Math.random() * 280;
+          p.style.left = `${cx - 2.5}px`;
+          p.style.top = `${cy - 2.5}px`;
+          p.style.setProperty("--tint", tint);
+          p.style.setProperty("--dx", `${Math.cos(angle) * dist}px`);
+          p.style.setProperty("--dy", `${Math.sin(angle) * dist - 8 - Math.random() * 18}px`);
+          p.style.setProperty("--life", `${life}ms`);
+          fxEl.appendChild(p);
+          window.setTimeout(() => p.remove(), life + 40);
+        }
+      }
+    }
+
+    function ghostOutlinePath(blocks, size, gap) {
+      const step = size + gap;
+      const set = new Set();
+      for (const b of blocks) {
+        if (b.r >= 0) set.add(`${b.r},${b.c}`);
+      }
+      if (!set.size) return "";
+
+      let d = "";
+      for (const key of set) {
+        const [r, c] = key.split(",").map(Number);
+        const x = c * step;
+        const y = r * step;
+        if (!set.has(`${r - 1},${c}`)) d += `M ${x} ${y} L ${x + size} ${y} `;
+        if (!set.has(`${r},${c + 1}`)) d += `M ${x + size} ${y} L ${x + size} ${y + size} `;
+        if (!set.has(`${r + 1},${c}`)) d += `M ${x + size} ${y + size} L ${x} ${y + size} `;
+        if (!set.has(`${r},${c - 1}`)) d += `M ${x} ${y + size} L ${x} ${y} `;
+      }
+      return d.trim();
+    }
+
+    function updateGhostOutline() {
+      let svg = boardEl.querySelector("svg.ghost-outline");
+      if (!svg) {
+        svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.classList.add("ghost-outline");
+        svg.setAttribute("aria-hidden", "true");
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        svg.appendChild(path);
+        boardEl.appendChild(svg);
+      }
+      const path = svg.querySelector("path");
+
+      if (!piece || over || paused) {
+        path.setAttribute("d", "");
+        return;
+      }
+
+      const size = cellSize();
+      const gap = parseFloat(getComputedStyle(boardEl).gap) || 1;
+      const gy = ghostY();
+      if (gy === piece.y) {
+        path.setAttribute("d", "");
+        return;
+      }
+      const blocks = blocksOf(piece, piece.cells, piece.x, gy);
+      const d = ghostOutlinePath(blocks, size, gap);
+      path.setAttribute("d", d);
+
+      const tint = getComputedStyle(document.documentElement)
+        .getPropertyValue(`--p-${piece.key.toLowerCase()}`)
+        .trim() || "#ffffff";
+      svg.style.setProperty("--ghost-tint", tint);
+    }
+
     function render() {
       const view = new Array(ROWS * COLS).fill(null);
 
@@ -492,12 +830,6 @@
       }
 
       if (piece && !over) {
-        const gy = ghostY();
-        for (const b of blocksOf(piece, piece.cells, piece.x, gy)) {
-          if (b.r >= 0 && !view[b.r * COLS + b.c]) {
-            view[b.r * COLS + b.c] = { key: piece.key, kind: "ghost" };
-          }
-        }
         for (const b of blocksOf(piece)) {
           if (b.r >= 0) view[b.r * COLS + b.c] = { key: piece.key, kind: "active" };
         }
@@ -511,21 +843,40 @@
         if (lit) el.classList.add("lit");
         el.style.setProperty("--tint", v ? `var(--p-${v.key.toLowerCase()})` : "transparent");
       }
+
+      updateGhostOutline();
     }
 
     function renderMini(container, key) {
       container.innerHTML = "";
-      const cells = key ? PIECES[key] : null;
-      const n = cells ? cells.length : 0;
-      const offset = n === 2 ? 1 : 0;
-      for (let r = 0; r < 4; r++) {
-        for (let c = 0; c < 4; c++) {
+      container.style.gridTemplateColumns = "";
+      container.style.gridAutoRows = "";
+      if (!key) return;
+
+      const cells = PIECES[key];
+      let minR = Infinity;
+      let maxR = -Infinity;
+      let minC = Infinity;
+      let maxC = -Infinity;
+      for (let r = 0; r < cells.length; r++) {
+        for (let c = 0; c < cells[r].length; c++) {
+          if (!cells[r][c]) continue;
+          if (r < minR) minR = r;
+          if (r > maxR) maxR = r;
+          if (c < minC) minC = c;
+          if (c > maxC) maxC = c;
+        }
+      }
+
+      const w = maxC - minC + 1;
+      container.style.gridTemplateColumns = `repeat(${w}, var(--mini))`;
+      container.style.gridAutoRows = "var(--mini)";
+
+      for (let r = minR; r <= maxR; r++) {
+        for (let c = minC; c <= maxC; c++) {
           const el = document.createElement("div");
           el.className = "mini-cell";
-          const sr = r - offset;
-          const sc = c - offset;
-          const on = cells && sr >= 0 && sr < n && sc >= 0 && sc < n && cells[sr][sc];
-          if (on) {
+          if (cells[r][c]) {
             el.classList.add("filled");
             el.style.setProperty("--tint", `var(--p-${key.toLowerCase()})`);
           }
@@ -540,6 +891,11 @@
 
     function updateHud() {
       scoreEl.textContent = String(score);
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem(HS_KEY, String(highScore));
+      }
+      highScoreEl.textContent = String(highScore);
     }
 
     function setOverlay(text) {
@@ -586,9 +942,7 @@
       if (!piece || clearing || paused || over) return;
       if (!collides(piece.cells, piece.x, piece.y + 1)) {
         piece.y += 1;
-        score += 1;
         dropAcc = 0;
-        updateHud();
         render();
       } else {
         lock();
@@ -598,9 +952,10 @@
     function hardDrop() {
       if (!piece || clearing || paused || over) return;
       const target = ghostY();
-      score += (target - piece.y) * 2;
       piece.y = target;
-      updateHud();
+      const landing = blocksOf(piece);
+      const key = piece.key;
+      spawnHardDropParticles(landing, key);
       lock();
     }
 
@@ -613,13 +968,17 @@
     }
 
     function lock() {
-      for (const b of blocksOf(piece)) {
+      const placed = blocksOf(piece);
+      for (const b of placed) {
         if (b.r < 0) {
           endGame();
           return;
         }
         grid[b.r][b.c] = piece.key;
       }
+
+      score += placed.length * PLACE_SCORE;
+      updateHud();
 
       const rows = fullRows();
       piece = null;
@@ -637,14 +996,14 @@
       }
 
       window.setTimeout(() => {
-        // bottom-up so earlier splices don't shift the rows still to remove
         for (let i = rows.length - 1; i >= 0; i--) grid.splice(rows[i], 1);
         for (let i = 0; i < rows.length; i++) grid.unshift(new Array(COLS).fill(null));
         for (const el of cellEls) el.classList.remove("lit");
 
         lines += rows.length;
-        score += LINE_SCORE[rows.length] * level;
-        level = Math.floor(lines / 10) + 1;
+        // Classic Tetris: points = base[lines] × (level + 1)
+        score += LINE_SCORE[rows.length] * (level + 1);
+        level = Math.floor(lines / 10);
         updateHud();
         statusEl.className = "status win";
         statusEl.textContent = rows.length === 4 ? "tetris!" : `${rows.length} line${rows.length > 1 ? "s" : ""} cleared`;
@@ -712,7 +1071,9 @@
     }
 
     function buildBoard() {
+      const fx = fxEl;
       boardEl.innerHTML = "";
+      boardEl.appendChild(fx);
       cellEls = [];
       for (let i = 0; i < ROWS * COLS; i++) {
         const el = document.createElement("div");
@@ -723,8 +1084,37 @@
       }
     }
 
+    function renderBinds() {
+      bindsEl.innerHTML = "";
+      for (const def of BIND_DEFS) {
+        const row = document.createElement("div");
+        row.className = "bind-row";
+
+        const label = document.createElement("span");
+        label.className = "bind-label";
+        label.textContent = def.label;
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "bind-key" + (listeningAction === def.action ? " listening" : "");
+        btn.dataset.action = def.action;
+        btn.textContent = listeningAction === def.action ? "…" : displayKey(binds[def.action]);
+        btn.title = `Click to rebind ${def.label}`;
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          listeningAction = def.action;
+          renderBinds();
+        });
+
+        row.appendChild(label);
+        row.appendChild(btn);
+        bindsEl.appendChild(row);
+      }
+    }
+
     function newGame() {
       clearShockwave();
+      fxEl.innerHTML = "";
       for (const el of cellEls) el.classList.remove("lit");
 
       grid = Array.from({ length: ROWS }, () => new Array(COLS).fill(null));
@@ -732,7 +1122,7 @@
       queue = [pullKey()];
       score = 0;
       lines = 0;
-      level = 1;
+      level = 0;
       paused = false;
       over = false;
       clearing = false;
@@ -748,45 +1138,76 @@
       if (!rafId) rafId = requestAnimationFrame(tick);
     }
 
-    document.addEventListener("keydown", (e) => {
-      const key = e.key.toLowerCase();
-
-      switch (key) {
-        case "a":
+    function handleAction(action, e) {
+      switch (action) {
+        case "left":
           e.preventDefault();
           move(-1);
           break;
-        case "d":
+        case "right":
           e.preventDefault();
           move(1);
           break;
-        case "s":
+        case "soft":
           e.preventDefault();
           softDrop();
           break;
-        case "e":
-          e.preventDefault();
-          rotate(1);
-          break;
-        case "q":
-          e.preventDefault();
-          rotate(-1);
-          break;
-        case " ":
+        case "hard":
           e.preventDefault();
           if (!e.repeat) hardDrop();
           break;
-        case "p":
+        case "rotL":
+          e.preventDefault();
+          rotate(-1);
+          break;
+        case "rotR":
+          e.preventDefault();
+          rotate(1);
+          break;
+        case "pause":
           e.preventDefault();
           togglePause();
           break;
-        case "r":
+        case "reset":
+          e.preventDefault();
           newGame();
           break;
       }
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (listeningAction) {
+        e.preventDefault();
+        if (e.key === "Escape") {
+          listeningAction = null;
+          renderBinds();
+          return;
+        }
+
+        const next = normalizeKey(e.key);
+        if (next === "shift" || next === "control" || next === "alt" || next === "meta") return;
+
+        for (const def of BIND_DEFS) {
+          if (def.action !== listeningAction && binds[def.action] === next) {
+            binds[def.action] = binds[listeningAction];
+          }
+        }
+        binds[listeningAction] = next;
+        saveBinds();
+        listeningAction = null;
+        renderBinds();
+        return;
+      }
+
+      const action = actionForKey(e.key);
+      if (action) handleAction(action, e);
     });
 
     window.addEventListener("blur", () => {
+      if (listeningAction) {
+        listeningAction = null;
+        renderBinds();
+      }
       if (!paused && !over) togglePause();
     });
 
@@ -796,6 +1217,8 @@
     });
 
     buildBoard();
+    renderBinds();
+    updateHud();
     newGame();
   </script>
 </body>
