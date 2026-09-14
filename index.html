@@ -448,12 +448,16 @@
       flex-shrink: 0;
       display: block;
       color: var(--accent);
+      border-radius: 3px;
+      overflow: hidden;
     }
 
-    .window-logo svg {
+    .window-logo svg,
+    .window-logo img {
       width: 100%;
       height: 100%;
       display: block;
+      object-fit: cover;
     }
 
     .window-body {
@@ -475,6 +479,11 @@
       padding: 1.1rem;
     }
 
+    .window-preview.tetris-preview {
+      padding: 0.7rem;
+      place-items: center;
+    }
+
     .preview-grid {
       display: grid;
       grid-template-columns: repeat(2, 2.55rem);
@@ -484,6 +493,10 @@
 
     .window-body:hover .preview-grid {
       transform: scale(1.04);
+    }
+
+    .window-body:hover .preview-grid.tetris {
+      transform: none;
     }
 
     .preview-cell {
@@ -519,21 +532,56 @@
     .preview-cell.n8 { color: #b0b0b0; }
 
     .preview-grid.tetris {
-      grid-template-columns: repeat(4, 1.35rem);
-      gap: 0.25rem;
+      --tetris-cols: 8;
+      --tetris-rows: 6;
+      width: auto;
+      height: 100%;
+      max-width: 100%;
+      aspect-ratio: var(--tetris-cols) / var(--tetris-rows);
+      grid-template-columns: repeat(var(--tetris-cols), 1fr);
+      grid-template-rows: repeat(var(--tetris-rows), 1fr);
+      gap: 2px;
+      padding: 0.28rem;
+      border-radius: 0;
+      border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+      background: color-mix(in srgb, var(--accent) 5%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      box-sizing: border-box;
     }
 
     .preview-grid.tetris .preview-cell {
-      width: 1.35rem;
-      height: 1.35rem;
-      border-radius: 5px;
-      border-color: transparent;
-      background: transparent;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      aspect-ratio: 1;
+      border-radius: 0;
+      border: none;
+      background: rgba(255, 255, 255, 0.045);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
     }
 
     .preview-grid.tetris .preview-cell.block {
-      background: color-mix(in srgb, var(--tint) 45%, transparent);
-      border-color: color-mix(in srgb, var(--tint) 80%, transparent);
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255, 255, 255, 0.32) 0%,
+          rgba(255, 255, 255, 0.12) 32%,
+          rgba(255, 255, 255, 0) 58%
+        ),
+        linear-gradient(
+          320deg,
+          rgba(0, 0, 0, 0.2) 0%,
+          rgba(0, 0, 0, 0.06) 40%,
+          transparent 65%
+        ),
+        var(--tint);
+      box-shadow:
+        inset 0 1px 3px rgba(255, 255, 255, 0.28),
+        inset 0 -1px 3px rgba(0, 0, 0, 0.16),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.1),
+        0 0 5px color-mix(in srgb, var(--tint) 28%, transparent);
+      border-color: transparent;
     }
 
     /* minimized → logo only */
@@ -650,6 +698,7 @@
     const WINDOW_MIN_SIZE = 42;
     const WINDOW_PAD = 16;
     const WINDOW_DRAG_EASE = 0.22;
+    const WINDOW_POS_KEY = "spookitys-window-pos";
     let windowZ = 10;
 
     let cols = 0;
@@ -1144,6 +1193,66 @@
       el.style.top = `${clamp(y, 0, maxY)}px`;
     }
 
+    function loadWindowState() {
+      try {
+        const raw = localStorage.getItem(WINDOW_POS_KEY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === "object" ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function updateWindowState(title, patch) {
+      if (!title) return;
+      const all = loadWindowState();
+      const prev = all[title] && typeof all[title] === "object" ? all[title] : {};
+      all[title] = { ...prev, ...patch };
+      localStorage.setItem(WINDOW_POS_KEY, JSON.stringify(all));
+    }
+
+    function savedWindowTarget(title, w, h) {
+      const saved = loadWindowState()[title];
+      if (!saved || typeof saved.x !== "number" || typeof saved.y !== "number") {
+        return null;
+      }
+      const maxX = Math.max(WINDOW_PAD, window.innerWidth - w - WINDOW_PAD);
+      const maxY = Math.max(WINDOW_PAD, window.innerHeight - h - WINDOW_PAD);
+      return {
+        x: clamp(saved.x, WINDOW_PAD, maxX),
+        y: clamp(saved.y, WINDOW_PAD, maxY),
+      };
+    }
+
+    function persistWindowPos(el) {
+      const title = el.dataset.windowKey;
+      if (!title) return;
+      const pos = parsePos(el);
+      updateWindowState(title, {
+        x: pos.x,
+        y: pos.y,
+        open: true,
+        minimized: el.classList.contains("minimized"),
+      });
+    }
+
+    function markWindowClosed(el) {
+      const title = el.dataset.windowKey;
+      if (!title) return;
+      const pos = parsePos(el);
+      updateWindowState(title, {
+        x: pos.x,
+        y: pos.y,
+        open: false,
+        minimized: false,
+      });
+    }
+
+    function findOpenWindow(title) {
+      return windowsLayer.querySelector(`.site-window[data-window-key="${title}"]`);
+    }
+
     function parsePos(el) {
       return {
         x: parseFloat(el.style.left) || 0,
@@ -1192,6 +1301,7 @@
         } else {
           rafId = 0;
           el.classList.remove("dragging");
+          persistWindowPos(el);
         }
       }
 
@@ -1285,32 +1395,96 @@
     };
 
     const TETRIS_TINTS = {
-      i: "#6ee7e0",
-      j: "#7ec8ff",
-      l: "#ffb86c",
-      o: "#ffe57e",
-      s: "#7dffa0",
-      t: "#c9a0ff",
-      z: "#ff8a8a",
+      i: "#00e5e5",
+      j: "#2b6cff",
+      l: "#ff9a1a",
+      o: "#f0d000",
+      s: "#22d94a",
+      t: "#b44dff",
+      z: "#f23838",
     };
+
+    function tetrisCells(shape) {
+      const cells = [];
+      for (let r = 0; r < shape.length; r++) {
+        for (let c = 0; c < shape[r].length; c++) {
+          if (shape[r][c]) cells.push({ r, c });
+        }
+      }
+      return cells;
+    }
+
+    function normalizeTetrisCells(cells) {
+      const minR = Math.min(...cells.map((p) => p.r));
+      const minC = Math.min(...cells.map((p) => p.c));
+      return cells.map(({ r, c }) => ({ r: r - minR, c: c - minC }));
+    }
+
+    function rotateTetrisCells(cells, turns) {
+      let out = cells;
+      for (let i = 0; i < turns; i++) {
+        out = normalizeTetrisCells(out.map(({ r, c }) => ({ r: c, c: -r })));
+      }
+      return out;
+    }
+
+    function canPlaceTetris(board, cells, r0, c0, rows, cols) {
+      for (const { r, c } of cells) {
+        const rr = r0 + r;
+        const cc = c0 + c;
+        if (rr < 0 || rr >= rows || cc < 0 || cc >= cols) return false;
+        if (board[rr][cc]) return false;
+      }
+      return true;
+    }
+
+    function placeTetris(board, cells, r0, c0, key) {
+      for (const { r, c } of cells) {
+        board[r0 + r][c0 + c] = key;
+      }
+    }
 
     function fillTetrisGrid(grid) {
       grid.innerHTML = "";
       grid.classList.add("tetris");
+      if (grid.parentElement) grid.parentElement.classList.add("tetris-preview");
 
+      const rows = 6;
+      const cols = 8;
+      const board = Array.from({ length: rows }, () => Array(cols).fill(null));
       const keys = Object.keys(TETRIS_PIECES);
-      const key = keys[Math.floor(Math.random() * keys.length)];
-      const shape = TETRIS_PIECES[key];
-      const n = shape.length;
-      const offset = n === 2 ? 1 : 0;
 
-      for (let r = 0; r < 4; r++) {
-        for (let c = 0; c < 4; c++) {
+      for (let n = 0; n < 4; n++) {
+        let placed = false;
+        for (let attempt = 0; attempt < 120 && !placed; attempt++) {
+          const key = keys[Math.floor(Math.random() * keys.length)];
+          const cells = rotateTetrisCells(
+            tetrisCells(TETRIS_PIECES[key]),
+            Math.floor(Math.random() * 4)
+          );
+          const maxR = Math.max(...cells.map((p) => p.r));
+          const maxC = Math.max(...cells.map((p) => p.c));
+          const candidates = [];
+          for (let r = 0; r <= rows - 1 - maxR; r++) {
+            for (let c = 0; c <= cols - 1 - maxC; c++) {
+              if (canPlaceTetris(board, cells, r, c, rows, cols)) {
+                candidates.push({ r, c });
+              }
+            }
+          }
+          if (!candidates.length) continue;
+          const spot = candidates[Math.floor(Math.random() * candidates.length)];
+          placeTetris(board, cells, spot.r, spot.c, key);
+          placed = true;
+        }
+      }
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
           const cell = document.createElement("div");
           cell.className = "preview-cell";
-          const sr = r - offset;
-          const sc = c - offset;
-          if (sr >= 0 && sr < n && sc >= 0 && sc < n && shape[sr][sc]) {
+          const key = board[r][c];
+          if (key) {
             cell.classList.add("block");
             cell.style.setProperty("--tint", TETRIS_TINTS[key]);
           }
@@ -1319,14 +1493,42 @@
       }
     }
 
-    function spawnWindow({ title, href, logoSvg, fillPreview = fillPreviewGrid }) {
-      const el = document.createElement("div");
-      el.className = "site-window entering";
-      el.setAttribute("role", "dialog");
-      el.setAttribute("aria-label", title);
+    function spawnWindow({
+      title,
+      href,
+      logoSvg,
+      fillPreview = fillPreviewGrid,
+      instant = false,
+      minimized = false,
+    }) {
+      const existing = findOpenWindow(title);
+      if (existing) {
+        bringWindowFront(existing);
+        if (minimized && !existing.classList.contains("minimized")) {
+          existing.classList.add("minimized");
+          existing.setAttribute("aria-label", `${title} (minimized)`);
+          const pos = parsePos(existing);
+          setWindowPos(existing, pos.x, pos.y);
+          persistWindowPos(existing);
+        }
+        return existing;
+      }
 
-      const origin = pickEdgeOrigin(WINDOW_W, WINDOW_H);
-      const target = pickTargetPosition(WINDOW_W, WINDOW_H);
+      const el = document.createElement("div");
+      el.className = "site-window" + (instant ? "" : " entering");
+      el.setAttribute("role", "dialog");
+      el.setAttribute("aria-label", minimized ? `${title} (minimized)` : title);
+      el.dataset.windowKey = title;
+
+      const sizeW = minimized ? WINDOW_MIN_SIZE : WINDOW_W;
+      const sizeH = minimized ? WINDOW_MIN_SIZE : WINDOW_H;
+      const origin = instant
+        ? savedWindowTarget(title, sizeW, sizeH) ||
+          pickTargetPosition(WINDOW_W, WINDOW_H)
+        : pickEdgeOrigin(WINDOW_W, WINDOW_H);
+      const target =
+        savedWindowTarget(title, sizeW, sizeH) ||
+        pickTargetPosition(WINDOW_W, WINDOW_H);
       el.style.left = `${origin.x}px`;
       el.style.top = `${origin.y}px`;
       bringWindowFront(el);
@@ -1366,10 +1568,12 @@
         el.setAttribute("aria-label", `${title} (minimized)`);
         const pos = parsePos(el);
         setWindowPos(el, pos.x, pos.y);
+        persistWindowPos(el);
       });
 
       closeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
+        markWindowClosed(el);
         el.remove();
       });
 
@@ -1380,6 +1584,7 @@
         el.setAttribute("aria-label", title);
         const pos = parsePos(el);
         setWindowPos(el, pos.x, pos.y);
+        persistWindowPos(el);
       });
 
       bodyLink.addEventListener("click", (e) => {
@@ -1391,14 +1596,22 @@
 
       el.addEventListener("pointerdown", () => bringWindowFront(el));
 
+      if (minimized) el.classList.add("minimized");
+
       windowsLayer.appendChild(el);
 
-      requestAnimationFrame(() => {
+      if (instant) {
+        setWindowPos(el, target.x, target.y);
+        persistWindowPos(el);
+      } else {
         requestAnimationFrame(() => {
-          setWindowPos(el, target.x, target.y);
-          window.setTimeout(() => el.classList.remove("entering"), 750);
+          requestAnimationFrame(() => {
+            setWindowPos(el, target.x, target.y);
+            persistWindowPos(el);
+            window.setTimeout(() => el.classList.remove("entering"), 750);
+          });
         });
-      });
+      }
 
       return el;
     }
@@ -1411,12 +1624,35 @@
       </svg>
     `;
 
-    const TETRIS_LOGO = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3.5 3.5h7v7h7v10h-7"/>
-        <path d="M10.5 10.5v10h-7v-10z"/>
-      </svg>
-    `;
+    const TETRIS_LOGO = `<img src="assets/tetris-logo.png" alt="" />`;
+
+    const WINDOW_DEFS = {
+      minesweeper: {
+        title: "minesweeper",
+        href: "minesweeper.html",
+        logoSvg: MINESWEEPER_LOGO,
+      },
+      tetris: {
+        title: "tetris",
+        href: "tetris.html",
+        logoSvg: TETRIS_LOGO,
+        fillPreview: fillTetrisGrid,
+      },
+    };
+
+    function restoreOpenWindows() {
+      const all = loadWindowState();
+      for (const [title, state] of Object.entries(all)) {
+        if (!state || !state.open) continue;
+        const def = WINDOW_DEFS[title];
+        if (!def) continue;
+        spawnWindow({
+          ...def,
+          instant: true,
+          minimized: Boolean(state.minimized),
+        });
+      }
+    }
 
     // --- console ---
     function openConsole() {
@@ -1618,21 +1854,12 @@
         }
 
         case "minesweeper":
-          spawnWindow({
-            title: "minesweeper",
-            href: "minesweeper.html",
-            logoSvg: MINESWEEPER_LOGO,
-          });
+          spawnWindow(WINDOW_DEFS.minesweeper);
           appendLine("opened minesweeper window");
           break;
 
         case "tetris":
-          spawnWindow({
-            title: "tetris",
-            href: "tetris.html",
-            logoSvg: TETRIS_LOGO,
-            fillPreview: fillTetrisGrid,
-          });
+          spawnWindow(WINDOW_DEFS.tetris);
           appendLine("opened tetris window");
           break;
 
@@ -1674,6 +1901,7 @@
     applyColors(accentNow, bodyNow);
     rebuildGrid();
     syncCaretTarget(true);
+    restoreOpenWindows();
     requestAnimationFrame(draw);
     input.focus();
 

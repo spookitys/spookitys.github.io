@@ -17,15 +17,15 @@
       --line-ease: cubic-bezier(0.22, 1, 0.36, 1);
       --gap: 1px;
       --cell: max(
-        12px,
+        12.6px,
         min(
-          7.5vw,
-          calc((88dvh - 16.5rem) / 20),
-          30px
+          7.875vw,
+          calc((88dvh - 14rem) / 20),
+          31.5px
         )
       );
       --mini: var(--cell);
-      --side: max(7.5rem, calc(4 * var(--mini) + 3 * var(--gap) + 1.2rem));
+      --side: max(7.875rem, calc(4 * var(--mini) + 3 * var(--gap) + 1.26rem));
 
       --p-i: #00e5e5;
       --p-j: #2b6cff;
@@ -67,7 +67,7 @@
     .frame {
       width: min(
         96vw,
-        calc(10 * var(--cell) + 9 * var(--gap) + var(--side) + 4.6rem)
+        calc(10 * var(--cell) + 9 * var(--gap) + var(--side) + 4.83rem)
       );
       max-height: 96dvh;
       border-radius: 18px;
@@ -155,9 +155,12 @@
       opacity: 0.9;
     }
 
-    .brand svg {
+    .brand img {
       width: 1.25rem;
       height: 1.25rem;
+      border-radius: 3px;
+      object-fit: cover;
+      display: block;
     }
 
     .hud {
@@ -201,6 +204,12 @@
       font-weight: 600;
       font-variant-numeric: tabular-nums;
       font-size: 1.1rem;
+      transition: color 0.25s ease;
+    }
+
+    .stat strong.beating {
+      color: #e8c547;
+      text-shadow: 0 0 10px rgba(232, 197, 71, 0.35);
     }
 
     .reset {
@@ -226,7 +235,7 @@
     .play-wrap {
       position: relative;
       z-index: 1;
-      padding: 0.5rem 1.25rem 0.85rem;
+      padding: 0.5rem 1.25rem 1.15rem;
       display: flex;
       align-items: flex-start;
       justify-content: center;
@@ -307,22 +316,22 @@
       background:
         linear-gradient(
           145deg,
-          rgba(255, 255, 255, 0.72) 0%,
-          rgba(255, 255, 255, 0.28) 18%,
-          rgba(255, 255, 255, 0) 42%
+          rgba(255, 255, 255, 0.32) 0%,
+          rgba(255, 255, 255, 0.12) 32%,
+          rgba(255, 255, 255, 0) 58%
         ),
         linear-gradient(
           320deg,
-          rgba(0, 0, 0, 0.38) 0%,
-          rgba(0, 0, 0, 0.12) 28%,
-          transparent 52%
+          rgba(0, 0, 0, 0.2) 0%,
+          rgba(0, 0, 0, 0.06) 40%,
+          transparent 65%
         ),
         var(--tint);
       box-shadow:
-        inset 2px 2px 0 rgba(255, 255, 255, 0.55),
-        inset -2px -2px 0 rgba(0, 0, 0, 0.38),
-        inset 0 0 0 1px rgba(0, 0, 0, 0.22),
-        0 0 8px color-mix(in srgb, var(--tint) 45%, transparent);
+        inset 0 1px 3px rgba(255, 255, 255, 0.28),
+        inset 0 -1px 3px rgba(0, 0, 0, 0.16),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.1),
+        0 0 6px color-mix(in srgb, var(--tint) 28%, transparent);
     }
 
     .cell.active {
@@ -409,22 +418,22 @@
       background:
         linear-gradient(
           145deg,
-          rgba(255, 255, 255, 0.72) 0%,
-          rgba(255, 255, 255, 0.28) 18%,
-          rgba(255, 255, 255, 0) 42%
+          rgba(255, 255, 255, 0.32) 0%,
+          rgba(255, 255, 255, 0.12) 32%,
+          rgba(255, 255, 255, 0) 58%
         ),
         linear-gradient(
           320deg,
-          rgba(0, 0, 0, 0.38) 0%,
-          rgba(0, 0, 0, 0.12) 28%,
-          transparent 52%
+          rgba(0, 0, 0, 0.2) 0%,
+          rgba(0, 0, 0, 0.06) 40%,
+          transparent 65%
         ),
         var(--tint);
       box-shadow:
-        inset 2px 2px 0 rgba(255, 255, 255, 0.55),
-        inset -2px -2px 0 rgba(0, 0, 0, 0.38),
-        inset 0 0 0 1px rgba(0, 0, 0, 0.22),
-        0 0 7px color-mix(in srgb, var(--tint) 45%, transparent);
+        inset 0 1px 3px rgba(255, 255, 255, 0.28),
+        inset 0 -1px 3px rgba(0, 0, 0, 0.16),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.1),
+        0 0 5px color-mix(in srgb, var(--tint) 28%, transparent);
     }
 
     .binds {
@@ -485,24 +494,75 @@
       50% { opacity: 0.55; }
     }
 
-    .status {
-      position: relative;
-      z-index: 1;
+    .resume-veil {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: none;
+      place-items: center;
+      padding: 1.25rem;
+      background: color-mix(in srgb, var(--body) 72%, transparent);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border-radius: inherit;
+    }
+
+    .resume-veil.show {
+      display: grid;
+    }
+
+    .resume-card {
+      width: min(100%, 17rem);
+      padding: 1.25rem 1.15rem 1.1rem;
+      border-radius: 14px;
+      border: 1px solid var(--bar-border);
+      background:
+        linear-gradient(
+          155deg,
+          rgba(var(--accent-rgb), 0.18) 0%,
+          rgba(var(--accent-rgb), 0.06) 40%,
+          rgba(0, 0, 0, 0.35) 100%
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.28),
+        0 16px 40px rgba(0, 0, 0, 0.4);
       text-align: center;
-      padding: 0 1.25rem 1.1rem;
-      min-height: 1.5rem;
-      font-size: 0.95rem;
-      color: color-mix(in srgb, var(--accent) 55%, transparent);
-      transition: color 0.25s ease;
-      flex-shrink: 0;
     }
 
-    .status.win {
-      color: color-mix(in srgb, var(--accent) 70%, #7dffa0);
+    .resume-card p {
+      font-size: 0.92rem;
+      color: color-mix(in srgb, var(--accent) 78%, transparent);
+      margin-bottom: 1rem;
+      line-height: 1.35;
     }
 
-    .status.lose {
-      color: color-mix(in srgb, var(--accent) 55%, #ff6b6b);
+    .resume-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .resume-actions button {
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.85rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+    }
+
+    .resume-actions button:hover {
+      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+    }
+
+    .resume-actions button.primary {
+      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 48%, transparent);
+      font-weight: 600;
     }
   </style>
 </head>
@@ -512,10 +572,7 @@
       <a class="back" href="index.html">← home</a>
       <div class="brand">
         <span>tetris</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M3.5 3.5h7v7h7v10h-7"/>
-          <path d="M10.5 10.5v10h-7v-10z"/>
-        </svg>
+        <img src="assets/tetris-logo.png" alt="" width="20" height="20" />
       </div>
     </header>
 
@@ -545,7 +602,15 @@
       </div>
     </div>
 
-    <div class="status" id="status">stack them up</div>
+    <div class="resume-veil" id="resumeVeil" aria-hidden="true">
+      <div class="resume-card" role="dialog" aria-labelledby="resumeTitle">
+        <p id="resumeTitle">saved game found — continue or start fresh?</p>
+        <div class="resume-actions">
+          <button type="button" class="primary" id="continueBtn">continue</button>
+          <button type="button" id="freshBtn">new game</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -555,6 +620,7 @@
     const SHOCKWAVE_MS = 26;
     const HS_KEY = "spookitys-tetris-high";
     const BINDS_KEY = "spookitys-tetris-binds";
+    const SAVE_KEY = "spookitys-tetris-save";
 
     const PIECES = {
       I: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
@@ -588,10 +654,12 @@
     const fxEl = document.getElementById("fx");
     const scoreEl = document.getElementById("score");
     const highScoreEl = document.getElementById("highScore");
-    const statusEl = document.getElementById("status");
     const resetBtn = document.getElementById("resetBtn");
     const nextEl = document.getElementById("next");
     const bindsEl = document.getElementById("binds");
+    const resumeVeil = document.getElementById("resumeVeil");
+    const continueBtn = document.getElementById("continueBtn");
+    const freshBtn = document.getElementById("freshBtn");
 
     let cellEls = [];
     let grid = [];
@@ -600,11 +668,13 @@
     let piece = null;
     let score = 0;
     let highScore = Number(localStorage.getItem(HS_KEY)) || 0;
+    let beatHigh = highScore;
     let lines = 0;
     let level = 0;
     let paused = false;
     let over = false;
     let clearing = false;
+    let awaitingResume = false;
     let dropAcc = 0;
     let lastFrame = 0;
     let rafId = 0;
@@ -891,6 +961,7 @@
 
     function updateHud() {
       scoreEl.textContent = String(score);
+      scoreEl.classList.toggle("beating", score > beatHigh);
       if (score > highScore) {
         highScore = score;
         localStorage.setItem(HS_KEY, String(highScore));
@@ -1005,8 +1076,6 @@
         score += LINE_SCORE[rows.length] * (level + 1);
         level = Math.floor(lines / 10);
         updateHud();
-        statusEl.className = "status win";
-        statusEl.textContent = rows.length === 4 ? "tetris!" : `${rows.length} line${rows.length > 1 ? "s" : ""} cleared`;
 
         clearing = false;
         spawn();
@@ -1037,18 +1106,119 @@
       piece = null;
       render();
       setOverlay("game over");
-      statusEl.className = "status lose";
-      statusEl.textContent = `stacked out — ${score} points`;
+      clearSave();
       playEndSweep();
     }
 
+    function snapshotState() {
+      return {
+        grid: grid.map((row) => row.slice()),
+        bag: bag.slice(),
+        queue: queue.slice(),
+        piece: piece
+          ? {
+              key: piece.key,
+              cells: piece.cells.map((row) => row.slice()),
+              x: piece.x,
+              y: piece.y,
+            }
+          : null,
+        score,
+        lines,
+        level,
+        beatHigh,
+        dropAcc,
+      };
+    }
+
+    function saveGame() {
+      if (over || awaitingResume || clearing) return;
+      if (!piece && !grid.some((row) => row.some(Boolean))) return;
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(snapshotState()));
+      } catch {
+        /* ignore quota / private mode */
+      }
+    }
+
+    function clearSave() {
+      localStorage.removeItem(SAVE_KEY);
+    }
+
+    function loadSave() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return null;
+        const data = JSON.parse(raw);
+        if (!data || !Array.isArray(data.grid) || data.grid.length !== ROWS) return null;
+        if (!data.grid.every((row) => Array.isArray(row) && row.length === COLS)) return null;
+        if (!Array.isArray(data.queue) || typeof data.score !== "number") return null;
+        return data;
+      } catch {
+        return null;
+      }
+    }
+
+    function showResumePrompt() {
+      awaitingResume = true;
+      paused = true;
+      resumeVeil.classList.add("show");
+      resumeVeil.setAttribute("aria-hidden", "false");
+    }
+
+    function hideResumePrompt() {
+      awaitingResume = false;
+      resumeVeil.classList.remove("show");
+      resumeVeil.setAttribute("aria-hidden", "true");
+    }
+
+    function restoreGame(data) {
+      clearShockwave();
+      fxEl.innerHTML = "";
+      for (const el of cellEls) el.classList.remove("lit");
+
+      grid = data.grid.map((row) => row.map((cell) => cell || null));
+      bag = Array.isArray(data.bag) ? data.bag.slice() : [];
+      queue = data.queue.slice();
+      while (queue.length < 1) queue.push(pullKey());
+
+      piece = data.piece
+        ? {
+            key: data.piece.key,
+            cells: data.piece.cells.map((row) => row.slice()),
+            x: data.piece.x,
+            y: data.piece.y,
+          }
+        : null;
+
+      score = data.score || 0;
+      lines = data.lines || 0;
+      level = data.level || 0;
+      beatHigh = typeof data.beatHigh === "number" ? data.beatHigh : highScore;
+      dropAcc = data.dropAcc || 0;
+      paused = true;
+      over = false;
+      clearing = false;
+
+      setOverlay("paused");
+      updateHud();
+      renderNext();
+      render();
+
+      lastFrame = performance.now();
+      if (!rafId) rafId = requestAnimationFrame(tick);
+    }
+
     function togglePause() {
-      if (over) return;
+      if (over || awaitingResume) return;
       paused = !paused;
       setOverlay(paused ? "paused" : "");
-      statusEl.className = "status";
-      statusEl.textContent = paused ? "paused" : "stack them up";
-      if (!paused) lastFrame = performance.now();
+      if (paused) {
+        saveGame();
+      } else {
+        clearSave();
+        lastFrame = performance.now();
+      }
     }
 
     function tick(now) {
@@ -1121,16 +1291,16 @@
       bag = [];
       queue = [pullKey()];
       score = 0;
+      beatHigh = highScore;
       lines = 0;
       level = 0;
       paused = false;
       over = false;
       clearing = false;
       dropAcc = 0;
+      clearSave();
 
       setOverlay("");
-      statusEl.className = "status";
-      statusEl.textContent = "stack them up";
       updateHud();
       spawn();
 
@@ -1139,6 +1309,7 @@
     }
 
     function handleAction(action, e) {
+      if (awaitingResume) return;
       switch (action) {
         case "left":
           e.preventDefault();
@@ -1208,18 +1379,43 @@
         listeningAction = null;
         renderBinds();
       }
-      if (!paused && !over) togglePause();
+      if (!awaitingResume && !paused && !over) togglePause();
+    });
+
+    window.addEventListener("pagehide", () => {
+      if (!awaitingResume && !over) saveGame();
     });
 
     resetBtn.addEventListener("click", () => {
+      if (awaitingResume) return;
       newGame();
       resetBtn.blur();
+    });
+
+    continueBtn.addEventListener("click", () => {
+      const data = loadSave();
+      hideResumePrompt();
+      if (data) restoreGame(data);
+      else newGame();
+    });
+
+    freshBtn.addEventListener("click", () => {
+      hideResumePrompt();
+      clearSave();
+      newGame();
     });
 
     buildBoard();
     renderBinds();
     updateHud();
-    newGame();
+
+    const saved = loadSave();
+    if (saved) {
+      grid = Array.from({ length: ROWS }, () => new Array(COLS).fill(null));
+      showResumePrompt();
+    } else {
+      newGame();
+    }
   </script>
 </body>
 </html>
