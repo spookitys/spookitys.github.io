@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>pong — spookitys</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --body: #000000;
+      --accent: #ffffff;
+      --accent-rgb: 255, 255, 255;
+      --bar-border: rgba(255, 255, 255, 0.28);
+      --bar-glow: rgba(255, 255, 255, 0.12);
+      --line-ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --court-w: min(92vw, 720px);
+      --court-h: min(62dvh, 420px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      background: var(--body);
+      color: var(--accent);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+    }
+
+    body {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 0.85rem;
+      background:
+        radial-gradient(
+          ellipse at 50% 0%,
+          rgba(var(--accent-rgb), 0.08),
+          transparent 55%
+        ),
+        var(--body);
+    }
+
+    .frame {
+      width: min(96vw, calc(var(--court-w) + 3.2rem));
+      max-height: 96dvh;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid var(--bar-border);
+      background:
+        linear-gradient(
+          155deg,
+          rgba(var(--accent-rgb), 0.22) 0%,
+          rgba(var(--accent-rgb), 0.08) 28%,
+          rgba(0, 0, 0, 0.28) 62%,
+          rgba(0, 0, 0, 0.42) 100%
+        );
+      backdrop-filter: blur(28px) saturate(1.35);
+      -webkit-backdrop-filter: blur(28px) saturate(1.35);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+        0 18px 50px rgba(0, 0, 0, 0.45),
+        0 0 40px var(--bar-glow);
+      position: relative;
+      animation: rise-in 0.55s var(--line-ease) both;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .frame::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.05) 18%,
+        transparent 48%
+      );
+      opacity: 0.7;
+      z-index: 0;
+    }
+
+    @keyframes rise-in {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .top {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
+      flex-shrink: 0;
+    }
+
+    .back {
+      color: color-mix(in srgb, var(--accent) 55%, transparent);
+      text-decoration: none;
+      font-size: 0.95rem;
+      transition: color 0.2s ease;
+    }
+
+    .back:hover {
+      color: var(--accent);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      opacity: 0.9;
+    }
+
+    .brand img {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 3px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .hud {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.85rem 1.25rem 0.55rem;
+      font-size: 0.9rem;
+      color: color-mix(in srgb, var(--accent) 70%, transparent);
+      flex-shrink: 0;
+    }
+
+    .hud-scores {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      min-width: 5.5rem;
+    }
+
+    .hud-scores.right {
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .hud-scores.hidden {
+      visibility: hidden;
+    }
+
+    .hud-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.45rem;
+      flex: 1;
+    }
+
+    .mode-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: color-mix(in srgb, var(--accent) 42%, transparent);
+    }
+
+    .speed-stat {
+      font-size: 0.78rem;
+      color: color-mix(in srgb, var(--accent) 48%, transparent);
+    }
+
+    .speed-stat strong {
+      color: color-mix(in srgb, var(--accent) 85%, transparent);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      line-height: 1.2;
+    }
+
+    .stat.high {
+      font-size: 0.78rem;
+      color: color-mix(in srgb, var(--accent) 48%, transparent);
+    }
+
+    .stat.high strong {
+      font-size: 0.9rem;
+      color: color-mix(in srgb, var(--accent) 78%, transparent);
+    }
+
+    .stat strong {
+      color: var(--accent);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      font-size: 1.35rem;
+    }
+
+    .stat strong.beating {
+      color: #e8c547;
+      text-shadow: 0 0 10px rgba(232, 197, 71, 0.35);
+    }
+
+    .mode-btn {
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.85rem;
+      padding: 0.4rem 0.85rem;
+      border-radius: 10px;
+      cursor: pointer;
+      opacity: 0.85;
+      transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .mode-btn:hover {
+      opacity: 1;
+      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+    }
+
+    .play-wrap {
+      position: relative;
+      z-index: 1;
+      padding: 0.5rem 1.25rem 1.15rem;
+      display: grid;
+      place-items: center;
+      flex: 1;
+    }
+
+    .court {
+      position: relative;
+      width: var(--court-w);
+      height: var(--court-h);
+      border-radius: 10px;
+      border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+      background: color-mix(in srgb, var(--accent) 5%, transparent);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .court.paused::after,
+    .court.over::after,
+    .court.serve::after {
+      content: attr(data-overlay);
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: color-mix(in srgb, var(--body) 55%, transparent);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      color: color-mix(in srgb, var(--accent) 80%, transparent);
+      pointer-events: none;
+      z-index: 4;
+      text-align: center;
+      padding: 1rem;
+      white-space: pre-line;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .hint {
+      margin-top: 0.65rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      color: color-mix(in srgb, var(--accent) 38%, transparent);
+      text-align: center;
+      line-height: 1.45;
+    }
+
+    .mode-veil {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: none;
+      place-items: center;
+      padding: 1.25rem;
+      background: color-mix(in srgb, var(--body) 72%, transparent);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border-radius: inherit;
+    }
+
+    .mode-veil.show {
+      display: grid;
+    }
+
+    .mode-card {
+      width: min(100%, 18rem);
+      padding: 1.35rem 1.2rem 1.15rem;
+      border-radius: 14px;
+      border: 1px solid var(--bar-border);
+      background:
+        linear-gradient(
+          155deg,
+          rgba(var(--accent-rgb), 0.18) 0%,
+          rgba(var(--accent-rgb), 0.06) 40%,
+          rgba(0, 0, 0, 0.35) 100%
+        );
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.28),
+        0 16px 40px rgba(0, 0, 0, 0.4);
+      text-align: center;
+      animation: rise-in 0.4s var(--line-ease) both;
+    }
+
+    .mode-card .logo {
+      width: 4.5rem;
+      height: 4.5rem;
+      border-radius: 8px;
+      object-fit: cover;
+      margin: 0 auto 0.85rem;
+      display: block;
+      box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.12);
+    }
+
+    .mode-card h1 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+
+    .mode-card p {
+      font-size: 0.82rem;
+      color: color-mix(in srgb, var(--accent) 62%, transparent);
+      margin-bottom: 1.1rem;
+      line-height: 1.4;
+    }
+
+    .mode-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .mode-actions button {
+      border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+      color: var(--accent);
+      font: inherit;
+      font-size: 0.88rem;
+      padding: 0.6rem 0.85rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .mode-actions button:hover {
+      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+      transform: translateY(-1px);
+    }
+
+    .mode-actions button.primary {
+      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 48%, transparent);
+      font-weight: 600;
+    }
+
+    .mode-actions .sub {
+      font-size: 0.68rem;
+      opacity: 0.55;
+      display: block;
+      margin-top: 0.15rem;
+      letter-spacing: 0.02em;
+    }
+
+    @media (max-width: 560px) {
+      .hud {
+        flex-wrap: wrap;
+      }
+
+      .hud-center {
+        order: 3;
+        width: 100%;
+        margin-top: 0.15rem;
+      }
+
+      .stat strong {
+        font-size: 1.15rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <header class="top">
+      <a class="back" href="index.html">← home</a>
+      <div class="brand">
+        <span>pong</span>
+        <img src="assets/pong-logo.png" alt="" width="20" height="20" />
+      </div>
+    </header>
+
+    <div class="hud">
+      <div class="hud-scores" id="leftHud">
+        <div class="stat high" id="leftLabel">you</div>
+        <div class="stat"><strong id="leftScore">0</strong></div>
+      </div>
+      <div class="hud-center">
+        <div class="mode-label" id="modeLabel">vs bot</div>
+        <div class="speed-stat">speed <strong id="speedVal">1.00×</strong></div>
+        <button type="button" class="mode-btn" id="modeBtn">mode</button>
+      </div>
+      <div class="hud-scores right" id="rightHud">
+        <div class="stat high" id="rightLabel">bot</div>
+        <div class="stat"><strong id="rightScore">0</strong></div>
+      </div>
+    </div>
+
+    <div class="play-wrap">
+      <div class="court serve" id="court" data-overlay="press space to serve">
+        <canvas id="canvas" aria-label="Pong court"></canvas>
+      </div>
+      <p class="hint" id="hint">
+        W / S — move paddle · space — serve / pause · M — reset
+      </p>
+    </div>
+
+    <div class="mode-veil show" id="modeVeil" aria-hidden="false">
+      <div class="mode-card" role="dialog" aria-labelledby="modeTitle">
+        <img class="logo" src="assets/pong-logo.png" alt="" />
+        <h1 id="modeTitle">pong</h1>
+        <p id="modeBlurb">vs bot: survive the perfect AI · vs player: first to 7</p>
+        <div class="mode-actions">
+          <button type="button" class="primary" id="botBtn">
+            vs bot
+            <span class="sub">how long can you last?</span>
+          </button>
+          <button type="button" id="pvpBtn">
+            vs player
+            <span class="sub">left W/S · right ↑/↓</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const WIN_SCORE = 7;
+    const BASE_SPEED = 320;
+    const SPEED_STEP = 28 / 3;
+    const MAX_SPEED_MULT = 2.75;
+    const PADDLE_SPEED = 420;
+    const THEME_KEY = "spookitys-theme";
+    const BEST_KEY = "spookitys-pong-best";
+
+    (function applyStoredTheme() {
+      try {
+        const raw = localStorage.getItem(THEME_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        const a = data.accent;
+        if (!a || typeof a.r !== "number") return;
+        const root = document.documentElement;
+        const ar = Math.round(a.r);
+        const ag = Math.round(a.g);
+        const ab = Math.round(a.b);
+        root.style.setProperty("--accent", `rgb(${ar}, ${ag}, ${ab})`);
+        root.style.setProperty("--accent-rgb", `${ar}, ${ag}, ${ab}`);
+        root.style.setProperty("--bar-border", `rgba(${ar}, ${ag}, ${ab}, 0.28)`);
+        root.style.setProperty("--bar-glow", `rgba(${ar}, ${ag}, ${ab}, 0.12)`);
+        const b = data.body;
+        if (b && typeof b.r === "number") {
+          const br = Math.round(b.r);
+          const bg = Math.round(b.g);
+          const bb = Math.round(b.b);
+          root.style.setProperty("--body", `rgb(${br}, ${bg}, ${bb})`);
+          document.body.style.background = `rgb(${br}, ${bg}, ${bb})`;
+        }
+      } catch (_) {
+        /* ignore */
+      }
+    })();
+
+    const courtEl = document.getElementById("court");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const leftHud = document.getElementById("leftHud");
+    const rightHud = document.getElementById("rightHud");
+    const leftScoreEl = document.getElementById("leftScore");
+    const rightScoreEl = document.getElementById("rightScore");
+    const leftLabelEl = document.getElementById("leftLabel");
+    const rightLabelEl = document.getElementById("rightLabel");
+    const modeLabelEl = document.getElementById("modeLabel");
+    const speedValEl = document.getElementById("speedVal");
+    const hintEl = document.getElementById("hint");
+    const modeBtn = document.getElementById("modeBtn");
+    const modeVeil = document.getElementById("modeVeil");
+    const botBtn = document.getElementById("botBtn");
+    const pvpBtn = document.getElementById("pvpBtn");
+
+    let W = 720;
+    let H = 420;
+    let dpr = 1;
+
+    const state = {
+      mode: null, // "bot" | "pvp"
+      running: false,
+      paused: false,
+      serving: true,
+      over: false,
+      serveDir: 1,
+      leftScore: 0,
+      rightScore: 0,
+      hits: 0,
+      winner: null,
+      elapsed: 0,
+    };
+
+    const left = { y: 0, h: 0 };
+    const right = { y: 0, h: 0 };
+    const ball = { x: 0, y: 0, vx: 0, vy: 0, r: 0 };
+    const trail = [];
+    const keys = new Set();
+
+    let paddleW = 12;
+    let lastTs = 0;
+    let flash = 0;
+    let bestTime = Number(localStorage.getItem(BEST_KEY)) || 0;
+
+    function formatTime(sec) {
+      const s = Math.max(0, sec);
+      const m = Math.floor(s / 60);
+      const rem = s - m * 60;
+      if (m > 0) return `${m}:${rem.toFixed(1).padStart(4, "0")}`;
+      return `${rem.toFixed(1)}s`;
+    }
+
+    function resize() {
+      const rect = courtEl.getBoundingClientRect();
+      W = Math.max(280, Math.floor(rect.width));
+      H = Math.max(180, Math.floor(rect.height));
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(W * dpr);
+      canvas.height = Math.floor(H * dpr);
+      canvas.style.width = `${W}px`;
+      canvas.style.height = `${H}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      paddleW = Math.max(10, Math.round(W * 0.018));
+      const paddleH = Math.max(56, Math.round(H * 0.18));
+      left.h = paddleH;
+      right.h = paddleH;
+      ball.r = Math.max(5, Math.round(Math.min(W, H) * 0.016));
+
+      left.y = clamp(left.y || H / 2 - paddleH / 2, 0, H - paddleH);
+      right.y = clamp(right.y || H / 2 - paddleH / 2, 0, H - paddleH);
+      if (state.serving || !state.running) placeBallServe();
+    }
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function speedMult() {
+      return Math.min(MAX_SPEED_MULT, 1 + (state.hits * SPEED_STEP) / BASE_SPEED);
+    }
+
+    function currentSpeed() {
+      return BASE_SPEED * speedMult();
+    }
+
+    function updateSpeedHud() {
+      speedValEl.textContent = `${speedMult().toFixed(2)}×`;
+    }
+
+    function updateTimerHud() {
+      if (state.mode !== "bot") return;
+      rightScoreEl.textContent = formatTime(state.elapsed);
+      const beating = state.elapsed > bestTime && state.elapsed > 0 && !state.serving;
+      rightScoreEl.classList.toggle("beating", beating);
+    }
+
+    function syncHudForMode() {
+      if (state.mode === "bot") {
+        leftHud.classList.add("hidden");
+        leftLabelEl.textContent = "you";
+        rightLabelEl.textContent = "best " + formatTime(bestTime);
+        rightLabelEl.classList.add("high");
+        rightScoreEl.textContent = formatTime(state.elapsed);
+      } else {
+        leftHud.classList.remove("hidden");
+        leftLabelEl.textContent = "p1";
+        rightLabelEl.textContent = "p2";
+        rightLabelEl.classList.add("high");
+        leftScoreEl.textContent = String(state.leftScore);
+        rightScoreEl.textContent = String(state.rightScore);
+        rightScoreEl.classList.remove("beating");
+      }
+    }
+
+    function setOverlay(kind, text) {
+      courtEl.classList.remove("paused", "over", "serve");
+      if (kind) courtEl.classList.add(kind);
+      courtEl.dataset.overlay = text || "";
+    }
+
+    function placeBallServe() {
+      ball.x = W / 2;
+      ball.y = H / 2;
+      ball.vx = 0;
+      ball.vy = 0;
+      trail.length = 0;
+    }
+
+    function serve() {
+      if (state.over || !state.mode) return;
+      if (!state.serving && !state.paused) return;
+
+      state.serving = false;
+      state.paused = false;
+      state.running = true;
+      state.hits = 0;
+      if (state.mode === "bot") state.elapsed = 0;
+      updateSpeedHud();
+      updateTimerHud();
+      setOverlay(null, "");
+
+      const angle = (Math.random() * 0.7 - 0.35) * Math.PI;
+      const spd = currentSpeed();
+      ball.x = W / 2;
+      ball.y = H / 2;
+      // bot mode: always serve toward the player first
+      const dir = state.mode === "bot" ? -1 : state.serveDir;
+      ball.vx = Math.cos(angle) * spd * dir;
+      ball.vy = Math.sin(angle) * spd;
+      trail.length = 0;
+    }
+
+    function resetRound(scoredBy) {
+      state.serving = true;
+      state.hits = 0;
+      updateSpeedHud();
+      state.serveDir = scoredBy === "left" ? 1 : -1;
+      placeBallServe();
+      left.y = H / 2 - left.h / 2;
+      right.y = H / 2 - right.h / 2;
+      if (!state.over) {
+        setOverlay("serve", "press space to serve");
+      }
+    }
+
+    function resetMatch(keepMode) {
+      state.leftScore = 0;
+      state.rightScore = 0;
+      state.hits = 0;
+      state.elapsed = 0;
+      state.over = false;
+      state.winner = null;
+      state.paused = false;
+      state.running = Boolean(keepMode && state.mode);
+      state.serveDir = Math.random() < 0.5 ? 1 : -1;
+      updateSpeedHud();
+      syncHudForMode();
+      left.y = H / 2 - left.h / 2;
+      right.y = H / 2 - right.h / 2;
+      placeBallServe();
+      if (state.mode) {
+        state.serving = true;
+        setOverlay("serve", "press space to serve");
+      }
+    }
+
+    function startMode(mode) {
+      state.mode = mode;
+      modeVeil.classList.remove("show");
+      modeVeil.setAttribute("aria-hidden", "true");
+      modeLabelEl.textContent = mode === "bot" ? "vs bot" : "vs player";
+      hintEl.textContent =
+        mode === "bot"
+          ? "W / S or ↑ / ↓ — move · space — serve / pause · M — reset"
+          : "P1 W/S · P2 ↑/↓ · space — serve / pause · M — reset";
+      resetMatch(true);
+    }
+
+    function showModeSelect() {
+      state.mode = null;
+      state.running = false;
+      state.serving = true;
+      state.paused = false;
+      state.over = false;
+      state.elapsed = 0;
+      modeVeil.classList.add("show");
+      modeVeil.setAttribute("aria-hidden", "false");
+      setOverlay(null, "");
+      placeBallServe();
+    }
+
+    function endBotRun() {
+      state.over = true;
+      state.running = false;
+      state.serving = false;
+      flash = 0.35;
+      const time = state.elapsed;
+      let msg = `survived ${formatTime(time)}`;
+      if (time > bestTime) {
+        bestTime = time;
+        localStorage.setItem(BEST_KEY, String(bestTime));
+        msg = `new best · ${formatTime(time)}`;
+      }
+      rightLabelEl.textContent = "best " + formatTime(bestTime);
+      rightScoreEl.classList.remove("beating");
+      setOverlay("over", `${msg}\nspace — try again`);
+    }
+
+    function scorePoint(side) {
+      if (state.mode === "bot") {
+        // perfect bot never lets the ball past; player miss ends the run
+        if (side === "right") endBotRun();
+        return;
+      }
+
+      if (side === "left") {
+        state.leftScore += 1;
+        leftScoreEl.textContent = String(state.leftScore);
+      } else {
+        state.rightScore += 1;
+        rightScoreEl.textContent = String(state.rightScore);
+      }
+      flash = 0.35;
+
+      if (state.leftScore >= WIN_SCORE || state.rightScore >= WIN_SCORE) {
+        state.over = true;
+        state.running = false;
+        state.serving = false;
+        state.winner = state.leftScore >= WIN_SCORE ? "left" : "right";
+        const name = state.winner === "left" ? "p1" : "p2";
+        setOverlay("over", `${name} wins\nspace — rematch`);
+        return;
+      }
+
+      resetRound(side);
+    }
+
+    function bounceOffPaddle(paddle, dir) {
+      const rel = (ball.y - (paddle.y + paddle.h / 2)) / (paddle.h / 2);
+      const clamped = clamp(rel, -1, 1);
+      const angle = clamped * (Math.PI / 3);
+      state.hits += 1;
+      updateSpeedHud();
+      const spd = currentSpeed();
+      ball.vx = Math.cos(angle) * spd * dir;
+      ball.vy = Math.sin(angle) * spd;
+      ball.x = dir > 0 ? paddleW + 8 + ball.r : W - paddleW - 8 - ball.r;
+    }
+
+    /** Perfect intercept: reflect off top/bottom until ball reaches paddle x. */
+    function perfectInterceptY(targetX) {
+      let x = ball.x;
+      let y = ball.y;
+      let vx = ball.vx;
+      let vy = ball.vy;
+      if (vx <= 0) return H / 2;
+
+      let guard = 40;
+      while (guard-- > 0) {
+        const dtX = (targetX - x) / vx;
+        if (dtX < 0) break;
+
+        const nextY = y + vy * dtX;
+        if (nextY - ball.r >= 0 && nextY + ball.r <= H) {
+          return clamp(nextY, ball.r, H - ball.r);
+        }
+
+        if (vy > 0) {
+          const dtWall = (H - ball.r - y) / vy;
+          x += vx * dtWall;
+          y = H - ball.r;
+          vy = -vy;
+        } else if (vy < 0) {
+          const dtWall = (ball.r - y) / vy;
+          x += vx * dtWall;
+          y = ball.r;
+          vy = -vy;
+        } else {
+          return clamp(y, ball.r, H - ball.r);
+        }
+      }
+      return clamp(y, ball.r, H - ball.r);
+    }
+
+    function updatePaddles(dt) {
+      const step = PADDLE_SPEED * dt;
+
+      let leftDir = 0;
+      if (keys.has("w")) leftDir -= 1;
+      if (keys.has("s")) leftDir += 1;
+      if (state.mode === "bot") {
+        if (keys.has("arrowup")) leftDir -= 1;
+        if (keys.has("arrowdown")) leftDir += 1;
+      }
+      leftDir = clamp(leftDir, -1, 1);
+      left.y = clamp(left.y + leftDir * step, 0, H - left.h);
+
+      if (state.mode === "pvp") {
+        let rightDir = 0;
+        if (keys.has("arrowup")) rightDir -= 1;
+        if (keys.has("arrowdown")) rightDir += 1;
+        right.y = clamp(right.y + rightDir * step, 0, H - right.h);
+      } else if (state.mode === "bot" && !state.serving) {
+        const targetX = W - paddleW - 8 - ball.r;
+        const targetY = ball.vx > 0 ? perfectInterceptY(targetX) : H / 2;
+        right.y = clamp(targetY - right.h / 2, 0, H - right.h);
+      }
+    }
+
+    function updateBall(dt) {
+      if (state.serving || state.paused || state.over) return;
+
+      if (state.mode === "bot") {
+        state.elapsed += dt;
+        updateTimerHud();
+      }
+
+      trail.push({ x: ball.x, y: ball.y, life: 1 });
+      if (trail.length > 14) trail.shift();
+      for (const t of trail) t.life -= dt * 2.8;
+
+      ball.x += ball.vx * dt;
+      ball.y += ball.vy * dt;
+
+      if (ball.y - ball.r <= 0) {
+        ball.y = ball.r;
+        ball.vy = Math.abs(ball.vy);
+      } else if (ball.y + ball.r >= H) {
+        ball.y = H - ball.r;
+        ball.vy = -Math.abs(ball.vy);
+      }
+
+      if (
+        ball.vx < 0 &&
+        ball.x - ball.r <= paddleW + 8 &&
+        ball.x - ball.r >= 0 &&
+        ball.y >= left.y &&
+        ball.y <= left.y + left.h
+      ) {
+        bounceOffPaddle(left, 1);
+      } else if (
+        ball.vx > 0 &&
+        ball.x + ball.r >= W - paddleW - 8 &&
+        ball.x + ball.r <= W &&
+        ball.y >= right.y &&
+        ball.y <= right.y + right.h
+      ) {
+        bounceOffPaddle(right, -1);
+      }
+
+      if (ball.x + ball.r < 0) scorePoint("right");
+      else if (ball.x - ball.r > W) scorePoint("left");
+    }
+
+    function accentRgb() {
+      const raw = getComputedStyle(document.documentElement)
+        .getPropertyValue("--accent-rgb")
+        .trim();
+      const parts = raw.split(",").map((n) => Number(n.trim()));
+      if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) {
+        return parts;
+      }
+      return [255, 255, 255];
+    }
+
+    function draw() {
+      const [ar, ag, ab] = accentRgb();
+      ctx.clearRect(0, 0, W, H);
+
+      ctx.fillStyle = `rgba(${ar}, ${ag}, ${ab}, 0.045)`;
+      ctx.fillRect(0, 0, W, H);
+
+      const drawPaddle = (x, y, h) => {
+        const g = ctx.createLinearGradient(x, y, x + paddleW, y + h);
+        g.addColorStop(0, `rgba(${ar}, ${ag}, ${ab}, 0.95)`);
+        g.addColorStop(1, `rgba(${ar}, ${ag}, ${ab}, 0.7)`);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.roundRect(x, y, paddleW, h, 3);
+        ctx.fill();
+      };
+      drawPaddle(8, left.y, left.h);
+      drawPaddle(W - paddleW - 8, right.y, right.h);
+
+      for (let i = 0; i < trail.length; i++) {
+        const t = trail[i];
+        if (t.life <= 0) continue;
+        const alpha = t.life * 0.35 * ((i + 1) / trail.length);
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(${ar}, ${ag}, ${ab}, ${alpha})`;
+        ctx.arc(t.x, t.y, ball.r * (0.55 + t.life * 0.35), 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (!state.serving || state.mode) {
+        ctx.beginPath();
+        ctx.fillStyle = `rgb(${ar}, ${ag}, ${ab})`;
+        ctx.shadowColor = `rgba(${ar}, ${ag}, ${ab}, 0.45)`;
+        ctx.shadowBlur = 12;
+        ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      if (flash > 0) {
+        ctx.fillStyle = `rgba(${ar}, ${ag}, ${ab}, ${flash * 0.12})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+
+    function tick(ts) {
+      const dt = Math.min(0.033, (ts - lastTs) / 1000 || 0.016);
+      lastTs = ts;
+
+      if (state.mode && !state.paused && !state.over) {
+        updatePaddles(dt);
+        if (!state.serving) updateBall(dt);
+      }
+
+      if (flash > 0) flash = Math.max(0, flash - dt);
+
+      draw();
+      requestAnimationFrame(tick);
+    }
+
+    function togglePause() {
+      if (!state.mode || state.over || state.serving) return;
+      state.paused = !state.paused;
+      if (state.paused) {
+        pointers.clear();
+        setOverlay("paused", "paused\nspace to resume");
+      } else {
+        setOverlay(null, "");
+      }
+    }
+
+    function onKey(e, down) {
+      const key = e.key.toLowerCase();
+      if (["w", "s", "arrowup", "arrowdown", " "].includes(key) || e.key === " ") {
+        e.preventDefault();
+      }
+      const map = key === " " ? " " : key;
+      if (down) keys.add(map);
+      else keys.delete(map);
+
+      if (!down) return;
+
+      if (key === " " || e.code === "Space") {
+        if (modeVeil.classList.contains("show")) return;
+        if (state.over) {
+          resetMatch(true);
+          return;
+        }
+        if (state.serving) serve();
+        else togglePause();
+      }
+
+      if (key === "m" || key === "r") {
+        if (state.mode) resetMatch(true);
+      }
+
+      if (key === "escape") {
+        showModeSelect();
+      }
+    }
+
+    const pointers = new Map();
+
+    courtEl.addEventListener("pointerdown", (e) => {
+      if (!state.mode || state.over || state.paused) return;
+      courtEl.setPointerCapture(e.pointerId);
+      const rect = courtEl.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const side = state.mode === "pvp" && x > rect.width / 2 ? "right" : "left";
+      pointers.set(e.pointerId, { side, y });
+      const paddle = side === "left" ? left : right;
+      paddle.y = clamp(y - paddle.h / 2, 0, H - paddle.h);
+      if (state.serving) serve();
+    });
+
+    courtEl.addEventListener("pointermove", (e) => {
+      if (state.paused || state.over || state.serving) return;
+      const p = pointers.get(e.pointerId);
+      if (!p) return;
+      const rect = courtEl.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      const paddle = p.side === "left" ? left : right;
+      paddle.y = clamp(y - paddle.h / 2, 0, H - paddle.h);
+    });
+
+    courtEl.addEventListener("pointerup", (e) => pointers.delete(e.pointerId));
+    courtEl.addEventListener("pointercancel", (e) => pointers.delete(e.pointerId));
+
+    window.addEventListener("keydown", (e) => onKey(e, true));
+    window.addEventListener("keyup", (e) => onKey(e, false));
+    window.addEventListener("resize", resize);
+
+    modeBtn.addEventListener("click", showModeSelect);
+    botBtn.addEventListener("click", () => startMode("bot"));
+    pvpBtn.addEventListener("click", () => startMode("pvp"));
+
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+        const radius = Math.min(r, w / 2, h / 2);
+        this.moveTo(x + radius, y);
+        this.arcTo(x + w, y, x + w, y + h, radius);
+        this.arcTo(x + w, y + h, x, y + h, radius);
+        this.arcTo(x, y + h, x, y, radius);
+        this.arcTo(x, y, x + w, y, radius);
+        this.closePath();
+      };
+    }
+
+    resize();
+    updateSpeedHud();
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>

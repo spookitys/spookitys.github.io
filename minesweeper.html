@@ -15,11 +15,10 @@
       --bar-border: rgba(255, 255, 255, 0.28);
       --bar-glow: rgba(255, 255, 255, 0.12);
       --line-ease: cubic-bezier(0.22, 1, 0.36, 1);
-      --chrome: 11rem;
-      --gap: 4px;
+      --gap: 1px;
       --cell: clamp(
         18px,
-        calc((min(96vw, 92dvh) - 3.5rem - (14 * var(--gap))) / 15),
+        calc((min(96vw, 92dvh) - 3.2rem - (14 * var(--gap))) / 15),
         52px
       );
     }
@@ -53,7 +52,7 @@
     }
 
     .frame {
-      width: min(96vw, calc(15 * var(--cell) + 14 * var(--gap) + 3.5rem));
+      width: min(96vw, calc(15 * var(--cell) + 14 * var(--gap) + 3.2rem));
       max-height: 96dvh;
       border-radius: 18px;
       overflow: hidden;
@@ -140,36 +139,67 @@
       opacity: 0.9;
     }
 
-    .brand svg {
+    .brand img {
       width: 1.25rem;
       height: 1.25rem;
+      border-radius: 3px;
+      object-fit: cover;
+      display: block;
     }
 
     .hud {
       position: relative;
       z-index: 1;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 0.75rem;
-      padding: 1rem 1.25rem 0.65rem;
-      font-size: 0.95rem;
+      padding: 0.85rem 1.25rem 0.55rem;
+      font-size: 0.9rem;
       color: color-mix(in srgb, var(--accent) 70%, transparent);
       flex-shrink: 0;
+    }
+
+    .hud-scores {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      min-width: 5.5rem;
+    }
+
+    .hud-scores.right {
+      align-items: flex-end;
+      text-align: right;
     }
 
     .stat {
       display: flex;
       align-items: baseline;
       gap: 0.4rem;
-      min-width: 5.5rem;
+      line-height: 1.2;
+    }
+
+    .stat.high {
+      font-size: 0.78rem;
+      color: color-mix(in srgb, var(--accent) 48%, transparent);
+    }
+
+    .stat.high strong {
+      font-size: 0.9rem;
+      color: color-mix(in srgb, var(--accent) 78%, transparent);
     }
 
     .stat strong {
       color: var(--accent);
       font-weight: 600;
       font-variant-numeric: tabular-nums;
-      font-size: 1.15rem;
+      font-size: 1.1rem;
+      transition: color 0.25s ease;
+    }
+
+    .stat strong.beating {
+      color: #e8c547;
+      text-shadow: 0 0 10px rgba(232, 197, 71, 0.35);
     }
 
     .reset {
@@ -177,12 +207,13 @@
       background: color-mix(in srgb, var(--accent) 10%, transparent);
       color: var(--accent);
       font: inherit;
-      font-size: 0.9rem;
-      padding: 0.45rem 0.95rem;
+      font-size: 0.85rem;
+      padding: 0.4rem 0.85rem;
       border-radius: 10px;
       cursor: pointer;
       opacity: 0.85;
       transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+      margin-top: 0.15rem;
     }
 
     .reset:hover {
@@ -211,9 +242,10 @@
     .cell {
       width: var(--cell);
       height: var(--cell);
-      border-radius: calc(var(--cell) * 0.18);
-      border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
-      background: color-mix(in srgb, var(--accent) 8%, transparent);
+      border-radius: 0;
+      border: none;
+      background: rgba(255, 255, 255, 0.045);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
       color: var(--accent);
       font: inherit;
       font-size: calc(var(--cell) * 0.42);
@@ -224,16 +256,16 @@
       padding: 0;
       transition:
         background 0.18s ease,
-        border-color 0.18s ease,
         box-shadow 0.25s ease,
         transform 0.2s var(--line-ease),
         opacity 0.2s ease,
-        color 0.2s ease;
+        color 0.2s ease,
+        filter 0.2s ease;
     }
 
     .cell:hover:not(.open):not(:disabled) {
-      background: color-mix(in srgb, var(--accent) 16%, transparent);
-      border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
     }
 
     .cell:active:not(.open):not(:disabled) {
@@ -241,8 +273,8 @@
     }
 
     .cell.open {
-      background: color-mix(in srgb, var(--accent) 4%, transparent);
-      border-color: color-mix(in srgb, var(--accent) 12%, transparent);
+      background: rgba(255, 255, 255, 0.02);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
       cursor: default;
     }
 
@@ -252,22 +284,20 @@
 
     .cell.mine {
       background: color-mix(in srgb, #ff6b6b 28%, transparent);
-      border-color: color-mix(in srgb, #ff6b6b 55%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, #ff6b6b 55%, transparent);
     }
 
     .cell.blast {
       background: color-mix(in srgb, #ff6b6b 55%, transparent);
-      border-color: #ff6b6b;
+      box-shadow: inset 0 0 0 1px #ff6b6b;
     }
 
     .cell.lit {
-      background: color-mix(in srgb, var(--accent) 42%, transparent);
-      border-color: color-mix(in srgb, var(--accent) 85%, transparent);
-      box-shadow:
-        0 0 14px color-mix(in srgb, var(--accent) 45%, transparent),
-        inset 0 0 10px color-mix(in srgb, var(--accent) 20%, transparent);
-      transform: scale(1.06);
-      color: #fff;
+      background: #ffffff;
+      box-shadow: none;
+      filter: none;
+      transform: none;
+      color: #000;
     }
 
     .cell.n1 { color: #7ec8ff; }
@@ -288,27 +318,7 @@
     .cell.lit.n7,
     .cell.lit.n8,
     .cell.lit.flagged {
-      color: #fff;
-    }
-
-    .status {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-      padding: 0 1.25rem 0.65rem;
-      min-height: 1.5rem;
-      font-size: 0.95rem;
-      color: color-mix(in srgb, var(--accent) 55%, transparent);
-      transition: color 0.25s ease;
-      flex-shrink: 0;
-    }
-
-    .status.win {
-      color: color-mix(in srgb, var(--accent) 70%, #7dffa0);
-    }
-
-    .status.lose {
-      color: color-mix(in srgb, var(--accent) 55%, #ff6b6b);
+      color: #000;
     }
 
     .hint {
@@ -328,25 +338,25 @@
       <a class="back" href="index.html">← home</a>
       <div class="brand">
         <span>minesweeper</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="13" r="6.5"/>
-          <path d="M12 3.5v2.2M12 20.3v.7M4.2 13H3.5M20.5 13h-.7M6.4 7.4l-.9-.9M18.5 19.5l-.9-.9M17.6 7.4l.9-.9M5.5 19.5l.9-.9"/>
-          <circle cx="10.2" cy="11.2" r="0.9" fill="currentColor" stroke="none"/>
-        </svg>
+        <img src="assets/minesweeper-logo.png" alt="" width="20" height="20" />
       </div>
     </header>
 
     <div class="hud">
-      <div class="stat">mines <strong id="minesLeft">35</strong></div>
+      <div class="stat" style="min-width: 5.5rem; margin-top: 0.15rem">
+        mines <strong id="minesLeft">35</strong>
+      </div>
       <button type="button" class="reset" id="resetBtn">reset</button>
-      <div class="stat" style="justify-content: flex-end">time <strong id="timer">0</strong></div>
+      <div class="hud-scores right">
+        <div class="stat high">best <strong id="bestTime">—</strong></div>
+        <div class="stat">time <strong id="timer">0</strong></div>
+      </div>
     </div>
 
     <div class="board-wrap">
       <div class="board" id="board" role="grid" aria-label="Minesweeper board"></div>
     </div>
 
-    <div class="status" id="status">clear the field</div>
     <p class="hint">click to reveal · right-click / shift-click / space to flag</p>
   </div>
 
@@ -355,11 +365,41 @@
     const COLS = 15;
     const MINE_COUNT = 35;
     const SHOCKWAVE_MS = 42;
+    const BEST_KEY = "spookitys-minesweeper-best";
+    const THEME_KEY = "spookitys-theme";
+
+    (function applyStoredTheme() {
+      try {
+        const raw = localStorage.getItem(THEME_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        const a = data.accent;
+        if (!a || typeof a.r !== "number") return;
+        const root = document.documentElement;
+        const ar = Math.round(a.r);
+        const ag = Math.round(a.g);
+        const ab = Math.round(a.b);
+        root.style.setProperty("--accent", `rgb(${ar}, ${ag}, ${ab})`);
+        root.style.setProperty("--accent-rgb", `${ar}, ${ag}, ${ab}`);
+        root.style.setProperty("--bar-border", `rgba(${ar}, ${ag}, ${ab}, 0.28)`);
+        root.style.setProperty("--bar-glow", `rgba(${ar}, ${ag}, ${ab}, 0.12)`);
+        const b = data.body;
+        if (b && typeof b.r === "number") {
+          const br = Math.round(b.r);
+          const bg = Math.round(b.g);
+          const bb = Math.round(b.b);
+          root.style.setProperty("--body", `rgb(${br}, ${bg}, ${bb})`);
+          document.body.style.background = `rgb(${br}, ${bg}, ${bb})`;
+        }
+      } catch (_) {
+        /* ignore */
+      }
+    })();
 
     const boardEl = document.getElementById("board");
     const minesLeftEl = document.getElementById("minesLeft");
     const timerEl = document.getElementById("timer");
-    const statusEl = document.getElementById("status");
+    const bestTimeEl = document.getElementById("bestTime");
     const resetBtn = document.getElementById("resetBtn");
 
     let cells = [];
@@ -372,6 +412,18 @@
     let timer = 0;
     let timerId = null;
     let shockwaveTimers = [];
+    let bestTime = loadBest();
+
+    function loadBest() {
+      const raw = localStorage.getItem(BEST_KEY);
+      if (raw == null || raw === "") return null;
+      const n = Number(raw);
+      return Number.isFinite(n) && n >= 0 ? n : null;
+    }
+
+    function formatBest(n) {
+      return n == null ? "—" : String(n);
+    }
 
     function idx(r, c) {
       return r * COLS + c;
@@ -406,13 +458,19 @@
       shockwaveTimers = [];
     }
 
+    function updateTimerDisplay() {
+      timerEl.textContent = String(timer);
+      const beating = bestTime != null && started && !over && timer < bestTime;
+      timerEl.classList.toggle("beating", beating);
+    }
+
     function startTimer() {
       stopTimer();
       timer = 0;
-      timerEl.textContent = "0";
+      updateTimerDisplay();
       timerId = setInterval(() => {
         timer += 1;
-        timerEl.textContent = String(timer);
+        updateTimerDisplay();
       }, 1000);
     }
 
@@ -439,6 +497,7 @@
 
     function updateHud() {
       minesLeftEl.textContent = String(Math.max(0, MINE_COUNT - flags));
+      bestTimeEl.textContent = formatBest(bestTime);
     }
 
     function paintCell(cell) {
@@ -525,10 +584,21 @@
       over = true;
       won = success;
       stopTimer();
-      statusEl.className = `status ${success ? "win" : "lose"}`;
-      statusEl.textContent = success ? "cleared — nice" : "boom — try again";
+      if (success) {
+        if (bestTime == null || timer < bestTime) {
+          bestTime = timer;
+          localStorage.setItem(BEST_KEY, String(bestTime));
+        }
+        timerEl.classList.toggle(
+          "beating",
+          bestTime != null && timer <= bestTime
+        );
+        updateHud();
+        if (origin) playWinShockwave(origin);
+      } else {
+        timerEl.classList.remove("beating");
+      }
       for (const cell of cells) paintCell(cell);
-      if (success && origin) playWinShockwave(origin);
     }
 
     function onReveal(cell) {
@@ -537,8 +607,6 @@
         started = true;
         placeMines(cell.r, cell.c);
         startTimer();
-        statusEl.className = "status";
-        statusEl.textContent = "sweeping…";
       }
       if (cell.flagged) return;
       reveal(cell);
@@ -556,9 +624,7 @@
       stopTimer();
       clearShockwave();
       timer = 0;
-      timerEl.textContent = "0";
-      statusEl.className = "status";
-      statusEl.textContent = "clear the field";
+      updateTimerDisplay();
       updateHud();
 
       for (let r = 0; r < ROWS; r++) {

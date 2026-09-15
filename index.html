@@ -479,7 +479,9 @@
       padding: 1.1rem;
     }
 
-    .window-preview.tetris-preview {
+    .window-preview.tetris-preview,
+    .window-preview.mines-preview,
+    .window-preview.pong-preview {
       padding: 0.7rem;
       place-items: center;
     }
@@ -495,7 +497,9 @@
       transform: scale(1.04);
     }
 
-    .window-body:hover .preview-grid.tetris {
+    .window-body:hover .preview-grid.tetris,
+    .window-body:hover .preview-grid.mines,
+    .window-body:hover .preview-grid.pong {
       transform: none;
     }
 
@@ -531,16 +535,18 @@
     .preview-cell.n7 { color: #f0f0f0; }
     .preview-cell.n8 { color: #b0b0b0; }
 
-    .preview-grid.tetris {
-      --tetris-cols: 8;
-      --tetris-rows: 6;
+    .preview-grid.tetris,
+    .preview-grid.mines,
+    .preview-grid.pong {
+      --preview-cols: 8;
+      --preview-rows: 6;
       width: auto;
       height: 100%;
       max-width: 100%;
-      aspect-ratio: var(--tetris-cols) / var(--tetris-rows);
-      grid-template-columns: repeat(var(--tetris-cols), 1fr);
-      grid-template-rows: repeat(var(--tetris-rows), 1fr);
-      gap: 2px;
+      aspect-ratio: var(--preview-cols) / var(--preview-rows);
+      grid-template-columns: repeat(var(--preview-cols), 1fr);
+      grid-template-rows: repeat(var(--preview-rows), 1fr);
+      gap: 1px;
       padding: 0.28rem;
       border-radius: 0;
       border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
@@ -549,7 +555,9 @@
       box-sizing: border-box;
     }
 
-    .preview-grid.tetris .preview-cell {
+    .preview-grid.tetris .preview-cell,
+    .preview-grid.mines .preview-cell,
+    .preview-grid.pong .preview-cell {
       width: 100%;
       height: 100%;
       min-width: 0;
@@ -559,6 +567,33 @@
       border: none;
       background: rgba(255, 255, 255, 0.045);
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      font-size: clamp(0.45rem, 1.6vw, 0.7rem);
+    }
+
+    .preview-grid.pong .preview-cell.paddle,
+    .preview-grid.pong .preview-cell.ball {
+      background: color-mix(in srgb, var(--accent) 88%, transparent);
+      box-shadow: none;
+    }
+
+    .preview-grid.pong .preview-cell.trail {
+      background: color-mix(in srgb, var(--accent) 35%, transparent);
+      box-shadow: none;
+    }
+
+    .preview-grid.pong .preview-cell.net {
+      background: color-mix(in srgb, var(--accent) 18%, transparent);
+      box-shadow: none;
+    }
+
+    .preview-grid.mines .preview-cell.open {
+      background: rgba(255, 255, 255, 0.02);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    }
+
+    .preview-grid.mines .preview-cell.mine {
+      background: color-mix(in srgb, #ff6b6b 28%, transparent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, #ff6b6b 55%, transparent);
     }
 
     .preview-grid.tetris .preview-cell.block {
@@ -679,10 +714,14 @@
       glowing: "cursor glow without a trail",
       ripple: "expanding ripples on click",
       disco: "random cells pulse on and off",
+      linesweeper: "entire rows flash like disco",
+      droplets: "matrix-code rain falling from the top",
       perlin: "topographic noise field",
       none: "all numbers transparent",
       illuminate: "all numbers fully lit",
     };
+
+    const THEME_KEY = "spookitys-theme";
 
     const COMMANDS = [
       { name: "cmds | help | commands", detail: "list all commands" },
@@ -691,6 +730,7 @@
       { name: "matrixstyle <style>", detail: "set the binary matrix style" },
       { name: "minesweeper", detail: "open a minesweeper window" },
       { name: "tetris", detail: "open a tetris window" },
+      { name: "pong", detail: "open a pong window" },
     ];
 
     const WINDOW_W = 280;
@@ -711,8 +751,11 @@
     };
     let trail = [];
     let ripples = [];
+    let rowPulse = [];
+    let streams = [];
     let matrixStyle = "glowingtrail";
     let dpr = 1;
+    let lastDrawNow = 0;
 
     let accentNow = { r: 255, g: 255, b: 255 };
     let bodyNow = { r: 0, g: 0, b: 0 };
@@ -789,6 +832,44 @@
       document.body.style.background = rgbCss(body);
     }
 
+    function persistTheme() {
+      try {
+        localStorage.setItem(
+          THEME_KEY,
+          JSON.stringify({
+            accent: accentTarget,
+            body: bodyTarget,
+            matrixStyle,
+          })
+        );
+      } catch (_) {
+        /* ignore quota / private mode */
+      }
+    }
+
+    function loadTheme() {
+      try {
+        const raw = localStorage.getItem(THEME_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (data.accent && typeof data.accent.r === "number") {
+          accentNow = { ...data.accent };
+          accentFrom = { ...data.accent };
+          accentTarget = { ...data.accent };
+        }
+        if (data.body && typeof data.body.r === "number") {
+          bodyNow = { ...data.body };
+          bodyFrom = { ...data.body };
+          bodyTarget = { ...data.body };
+        }
+        if (data.matrixStyle && data.matrixStyle in MATRIX_STYLES) {
+          matrixStyle = data.matrixStyle;
+        }
+      } catch (_) {
+        /* ignore */
+      }
+    }
+
     function startColorTransition(nextAccent, nextBody) {
       accentFrom = { ...accentNow };
       bodyFrom = { ...bodyNow };
@@ -796,6 +877,7 @@
       bodyTarget = { ...nextBody };
       colorAnimStart = performance.now();
       colorAnimating = true;
+      persistTheme();
     }
 
     function updateColorAnimation(now) {
@@ -906,6 +988,8 @@
           pulse: 0,
         };
       }
+      if (matrixStyle === "droplets") initStreams();
+      if (matrixStyle === "linesweeper") rowPulse = new Array(rows).fill(0);
     }
 
     function pushTrail(x, y, t) {
@@ -1005,14 +1089,71 @@
         case "disco":
           return cell.pulse;
         case "perlin": {
-          const n = fbm(cx * 0.012, cy * 0.012 + now * 0.00018);
-          // Contour bands → topographic ridges
-          const ridges = Math.pow(1 - Math.abs(Math.sin(n * Math.PI * 7)), 2.2);
+          // ~5× zoomed-in field; continuously drifts so contours keep morphing
+          const t = now * 0.00022;
+          const n = fbm(
+            cx * 0.0024 + t * 0.55,
+            cy * 0.0024 + t * 0.85
+          );
+          const ridges = Math.pow(
+            1 - Math.abs(Math.sin(n * Math.PI * 4 + t * 1.6)),
+            2.2
+          );
           return ridges * 0.95;
+        }
+        case "linesweeper": {
+          const ry = Math.min(rows - 1, Math.max(0, Math.floor(cy / CELL)));
+          return rowPulse[ry] || 0;
+        }
+        case "droplets": {
+          const col = Math.min(cols - 1, Math.max(0, Math.floor(cx / CELL)));
+          const list = streams[col];
+          if (!list || !list.length) return 0;
+          const row = cy / CELL - 0.5;
+          const fadeStart = rows * 0.52;
+          const fadeEnd = rows * 0.9;
+          let best = 0;
+          for (const s of list) {
+            const dy = s.y - row;
+            if (dy < -0.5 || dy > s.len) continue;
+            const t = 1 - Math.max(0, dy) / s.len;
+            let a = (dy < 1.1 ? 1 : t * t) * 0.95;
+            if (s.y > fadeStart) {
+              a *= Math.max(0, 1 - (s.y - fadeStart) / (fadeEnd - fadeStart));
+            }
+            best = Math.max(best, a);
+          }
+          return best;
         }
         default:
           return glowInfluence(cx, cy, now, true);
       }
+    }
+
+    function makeStream() {
+      return {
+        y: Math.random() * (rows * 0.55) - 8,
+        speed: 10 + Math.random() * 26,
+        len: 6 + Math.floor(Math.random() * 18),
+      };
+    }
+
+    function initStreams() {
+      // ~2× prior density (~0.72/col → ~1.44/col), multiple trails per column ok
+      streams = Array.from({ length: cols }, () => []);
+      const count = Math.max(1, Math.round(cols * 1.44));
+      for (let i = 0; i < count; i++) {
+        streams[Math.floor(Math.random() * cols)].push(makeStream());
+      }
+    }
+
+    function resetStyleState(style) {
+      if (style !== "glowingtrail") trail = [];
+      if (style !== "ripple") ripples = [];
+      if (style === "droplets") initStreams();
+      else streams = [];
+      if (style === "linesweeper") rowPulse = new Array(rows).fill(0);
+      else rowPulse = [];
     }
 
     function onPointerMove(e) {
@@ -1092,6 +1233,9 @@
     function draw(now) {
       const w = window.innerWidth;
       const h = window.innerHeight;
+      const dt = lastDrawNow ? Math.min(0.05, (now - lastDrawNow) / 1000) : 0;
+      lastDrawNow = now;
+
       ctx.clearRect(0, 0, w, h);
       ctx.font = `500 ${Math.floor(CELL * 0.72)}px "IBM Plex Mono", monospace`;
       ctx.textAlign = "center";
@@ -1104,6 +1248,35 @@
         pushTrail(mouse.x, mouse.y, now);
       }
       if (matrixStyle === "ripple") pruneRipples(now);
+
+      if (matrixStyle === "linesweeper") {
+        if (rowPulse.length !== rows) rowPulse = new Array(rows).fill(0);
+        if (Math.random() < dt * 2.8) {
+          rowPulse[Math.floor(Math.random() * rows)] = 1;
+        }
+        for (let i = 0; i < rowPulse.length; i++) {
+          if (!rowPulse[i]) continue;
+          rowPulse[i] *= Math.pow(0.965, dt * 60);
+          if (rowPulse[i] < 0.02) rowPulse[i] = 0;
+        }
+      }
+
+      if (matrixStyle === "droplets") {
+        if (streams.length !== cols) initStreams();
+        const fadeEnd = rows * 0.9;
+        for (let x = 0; x < cols; x++) {
+          const list = streams[x];
+          if (!list) continue;
+          for (const s of list) {
+            s.y += s.speed * dt;
+            if (s.y > fadeEnd) {
+              s.y = -2 - Math.random() * 10;
+              s.speed = 10 + Math.random() * 26;
+              s.len = 6 + Math.floor(Math.random() * 18);
+            }
+          }
+        }
+      }
 
       const ar = accentNow.r;
       const ag = accentNow.g;
@@ -1358,29 +1531,140 @@
       bar.addEventListener("pointercancel", endDrag);
     }
 
-    function randomPreviewKind() {
-      const roll = Math.random();
-      if (roll < 0.28) return { kind: "empty" };
-      if (roll < 0.48) return { kind: "flagged" };
-      return { kind: "number", n: 1 + Math.floor(Math.random() * 8) };
-    }
-
-    function fillPreviewGrid(grid) {
+    function fillMinesweeperGrid(grid) {
       grid.innerHTML = "";
-      for (let i = 0; i < 4; i++) {
-        const cell = document.createElement("div");
-        const pick = randomPreviewKind();
-        cell.className = "preview-cell";
-        if (pick.kind === "empty") {
-          cell.classList.add("open");
-        } else if (pick.kind === "flagged") {
-          cell.classList.add("flagged");
-          cell.textContent = "▲";
-        } else {
-          cell.classList.add("open", `n${pick.n}`);
-          cell.textContent = String(pick.n);
+      grid.classList.add("mines");
+      if (grid.parentElement) grid.parentElement.classList.add("mines-preview");
+
+      const rows = 6;
+      const cols = 8;
+      const mineCount = 10;
+      const board = Array.from({ length: rows }, () =>
+        Array.from({ length: cols }, () => ({
+          mine: false,
+          count: 0,
+          open: false,
+          flagged: false,
+        }))
+      );
+
+      let placed = 0;
+      while (placed < mineCount) {
+        const r = Math.floor(Math.random() * rows);
+        const c = Math.floor(Math.random() * cols);
+        if (board[r][c].mine) continue;
+        board[r][c].mine = true;
+        placed += 1;
+      }
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (board[r][c].mine) continue;
+          let n = 0;
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              if (!dr && !dc) continue;
+              const rr = r + dr;
+              const cc = c + dc;
+              if (rr < 0 || rr >= rows || cc < 0 || cc >= cols) continue;
+              if (board[rr][cc].mine) n += 1;
+            }
+          }
+          board[r][c].count = n;
         }
-        grid.appendChild(cell);
+      }
+
+      const safe = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (!board[r][c].mine) safe.push({ r, c });
+        }
+      }
+      for (let i = safe.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [safe[i], safe[j]] = [safe[j], safe[i]];
+      }
+
+      const revealTarget = Math.floor(safe.length * (0.35 + Math.random() * 0.25));
+      const queue = [];
+      const seen = new Set();
+      const start = safe[0];
+      if (start) {
+        queue.push(start);
+        seen.add(`${start.r},${start.c}`);
+      }
+
+      while (queue.length && seen.size < revealTarget) {
+        const { r, c } = queue.shift();
+        board[r][c].open = true;
+        if (board[r][c].count > 0) continue;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (!dr && !dc) continue;
+            const rr = r + dr;
+            const cc = c + dc;
+            if (rr < 0 || rr >= rows || cc < 0 || cc >= cols) continue;
+            if (board[rr][cc].mine) continue;
+            const key = `${rr},${cc}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            queue.push({ r: rr, c: cc });
+          }
+        }
+      }
+
+      for (const { r, c } of safe) {
+        if (seen.size >= revealTarget) break;
+        if (seen.has(`${r},${c}`)) continue;
+        board[r][c].open = true;
+        seen.add(`${r},${c}`);
+      }
+
+      let flagsLeft = 3 + Math.floor(Math.random() * 3);
+      for (let r = 0; r < rows && flagsLeft > 0; r++) {
+        for (let c = 0; c < cols && flagsLeft > 0; c++) {
+          const cell = board[r][c];
+          if (cell.open || !cell.mine) continue;
+          if (Math.random() > 0.45) continue;
+          cell.flagged = true;
+          flagsLeft -= 1;
+        }
+      }
+
+      const showMine = Math.random() < 0.22;
+      if (showMine) {
+        const mines = [];
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            if (board[r][c].mine && !board[r][c].flagged) mines.push({ r, c });
+          }
+        }
+        if (mines.length) {
+          const pick = mines[Math.floor(Math.random() * mines.length)];
+          board[pick.r][pick.c].open = true;
+        }
+      }
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = board[r][c];
+          const el = document.createElement("div");
+          el.className = "preview-cell";
+          if (cell.open) {
+            el.classList.add("open");
+            if (cell.mine) {
+              el.classList.add("mine");
+              el.textContent = "●";
+            } else if (cell.count > 0) {
+              el.classList.add(`n${cell.count}`);
+              el.textContent = String(cell.count);
+            }
+          } else if (cell.flagged) {
+            el.classList.add("flagged");
+            el.textContent = "▲";
+          }
+          grid.appendChild(el);
+        }
       }
     }
 
@@ -1444,6 +1728,38 @@
       }
     }
 
+    function fillPongGrid(grid) {
+      grid.innerHTML = "";
+      grid.classList.add("pong");
+      if (grid.parentElement) grid.parentElement.classList.add("pong-preview");
+
+      const rows = 6;
+      const cols = 8;
+      const board = Array.from({ length: rows }, () => Array(cols).fill(null));
+
+      // left paddle
+      for (let r = 1; r <= 3; r++) board[r][0] = "paddle";
+      // right paddle
+      for (let r = 2; r <= 4; r++) board[r][cols - 1] = "paddle";
+      // center net
+      for (let r = 0; r < rows; r += 2) board[r][3] = "net";
+      for (let r = 1; r < rows; r += 2) board[r][4] = "net";
+      // ball + trail (diagonal)
+      board[3][5] = "ball";
+      board[2][4] = "trail";
+      board[1][2] = "trail";
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement("div");
+          cell.className = "preview-cell";
+          const kind = board[r][c];
+          if (kind) cell.classList.add(kind);
+          grid.appendChild(cell);
+        }
+      }
+    }
+
     function fillTetrisGrid(grid) {
       grid.innerHTML = "";
       grid.classList.add("tetris");
@@ -1497,7 +1813,7 @@
       title,
       href,
       logoSvg,
-      fillPreview = fillPreviewGrid,
+      fillPreview = fillMinesweeperGrid,
       instant = false,
       minimized = false,
     }) {
@@ -1616,27 +1932,28 @@
       return el;
     }
 
-    const MINESWEEPER_LOGO = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="13" r="6.5"/>
-        <path d="M12 3.5v2.2M12 20.3v.7M4.2 13H3.5M20.5 13h-.7M6.4 7.4l-.9-.9M18.5 19.5l-.9-.9M17.6 7.4l.9-.9M5.5 19.5l.9-.9"/>
-        <circle cx="10.2" cy="11.2" r="0.9" fill="currentColor" stroke="none"/>
-      </svg>
-    `;
-
+    const MINESWEEPER_LOGO = `<img src="assets/minesweeper-logo.png" alt="" />`;
     const TETRIS_LOGO = `<img src="assets/tetris-logo.png" alt="" />`;
+    const PONG_LOGO = `<img src="assets/pong-logo.png" alt="" />`;
 
     const WINDOW_DEFS = {
       minesweeper: {
         title: "minesweeper",
         href: "minesweeper.html",
         logoSvg: MINESWEEPER_LOGO,
+        fillPreview: fillMinesweeperGrid,
       },
       tetris: {
         title: "tetris",
         href: "tetris.html",
         logoSvg: TETRIS_LOGO,
         fillPreview: fillTetrisGrid,
+      },
+      pong: {
+        title: "pong",
+        href: "pong.html",
+        logoSvg: PONG_LOGO,
+        fillPreview: fillPongGrid,
       },
     };
 
@@ -1847,8 +2164,8 @@
             break;
           }
           matrixStyle = style;
-          if (style !== "glowingtrail") trail = [];
-          if (style !== "ripple") ripples = [];
+          resetStyleState(style);
+          persistTheme();
           appendLine(`matrixstyle → ${style}`);
           break;
         }
@@ -1861,6 +2178,11 @@
         case "tetris":
           spawnWindow(WINDOW_DEFS.tetris);
           appendLine("opened tetris window");
+          break;
+
+        case "pong":
+          spawnWindow(WINDOW_DEFS.pong);
+          appendLine("opened pong window");
           break;
 
         default:
@@ -1898,8 +2220,10 @@
 
     setInterval(pruneExpired, 250);
 
+    loadTheme();
     applyColors(accentNow, bodyNow);
     rebuildGrid();
+    resetStyleState(matrixStyle);
     syncCaretTarget(true);
     restoreOpenWindows();
     requestAnimationFrame(draw);

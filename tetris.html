@@ -621,6 +621,35 @@
     const HS_KEY = "spookitys-tetris-high";
     const BINDS_KEY = "spookitys-tetris-binds";
     const SAVE_KEY = "spookitys-tetris-save";
+    const THEME_KEY = "spookitys-theme";
+
+    (function applyStoredTheme() {
+      try {
+        const raw = localStorage.getItem(THEME_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        const a = data.accent;
+        if (!a || typeof a.r !== "number") return;
+        const root = document.documentElement;
+        const ar = Math.round(a.r);
+        const ag = Math.round(a.g);
+        const ab = Math.round(a.b);
+        root.style.setProperty("--accent", `rgb(${ar}, ${ag}, ${ab})`);
+        root.style.setProperty("--accent-rgb", `${ar}, ${ag}, ${ab}`);
+        root.style.setProperty("--bar-border", `rgba(${ar}, ${ag}, ${ab}, 0.28)`);
+        root.style.setProperty("--bar-glow", `rgba(${ar}, ${ag}, ${ab}, 0.12)`);
+        const b = data.body;
+        if (b && typeof b.r === "number") {
+          const br = Math.round(b.r);
+          const bg = Math.round(b.g);
+          const bb = Math.round(b.b);
+          root.style.setProperty("--body", `rgb(${br}, ${bg}, ${bb})`);
+          document.body.style.background = `rgb(${br}, ${bg}, ${bb})`;
+        }
+      } catch (_) {
+        /* ignore */
+      }
+    })();
 
     const PIECES = {
       I: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
